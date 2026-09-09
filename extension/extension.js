@@ -9,6 +9,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 		name: '天地归一',
 		editable: false,
 		precontent: function () {
+			var pkg;
 			game.import('character', function () {
 				// ---- 包内闭包辅助 ----
 				var findCeTarget = function () {
@@ -27,7 +28,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 					return p && p.hasSkill('mgj_dingce');
 				};
 
-				return {
+				pkg = {
 					name: 'tiandiguiyi',
 					character: {
 						mouguojia_soul: ['male', 'wei', 4, [
@@ -274,7 +275,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 					},
 				};
+				return pkg;
 			});
+			// ============ 包名注册三连（雷霆万钧同款，选将界面可见/可选的关键） ============
+			if (!lib.config.all.characters.contains('tiandiguiyi')) {
+				lib.config.all.characters.push('tiandiguiyi');
+			}
+			if (!lib.config.characters.contains('tiandiguiyi')) {
+				lib.config.characters.add('tiandiguiyi');
+			}
+			lib.translate['tiandiguiyi_character_config'] = '天地归一';
+			// ============ 保底：手动展平 + 技能清单（注册链漏跑时兜底，幂等） ============
+			if (pkg && pkg.character) {
+				for (var cid in pkg.character) {
+					if (!lib.character[cid]) lib.character[cid] = pkg.character[cid];
+					for (var si = 0; si < pkg.character[cid][3].length; si++) {
+						var skn = pkg.character[cid][3][si];
+						if (!lib.skilllist.contains(skn)) lib.skilllist.add(skn);
+					}
+				}
+			}
 		},
 	};
 });
