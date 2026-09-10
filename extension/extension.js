@@ -86,6 +86,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'mgj_extra_phase': '铸策·再战',
 						'mgj_boost': '铸策·锐',
 						'mgj_skip': '铸策·逸',
+						// ── B11：标记文案 ──
+						// 头像角标文字取自 lib.translate[标记名+'_bg']（game.js:27584），
+						// 缺省时退化为 get.translation(标记名)[0] —— 即键名首字母（mgj_ce → 'm'）。
+						// 此处显式给出，并补上标记名的译名（addMark 的日志文案也读 lib.translate）。
+						'mgj_ce': '策',
+						'mgj_ce_bg': '策',
+						'mgj_eff1_bg': '愈',
+						'mgj_eff2': '铸策·再战',
+						'mgj_eff2_bg': '再',
+						'mgj_eff3_perm': '铸策·锐',
+						'mgj_eff3_perm_bg': '锐',
+						'mgj_eff4_perm': '铸策·逸',
+						'mgj_eff4_perm_bg': '逸',
 					},
 					skill: {
 						// ============ 定策 ============
@@ -225,6 +238,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true,
 							sub: true,
 							popup: false,
+							// B11：补 intro，使「愈」标记能真正渲染（markSkill 无 intro 时直接 return）
+							intro: { name: '铸策·愈', content: '你的回合开始时回复1点体力，然后移去此标记。' },
 							trigger: { global: 'phaseBegin' },
 							filter: function (event) {
 								var ce = findCeTarget();
@@ -321,6 +336,36 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (ce) ce.draw(x + 1, 'nodelay');
 								event.finish();
 							},
+						},
+
+						// ============ B11：标记显示壳（纯显示，无 trigger/content） ============
+						// 「策」与铸策效果标记都直接挂在角色身上（通过 addMark），
+						// 而 markSkill 在 lib.skill[标记名].intro 缺失时会**直接 return、不渲染任何标记**
+						// （game.js:27412-27417）→ 玩家看不出「策」在谁身上、已有哪些效果。
+						//
+						// 下面四个是纯显示用空壳：不含任何逻辑，也**不在武将数组里**
+						// （因此不会被任何人"拥有"，只提供 intro 供 markSkill 取用）。
+						// 注意 mgj_eff2 / mgj_eff3_perm / mgj_eff4_perm 的标记名与技能名不同名
+						// （技能分别是 mgj_extra_phase / mgj_boost / mgj_skip），故必须单独补壳。
+						mgj_ce: {
+							charlotte: true,
+							sub: true,
+							intro: { name: '策', content: '谋郭嘉·魂的「策」。你与其相互间无法造成伤害。' },
+						},
+						mgj_eff2: {
+							charlotte: true,
+							sub: true,
+							intro: { name: '铸策·再战', content: '你的回合开始时，额外执行一个出牌阶段（不摸牌），然后移去此标记。' },
+						},
+						mgj_eff3_perm: {
+							charlotte: true,
+							sub: true,
+							intro: { name: '铸策·锐', content: '你使用单目标牌造成的伤害+1（永久，不移去）。' },
+						},
+						mgj_eff4_perm: {
+							charlotte: true,
+							sub: true,
+							intro: { name: '铸策·逸', content: '你的弃牌阶段开始时，移去此标记并跳过该阶段。' },
 						},
 					},
 				};
