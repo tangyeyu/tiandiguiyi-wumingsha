@@ -147,7 +147,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 					},
 					characterIntro: {
 						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你选择一名其他角色令其获得「策」，你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你与「策」各摸X+1张牌（X为「策」的效果数，至多4）。',
-						zhuan_caomao: '转·曹髦。<br>决境：每轮开始时，令全场摸一张牌，并将此牌转为闪电对自己使用；有人在闪电判定时你摸牌；你自己的闪电判定成功时免伤、清场闪电并永久失去决境。<br>奇技：锁定技，回合结束时夺取本回合未被你伤害过的角色各一张牌；受伤时可弃判定区牌免伤；有人受≥2点伤害时，你可摸X（体力值）或Y（全场判定区牌数）张。<br>讨贼：锁定技，每轮开始可把任意牌压入牌堆底，累计超过体力上限后即可无视次数与距离使用牌堆底的牌。',
+						zhuan_caomao: '转·曹髦。<br>决境：每轮开始时，令全场各摸一张牌，并将各自摸到的那张转为闪电对其自己使用（判定区已有闪电者跳过）；有人在闪电判定时你摸牌；你自己的闪电判定成功时免伤、清空全场判定区的闪电并永久失去决境。<br>奇技：锁定技，回合结束时夺取本回合未被你伤害过的角色各一张牌；受伤时可弃判定区牌免伤；有人受≥2点伤害时，你可摸X（体力值）或Y（全场判定区牌数）张。<br>讨贼：锁定技，每轮开始可把任意牌压入牌堆底，累计超过体力上限后即可无视次数与距离使用牌堆底的牌。',
 					},
 					translate: {
 						'tiandiguiyi': '天地归一',
@@ -581,6 +581,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 「每轮开始时」= roundStart：game.js:15857 / 34542 两处 event.trigger('roundStart')，
 						//   由 15844-15846 的 isRound 判定驱动（轮到 _status.roundStart 那位玩家时）
 						//   ⇒ 每轮恰好一次 ✓ 现有先例：game.js:34464、44184 的 trigger:{global:'roundStart'}
+						//
+						// ── 「全场各上闪电」为什么不会堆 ────────────────────────────
+						// 引擎硬规则：判定区不能有同名的延时锦囊 ——
+						//   canAddJudge（game.js:26826-26840）
+						//     if(this.hasJudge(name)) return false;
+						// 而 addJudgeNext（26841-26853）正是闪电「迁移到下家」的实现：
+						//   绕一圈找不到能接收的玩家就 game.log(card,'进入了弃牌堆')。
+						// 所以「每人至多一张闪电」是引擎保证的，不需要自己维护。
+						// 而且这套机制与「每轮开始时」是配套的：闪电判定成功即弃置、
+						//   判定失败则流转或进弃牌堆，场上闪电总量一直在减少，
+						//   每轮补一次正好维持 —— 不是无限堆积。
 						cm_juejing: {
 							locked: true,
 							forced: true,
@@ -590,27 +601,47 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								event.cmBefore = player.getCards('h').slice(0);
-								game.log(player, '发动了', '#g【决境】');
+								// 记录**每个人**摸牌前的手牌，用于事后各自找出新摸到的那张。
+								// 用 playerid 作键（不能把 Player 对象当普通 JS 对象键用）；
+								// 全部挂 event —— 'step 0' 与 'step 1' 是独立编译的函数体，变量不跨步
+								event.cmBefore = {};
+								var ps = [];
 								for (var i = 0; i < game.players.length; i++) {
-									if (game.players[i].isIn()) game.players[i].draw(1, 'nodelay');
+									if (game.players[i].isIn()) ps.push(game.players[i]);
+								}
+								event.cmPs = ps;
+								for (var i = 0; i < ps.length; i++) {
+									event.cmBefore[ps[i].playerid] = ps[i].getCards('h').slice(0);
+								}
+								game.log(player, '发动了', '#g【决境】');
+								for (var i = 0; i < ps.length; i++) {
+									ps[i].draw(1, 'nodelay');
 								}
 								'step 1'
-								// 差集法找出曹髦自己刚摸到的那张牌（不依赖 draw 事件的内部字段）
-								var before = event.cmBefore || [];
-								var now = player.getCards('h');
-								var got = null;
-								for (var i = 0; i < now.length; i++) {
-									var found = false;
-									for (var j = 0; j < before.length; j++) {
-										if (before[j] == now[i]) { found = true; break; }
+								// 各自把刚摸到的那张转为闪电塞进自己的判定区。
+								// 写法取自全库「转化牌塞判定区」的标准姿势（至少 3 处先例）：
+								//   ddd.js:1234      target.addJudge({name:'bingliang'},[card]);
+								//   jsrg.js:3338     event.targets[1].addJudge({name:link.viewAs},[link]);
+								//   mobile.js:15340  同上
+								// 用虚拟牌形式挂**实物牌**，才是卡面说的「将此牌转为」——
+								// 真正进判定区的是那张摸到的牌本身，而不是另生成一张闪电。
+								// 已有闪电的人由 canAddJudge 自动跳过（=「补满」语义）。
+								var ps = event.cmPs || [];
+								for (var i = 0; i < ps.length; i++) {
+									var p = ps[i];
+									if (!p.isIn()) continue;
+									if (!p.canAddJudge('shandian')) continue;
+									var before = event.cmBefore[p.playerid] || [];
+									var now = p.getCards('h');
+									var got = null;
+									for (var a = 0; a < now.length; a++) {
+										var found = false;
+										for (var b = 0; b < before.length; b++) {
+											if (before[b] == now[a]) { found = true; break; }
+										}
+										if (!found) { got = now[a]; break; }
 									}
-									if (!found) { got = now[i]; break; }
-								}
-								if (got && player.isIn()) {
-									// 「将此牌转为闪电对自己使用」：用被摸到的**实物牌**造虚拟牌，
-									// 于是真正进判定区的是那张牌本身（而不是另生成一张闪电）
-									player.useCard(get.autoViewAs({ name: 'shandian' }, [got]), player);
+									if (got) p.addJudge({ name: 'shandian' }, [got]);
 								}
 							},
 						},
