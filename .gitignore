@@ -1,3 +1,8 @@
 ﻿
 # 提交时用 -F 传消息产生的临时文件
 .commitmsg*.tmp
+
+# 提交时用 -F 传消息产生的临时文件（各种命名都挡住）
+.cmsg*.tmp
+.cmsgtmp*
+*.cmsg.tmp
