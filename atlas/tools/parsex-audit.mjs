@@ -87,6 +87,13 @@ function extractContents(src) {
   let m;
   CONTENT_RE.lastIndex = 0;
   while ((m = CONTENT_RE.exec(src)) !== null) {
+    // [过滤1] 跳过整行被 // 注释掉的 content（如十周年UI markskill.js 的 // content:function(storage,player){）
+    const lineStart = src.lastIndexOf('\n', m.index) + 1;
+    if (src.slice(lineStart, m.index).indexOf('//') !== -1) continue;
+    // [过滤2] 跳过扩展壳自己的启用回调 content:function(config, pack){}
+    //         它由 game.loadExtension 调用，**永远不会经过 parsex**，不是技能 content
+    if (/\(\s*config\b/.test(m[0])) continue;
+
     const braceStart = m.index + m[0].length - 1;
     const body = findFunctionBody(src, braceStart);
     if (body) {
