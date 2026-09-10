@@ -99,6 +99,7 @@ node atlas/tools/lint-extension.mjs extension/extension.js --app <app> --index a
 | **C6** | 标记可见性（`markSkill` 需要 `intro`） | 无 `intro` 直接 `return`，头像上什么标记都不显示 |
 | **C7** | 跨包重名（需 `--index`） | `lib.skill` 是全局命名空间，加载序在后者**静默覆盖**前者 |
 | **C8** | 触发时机白名单（需 `--app`） | 拼错事件名 → 注册照做、filter 永不调用、**零日志** |
+| **C9** | 转化牌名字比较漏 `viewAs` | `addJudge({name:'shandian'},[card])` 造的是**转化牌**，`.name` 仍是实物牌名、`'shandian'` 在 `.viewAs` 里 ⇒ `.name == 'shandian'` 恒 false、技能静默不触发（实测症状：闪电判定不摸牌、零报错） |
 
 ### 退出码
 

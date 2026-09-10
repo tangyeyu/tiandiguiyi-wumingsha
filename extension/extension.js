@@ -656,18 +656,32 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						// 决境·察电：场上任何一张闪电判定时，你摸一张牌
-						// judge 事件的 event.card 是**被判定对象**（闪电本身），不是翻出的判定牌
+						//
+						// ★ 判「这张判定牌是不是闪电」必须用 viewAs||name，不能用 name：
+						//   本技能体系里的闪电是用 addJudge({name:'shandian'}, [card]) 造的**转化牌**，
+						//   实物牌是那张被摸到的手牌 —— 它的 .name 仍是自己原本的牌名（如 'sha'），
+						//   'shandian' 存在 .viewAs 里。引擎自己读延时锦囊的有效名时永远用
+						//   card.viewAs || card.name（game.js:26832 canAddJudge、26844 addJudgeNext），
+						//   照抄这条才是对的。
+						//   写 .name 的后果：条件恒 false，技能静默永不触发（实测症状：闪电判定不摸牌）。
+						//   用 viewAs||name 同时兼容实物闪电（name='shandian'）与转化闪电（viewAs='shandian'）。
+						//
+						// event.card 是被判定对象本身：player.judge(card) 里
+						//   game.js:26892-26894  next.card = 传入的牌，next.judge = get.judge(next.card)
 						cm_juejing_draw: {
 							forced: true,
 							sub: true,
 							popup: false,
 							trigger: { global: 'judgeBefore' },
 							filter: function (event, player) {
-								return player.isIn() && player.hasSkill('cm_juejing') &&
-									event.card && event.card.name == 'shandian';
+								if (!player.isIn() || !player.hasSkill('cm_juejing')) return false;
+								var c = event.card;
+								if (!c) return false;
+								return (c.viewAs || c.name) == 'shandian';
 							},
 							content: function () {
 								player.draw(1);
+								game.log(player, '因闪电判定摸一张牌');
 							},
 						},
 						// 决境·渡劫：自己的闪电判定成功 → 免伤 + 清场闪电 + 永久失去决境
@@ -677,8 +691,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							popup: false,
 							trigger: { player: 'damageBegin' },
 							filter: function (event, player) {
-								return player.hasSkill('cm_juejing') && event.nature == 'thunder' &&
-									event.card && event.card.name == 'shandian';
+								// ★ 同 cm_juejing_draw：延时锦囊的有效名在 viewAs||name
+								if (!player.hasSkill('cm_juejing')) return false;
+								if (event.nature != 'thunder') return false;
+								var c = event.card;
+								if (!c) return false;
+								return (c.viewAs || c.name) == 'shandian';
 							},
 							content: function () {
 								'step 0'
@@ -688,13 +706,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								trigger.cancel();
 								game.log(player, '免疫了闪电伤害，渡劫成功');
 								'step 1'
-								// 弃置**在场角色**判定区内的闪电（含因判定失败迁移到别人头上的那张）
+								// 弃置**在场角色**判定区内的闪电（含因判定失败迁移到别人头上的那张）。
+								// 这里同样必须 viewAs||name —— 判定区里的闪电是转化牌
 								for (var i = 0; i < game.players.length; i++) {
 									var p = game.players[i];
 									if (!p.isIn()) continue;
 									var js = p.getCards('j');
 									for (var j = 0; j < js.length; j++) {
-										if (js[j].name == 'shandian') p.discard(js[j]);
+										if ((js[j].viewAs || js[j].name) == 'shandian') p.discard(js[j]);
 									}
 								}
 								'step 2'

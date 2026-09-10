@@ -341,6 +341,34 @@ if (APP) {
   }
 }
 
+/* ───────────────── C9. 转化牌名字比较漏 viewAs ───────────────── */
+// 实测症状：闪电判定时不摸牌，**零报错**，filter 恒 false。
+// 根因：延时锦囊的有效名是 viewAs||name，不是 name ——
+//   引擎自己就一直这么读：game.js:26832 canAddJudge、
+//   26844 addJudgeNext 都是 `card.viewAs || card.name`。
+//   而 addJudge({name:'shandian'},[card]) 造的是**转化牌**：
+//   实物牌是那张被摸到的手牌，.name 仍是它原本的名字（如 'sha'），
+//   'shandian' 存在 .viewAs 里 ⇒ `event.card.name == 'shandian'` 恒为 false。
+//
+// 判据（精确、低误报）：本文件若用 { name: 'X' } 造过虚拟牌/转化牌，
+// 则别处再出现 `.name == 'X'` 就高度可疑。
+const virtualNames = new Set();
+for (const m of src.matchAll(/(?:addJudge|autoViewAs|viewAs)\s*\(\s*\{\s*name\s*:\s*['"]([^'"]+)['"]/g)) virtualNames.add(m[1]);
+for (const m of src.matchAll(/\bviewAs\s*:\s*\{\s*name\s*:\s*['"]([^'"]+)['"]/g)) virtualNames.add(m[1]);
+for (const [sk, blk] of skillEntries) {
+  for (const m of blk.matchAll(/\.name\s*[!=]==?\s*['"]([^'"]+)['"]/g)) {
+    const nm = m[1];
+    if (!virtualNames.has(nm)) continue;
+    // 已经写成 viewAs||name 的不算（往前看一段，够覆盖同一行的写法）
+    const around = blk.slice(Math.max(0, m.index - 70), m.index + m[0].length);
+    if (/viewAs/.test(around)) continue;
+    W('C9', `技能 \`${sk}\` 用 \`.name == '${nm}'\` 判牌名，但本文件用 {name:'${nm}'} 造过转化牌 —— `
+      + `转化牌的 .name 仍是实物牌名，'${nm}' 在 .viewAs 里 ⇒ 条件恒 false、技能静默不触发`, {
+      hint: `改为 (card.viewAs || card.name) == '${nm}'（引擎自己的读法：game.js:26832 / 26844）`,
+    });
+  }
+}
+
 /* ───────────────── 输出 ───────────────── */
 const byCode = (c) => findings.filter((f) => f.code === c);
 const errs = findings.filter((f) => f.level === 'ERROR');
@@ -385,6 +413,12 @@ if (JSON_OUT) {
     const c8 = byCode('C8');
     mark('C8 触发时机', c8.length === 0, c8.length === 0 ? `${triggerNames.size} 个事件名均在白名单内（含合成后缀，共 ${validEvents.size} 个合法名）` : `${c8.length} 个事件名不存在`);
   } else skip('C8 触发时机', '需 --app <游戏app根目录>');
+
+  const c9 = byCode('C9');
+  mark('C9 转化牌名字', c9.length === 0,
+    c9.length === 0
+      ? (virtualNames.size ? `${virtualNames.size} 个虚拟牌名的比较均正确处理了 viewAs` : '本文件未造过虚拟牌')
+      : `${c9.length} 处漏了 viewAs`);
 
   L.push('');
   if (findings.length === 0) {
