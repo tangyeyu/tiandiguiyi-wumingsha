@@ -257,45 +257,58 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								for (var i = 0; i < game.players.length; i++) {
 									if (game.players[i].hasMark('mgj_ce')) { ce = game.players[i]; break; }
 								}
+								// ★ 语义修正（卡面一致性）：
+								//   卡面写的是「你给「策」添加以下**其中一项**效果」——每回合只能选一项。
+								//   原实现（以及本文件的上一版）是四项 chooseBool 依次询问、可全答"是"，
+								//   每回合能拿满四项 —— 代码结构与原版一致，但与卡面不符。
+								//   现改为真正的四选一：用一个 chooseControl 列出当前可选项。
+								//
+								// ★ 跨步数据必须挂在 event 上：每个 step 都是**独立编译的函数**，
+								//   局部变量（含 stepHead 里的 var）不跨步共享。
 								'step 0'
 								if (!ce) { event.finish(); return; }
-								// 效果1：回复体力（限一次）—— 只在未加过时询问
-								if (ce.countMark('mgj_picked1') < 1) {
-									player.chooseBool('给「策」添加效果【回复体力】（限一次）？').set('ai', function () { return true; });
+								var keys = [];
+								var labels = [];
+								if (ce.countMark('mgj_picked1') < 1) { keys.push('mgj_eff1'); labels.push('①回复体力（限一次）'); }
+								if (ce.countMark('mgj_picked2') < 1) { keys.push('mgj_eff2'); labels.push('②额外出牌阶段（限一次）'); }
+								if (ce.countMark('mgj_picked3') < 1) { keys.push('mgj_eff3_perm'); labels.push('③伤害+1（限一次·永久）'); }
+								keys.push('mgj_eff4_perm');
+								labels.push('④跳过弃牌阶段');
+								event.mgjKeys = keys;
+								event.mgjLabels = labels;
+								if (keys.length == 1) {
+									// 前三项已全部用尽，只剩④ —— 免询问，直接落实
+									event._result = { control: labels[0] };
+								}
+								else {
+									player.chooseControl(labels)
+										.set('prompt', '铸策：选择本回合给「策」添加的效果（每回合一项）')
+										.set('ai', function () { return 0; });
 								}
 								'step 1'
-								if (ce.countMark('mgj_picked1') < 1 && result && result.bool) {
+								var idx = -1;
+								if (result) {
+									if (typeof result.index == 'number') idx = result.index;
+									else if (result.control) idx = event.mgjLabels.indexOf(result.control);
+								}
+								if (idx < 0) idx = event.mgjLabels.length - 1; // 兜底：④
+								var key = event.mgjKeys[idx];
+								if (key == 'mgj_eff1') {
 									ce.addMark('mgj_eff1', 1);
 									ce.addMark('mgj_picked1', 1);
 									game.log(player, '给「策」添加了效果', '#g【回复体力】');
 								}
-								'step 2'
-								// 效果2：额外执行一个出牌阶段（不摸牌，限一次）
-								if (ce.countMark('mgj_picked2') < 1) {
-									player.chooseBool('给「策」添加效果【额外执行一个出牌阶段：不摸牌】（限一次）？').set('ai', function () { return true; });
-								}
-								'step 3'
-								if (ce.countMark('mgj_picked2') < 1 && result && result.bool) {
+								else if (key == 'mgj_eff2') {
 									ce.addMark('mgj_eff2', 1);
 									ce.addMark('mgj_picked2', 1);
 									game.log(player, '给「策」添加了效果', '#g【额外出牌阶段】');
 								}
-								'step 4'
-								// 效果3：使用牌造成的伤害+1（限一次，永久）
-								if (ce.countMark('mgj_picked3') < 1) {
-									player.chooseBool('给「策」添加效果【使用牌造成的伤害+1】（限一次，永久）？').set('ai', function () { return true; });
-								}
-								'step 5'
-								if (ce.countMark('mgj_picked3') < 1 && result && result.bool) {
+								else if (key == 'mgj_eff3_perm') {
 									ce.addMark('mgj_eff3_perm', 1);
 									ce.addMark('mgj_picked3', 1);
 									game.log(player, '给「策」添加了效果', '#g【伤害+1】');
 								}
-								'step 6'
-								// 效果4：跳过一次弃牌阶段（卡面未限次，故每次都问）
-								player.chooseBool('给「策」添加效果【跳过一次弃牌阶段】？').set('ai', function () { return true; });
-								'step 7'
-								if (result && result.bool) {
+								else {
 									ce.addMark('mgj_eff4_perm', 1);
 									game.log(player, '给「策」添加了效果', '#g【跳过弃牌阶段】');
 								}
