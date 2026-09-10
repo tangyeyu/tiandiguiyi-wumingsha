@@ -14,6 +14,7 @@
 | [`01-引擎契约.md`](01-引擎契约.md) | 技能如何被加载、**编译**、执行。`content` 的 `step` 编译机制、19 个注入变量、事件生命周期、声明式字段速查、最小正确骨架 | **先读这篇。**任何技能出问题，先回这里对照 |
 | [`02-范式库.md`](02-范式库.md) | 11 个范式，每个配**真实最小样例** + 逐行解析 + 陷阱。覆盖 `refresh`/`standard`/`offline`/`sb`/`jiange`/`swd`/`sp`/`ddd`/`xianjian`/`extra` 十个包 | 动手写技能时照抄 |
 | [`03-命名空间与冲突.md`](03-命名空间与冲突.md) | 实测：9 处技能名跨包覆盖、1 处悬空引用。附改名方案与提交前自检 | 提交前必看 |
+| [`04-天地归一审计.md`](04-天地归一审计.md) | **反面案例全解**：本仓库自己的扩展里 10 处错误，含 1 处 `parsex` 编译失败（步骤标记写进 `if` 块）与 4 处静默失效 | 想看「写错了会怎样」时 |
 | [`index/packs.md`](index/packs.md) | 34 个包 / 1885 武将 / 5232 技能 的结构总览（自动生成） | 找武将在哪个包 |
 | [`index/census.md`](index/census.md) | 37 个范式的使用统计 + 技能体量分布（自动生成） | 判断"某种写法是否主流" |
 | [`index/samples.md`](index/samples.md) | 每个范式按行数升序、跨包去重的候选清单（自动生成） | 想找更多同类样例 |
@@ -64,6 +65,12 @@ node atlas/tools/check-collisions.mjs atlas/index atlas/index --app <游戏app�
 
 # ④ 按"包:技能"精确抽取源码
 node atlas/tools/extract-skill.mjs <character目录> atlas/index <包>:<技能> [...]
+
+# ⑤ 单技能编译探针：打印 parsex 的替换轨迹、残留 step、结束步 K
+node atlas/tools/parsex-probe.mjs <扩展js> <技能名> [起始行 结束行]
+
+# ⑥ 全库编译体检：真的跑一遍 parsex，统计有多少技能编译后有残留 step
+node atlas/tools/parsex-audit.mjs <character目录> atlas/index [扩展目录...]
 ```
 
 `<character目录>` 指游戏的 `resources/app/character/`。
@@ -77,6 +84,8 @@ node atlas/tools/extract-skill.mjs <character目录> atlas/index <包>:<技能> 
 | `classify-skills.mjs` | 按技能自身行区间做特征匹配（不跨技能误判）；统计范式覆盖率；按体量+跨包去重推荐样例 |
 | `check-collisions.mjs` | 三类体检：技能名跨包重复 / 武将 id 重复 / 悬空技能引用；带 `--app` 时补充扫描 `character/` 之外的技能定义来源 |
 | `extract-skill.mjs` | 支持**跨包回退**：本包找不到时全库搜索并报出真实定义位置（技能是全局命名空间的） |
+| `parsex-probe.mjs` | 照抄 `parsex` 算法（`game.js:12094–12133`）对单个 `content` 做编译，打印替换轨迹与被静默跳过的位置 |
+| `parsex-audit.mjs` | 对全库每个技能的 `content` 跑一遍 `parsex`，统计编译后有残留 `'step N'`（= 状态机错位）的技能 |
 
 ---
 
