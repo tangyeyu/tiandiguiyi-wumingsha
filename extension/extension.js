@@ -41,7 +41,8 @@
 //
 // ── 修复清单（详见 atlas/04-天地归一审计.md）────────────────
 //  B1  mgj_zhuce     步骤标记写在 if/else 块内 → parsex 编译失败、13 个 step 全残留
-//                    → 四个效果一个都不会被添加。改为 generator 顺序流。
+//                    → 四个效果一个都不会被添加。改为「全部 step 提到 content 顶层」的
+//                    顺序流（★ 不是 generator —— 见铁律一，疾速模式下 generator 会炸）。
 //  B2  mgj_nohurt    get.player() 不接受参数，source/target 塌缩为同一对象
 //                    → 判定恒 false。改为直接读 event.source / event.player。
 //  B3  mgj_nohurt    event.cancel() 取消的是技能自身事件 → 改为 trigger.cancel()。
@@ -58,8 +59,25 @@
 //                    按「只修 bug」原则**未改名**，保留原标记名以免影响既有存档/录像。
 //  B9  mgj_ce_remove 在 die 事件内做玩家交互 —— 风险项而非已证缺陷，
 //                    按「只修 bug」原则**未改时机**。
-//  B10 mgj_zhuce     stepHead 使 var ce 每步重算 —— generator 天然只求值一次，
+//  B10 mgj_zhuce     stepHead 使 var ce 每步重算 —— 顺序流天然只求值一次，
 //                    属无害归一化（原实现每步重算亦非有意设计）。
+//  B11 标记不可见    markSkill 在 lib.skill[标记名].intro 缺失时**直接 return**、
+//                    不渲染任何标记（game.js:27412）→「策」与四个效果全看不见。
+//                    补 4 个纯显示壳（mgj_ce / mgj_eff2 / mgj_eff3_perm / mgj_eff4_perm）
+//                    + mgj_eff1 的 intro + 全部 *_bg 角标译名。
+//  B12 定策不触发    gameStart 不保证派发、enterGame 只在 addFellow/restorePlayer 里由
+//                    triggerEnter 创建（game.js:44881）→ ceBound 恒 false。
+//                    触发时机放宽为 {global:['gameStart','gameDrawAfter'], player:'enterGame'}。
+//  B13 四选一变四连发 mgj_zhuce 原来一次触发里把①②③④全 addMark 一遍，
+//                    与卡面「添加以下其中一项效果」不符 → 改为 chooseControl 四选一，
+//                    并用 mgj_picked1/2/3 实现①②③的「限一次」。
+//  B14 ①②被误当消耗品 ①②③④ 中只有 ④ 是消耗品 ——「限一次」限制的是**添加**次数，
+//                    不是**发动**次数，效果一旦添加即永久存在。
+//                    原 mgj_eff1 / mgj_extra_phase 在发动后 removeMark（回一次血/多一个
+//                    出牌阶段就没了，且 ceX() 凭空掉 1），已移除。
+//                    另：② 的插队姿势由 trigger.getParent().next.unshift(next) 改回
+//                    引擎惯用法 trigger.next.push(next)（本包 17 处「额外出牌阶段」皆然，
+//                    含 sb.js「当先」——卡面与②逐字同义）。
 // ============================================================
 game.import("extension", function (lib, game, ui, get, ai, _status) {
 	return {
@@ -269,8 +287,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!ce) { event.finish(); return; }
 								var keys = [];
 								var labels = [];
-								if (ce.countMark('mgj_picked1') < 1) { keys.push('mgj_eff1'); labels.push('①回复体力（限一次）'); }
-								if (ce.countMark('mgj_picked2') < 1) { keys.push('mgj_eff2'); labels.push('②额外出牌阶段（限一次）'); }
+								if (ce.countMark('mgj_picked1') < 1) { keys.push('mgj_eff1'); labels.push('①回复体力（限一次·永久）'); }
+								if (ce.countMark('mgj_picked2') < 1) { keys.push('mgj_eff2'); labels.push('②额外出牌阶段（限一次·永久）'); }
 								if (ce.countMark('mgj_picked3') < 1) { keys.push('mgj_eff3_perm'); labels.push('③伤害+1（限一次·永久）'); }
 								keys.push('mgj_eff4_perm');
 								labels.push('④跳过弃牌阶段');
@@ -324,18 +342,29 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							sub: true,
 							popup: false,
 							// B11：补 intro，使「愈」标记能真正渲染（markSkill 无 intro 时直接 return）
-							intro: { name: '铸策·愈', content: '你的回合开始时回复1点体力，然后移去此标记。' },
+							intro: { name: '铸策·愈', content: '你的回合开始时回复1点体力（效果永久存在）。' },
 							trigger: { global: 'phaseBegin' },
 							filter: function (event) {
 								var ce = findCeTarget();
 								return ce != null && event.player == ce && ce.countMark('mgj_eff1') > 0;
 							},
 							content: function () {
+								// ── B12：①③④ 的消耗语义（实测纠正）──────────────────
+								// 卡面的「限一次」限制的是**添加**（只能添加一次，由 mgj_zhuce 的
+								// mgj_picked1 守卫实现），不是**发动**次数。效果一旦添加即**永久存在**，
+								// 与 ③【伤害+1】（原实现即永久）语义一致，也才与 ceX()「策中已添加的
+								// 效果数量」这个恒增量吻合。原实现在这里 removeMark，回复一次后效果即消失、
+								// 且 ceX() 凭空掉 1，属于把「限一次」误解为「一次性」。
+								// 只有 ④【跳过一次弃牌阶段】是真正的消耗品（用一次扣一个）。
+								//
+								// 时机正确性：phaseBegin 在 phaseLoop 的 'step 7'
+								// （game.js:15953-15956，注释即「回合开始后⑨」）触发，早于 'step 8'
+								// 才创建的阶段序列（player[event.currentPhase]()，game.js:15965-15968），
+								// 即 phaseBegin = 回合开始、每回合仅一次 —— 故永久化不会变成每阶段回血。
 								var ce = trigger.player;
 								if (ce.countMark('mgj_eff1') > 0) {
 									ce.recover(1);
-									ce.removeMark('mgj_eff1', 1);
-									game.log(ce, '消耗了「策」效果', '#g【回复体力】');
+									game.log(ce, '「策」效果', '#g【回复体力】');
 								}
 								event.finish();
 							},
@@ -351,14 +380,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								return ce != null && event.player == ce && ce.countMark('mgj_eff2') > 0;
 							},
 							content: function () {
+								// ── B12：①永久化（同 mgj_eff1，不再 removeMark）
+								// ── B12b：插队姿势改回引擎惯用法 trigger.next.push(next) ──
+								// 本包内「额外执行一个出牌阶段」共 17 处，全部是这个写法，例如
+								//   sb.js:3993-3997   当先 —— 卡面「回合开始时，执行一个额外的出牌阶段」
+								//   jsrg.js:356-359   离叛
+								//   mobile.js:11704 / yijiang.js:2241 / clan.js:2198 …
+								// 其中 sb.js「当先」的卡面与②逐字同义，可直接比照。
+								// 原写法 trigger.getParent().next.unshift(next) 把 phaseUse 插进
+								// phaseLoop（phaseBegin 的父事件）的队列 —— 那是整回合跑完之后才消费的队列，
+								// 等于「出牌阶段排在结束阶段之后」，与本包 17 处先例都不同，属未经验证的姿势。
 								var ce = trigger.player;
-								// 额外出牌阶段的插队姿势（作者心得 §4.6，经验证有效）：
-								// phaseUse() 默认排到事件流末尾，需先摘出、再插到当前流程队首
 								var next = ce.phaseUse();
 								event.next.remove(next);
-								trigger.getParent().next.unshift(next);
-								ce.removeMark('mgj_eff2', 1);
-								game.log(ce, '消耗了「策」效果', '#g【额外出牌阶段】');
+								trigger.next.push(next);
+								game.log(ce, '「策」效果', '#g【额外出牌阶段】');
 							},
 						},
 						// —— 铸策·锐：使用牌造成的伤害+1（单目标） ——
@@ -448,7 +484,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						mgj_eff2: {
 							charlotte: true,
 							sub: true,
-							intro: { name: '铸策·再战', content: '你的回合开始时，额外执行一个出牌阶段（不摸牌），然后移去此标记。' },
+							intro: { name: '铸策·再战', content: '你的回合开始时，额外执行一个出牌阶段（不摸牌，效果永久存在）。' },
 						},
 						mgj_eff3_perm: {
 							charlotte: true,
