@@ -117,11 +117,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// ============ 定策 ============
 						mgj_dingce: {
 							forced: true,
-							trigger: { global: 'gameStart', player: 'enterGame' },
+							// ── 触发时机（实测修正）──────────────────────────────
+							// 原写法 { global:'gameStart', player:'enterGame' } 两半都可能失效：
+							//  · enterGame：game.js:44881 triggerEnter 只在 addFellow / restorePlayer
+							//    （中途加入、换将、复活）时创建，**开局流程不经过它**
+							//  · gameStart：identity.js:355 在开局 step 5 末尾派发，能否被收集
+							//    取决于那一刻本技能是否已注册进 lib.hook.globaltrigger
+							//    （addSkillTrigger 在 addSkill 时注册，时机可能更晚）
+							// 实测现象：技能已挂到玩家身上、content 可编译、闸门为真，
+							// 但 mgj_ce_bound 始终为 false —— 即 content 一次都没执行过。
+							//
+							// 加固：加 gameDrawAfter 兜底 —— 它在开局 step 6（game.gameDraw）之后，
+							// 必然晚于玩家初始化与技能挂载。mgj_ce_bound 保证只会真正选一次，
+							// 因此多挂一个时机不会重复触发。
+							trigger: { global: ['gameStart', 'gameDrawAfter'], player: 'enterGame' },
 							filter: function (event, player) {
-								if (event.name != 'enterGame' && event.name != 'gameStart') return false;
-								// B7：防重复标记改用 storage（原为无技能定义的裸标记 mgj_ce_bound）
-								return player.hasSkill('mgj_dingce') && !player.storage.mgj_ce_bound;
+								// 去掉原来的 event.name 白名单 —— trigger 已限定时机，
+								// 而原白名单只放行 gameStart / enterGame，会把 gameDrawAfter 兜底挡掉。
+								// 同时给 storage 加保险（避免 storage 未初始化时抛错）。
+								return !!(player.hasSkill('mgj_dingce') &&
+									player.storage && !player.storage.mgj_ce_bound);
 							},
 							// 步骤标记一律写在本函数体顶层（不嵌套在 if/else 内）。
 							// 这样在 parsex 的**两条分支**下都能正确编译：
