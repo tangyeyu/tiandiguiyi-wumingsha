@@ -229,3 +229,8 @@ console.log('技能名重复 TOP 15:');
 for (const [name, list] of dupSkills.slice(0, 15)) {
   console.log(`  ${name.padEnd(24)} ${list.length} 处  ${list.map((d) => d.pack + ':' + d.line).join(' | ')}`);
 }
+
+// 退出码：三类真问题任一存在即 1 —— 旧版恒返回 0，接不了 CI
+const bad = dupSkills.length > 0 || dupChars.length > 0 || trulyDangling.length > 0;
+if (bad) console.log(`\n❌ 命名空间体检未通过（技能名重复 ${dupSkills.length} / 武将 id 重复 ${dupChars.length} / 真悬空 ${trulyDangling.length}）`);
+process.exit(bad ? 1 : 0);

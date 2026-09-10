@@ -283,6 +283,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//
 								// ★ 跨步数据必须挂在 event 上：每个 step 都是**独立编译的函数**，
 								//   局部变量（含 stepHead 里的 var）不跨步共享。
+								//
+								// dsh-lint: ignore-mark mgj_picked1 mgj_picked2 mgj_picked3
+								//   ↑ 上面三个是纯记账标记（记录①②③是否已被添加过），刻意不渲染到头像上。
+								//     markSkill 在缺 intro 时会直接 return（game.js:27412-27417），
+								//     正好借这个特性实现"不可见"；此处显式声明意图，免得被 lint-extension
+								//     的 C6 反复提醒。
 								'step 0'
 								if (!ce) { event.finish(); return; }
 								var keys = [];

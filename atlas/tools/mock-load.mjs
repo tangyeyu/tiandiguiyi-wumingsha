@@ -170,7 +170,9 @@ for (const i in lib.characterPack) {
 
 console.log('');
 console.log('=== ⑤ 关键断言 ===');
-const assert = (ok, label, extra = '') => console.log(`  ${ok ? '✅' : '❌'} ${label}${extra ? '  → ' + extra : ''}`);
+let failed = 0;
+// 退出码：任一断言失败即 1 —— 旧版只打 ❌、恒返回 0，接不了 CI
+const assert = (ok, label, extra = '') => { if (!ok) failed++; console.log(`  ${ok ? '✅' : '❌'} ${label}${extra ? '  → ' + extra : ''}`); };
 
 assert(!!lib.character['mouguojia_soul'], '武将 mouguojia_soul 已展平进 lib.character');
 assert(lib.translate['mouguojia_soul'] === '谋郭嘉·魂', '译名 mouguojia_soul', JSON.stringify(lib.translate['mouguojia_soul']));
@@ -189,8 +191,14 @@ if (Array.isArray(arr)) {
 }
 
 // 技能名 ↔ 译名 成对
-const paired = wantSkills.filter((s) => lib.translate[s] && lib.translate[s + '_info']);
-assert(paired.length === wantSkills.length, '技能名与 _info 成对', `${paired.length}/${wantSkills.length}`);
+// ★ 与 lint-extension.mjs 的 C5 保持**同一口径**：sub:true 的实现型子技能刻意不写 _info，
+//   不算失败。（历史上这两处工具口径不一致，同一个扩展会给出相反结论 —— 见 03-命名空间与冲突.md）
+const needInfo = wantSkills.filter((s) => !(lib.skill[s] && lib.skill[s].sub));
+const paired = needInfo.filter((s) => lib.translate[s] && lib.translate[s + '_info']);
+const skippedSub = wantSkills.length - needInfo.length;
+assert(paired.length === needInfo.length,
+  `技能名与 _info 成对${skippedSub ? `（跳过 ${skippedSub} 个 sub 技能）` : ''}`,
+  `${paired.length}/${needInfo.length}`);
 
 console.log('');
 console.log('=== ⑥ translate 全量（排查空名）===');
@@ -204,3 +212,7 @@ if (logs.length) {
   console.log(`=== ⑦ 运行期 game.log（${logs.length} 条）===`);
   logs.slice(0, 10).forEach((l) => console.log('  ' + l));
 }
+
+console.log('');
+console.log(failed ? `❌ ${failed} 项断言失败` : '✅ 全部断言通过');
+process.exit(failed ? 1 : 0);

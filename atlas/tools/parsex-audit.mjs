@@ -153,3 +153,9 @@ if (brokenList.length) {
   }
   if (brokenList.length > 60) console.log(`... 共 ${brokenList.length} 项`);
 }
+
+// 退出码：有状态机错位的技能即 1 —— 旧版恒返回 0，接不了 CI。
+// ⚠ 注意本工具**只建模了 else 分支**。old 分支（疾速模式）下无 generator 判定、无 try/catch，
+//   同一批技能里会有一部分直接 SyntaxError 硬崩。要覆盖 old 分支请用
+//   verify-extension.mjs / lint-extension.mjs 的 C1（那两处是双分支的）。
+process.exit(broken > 0 ? 1 : 0);
