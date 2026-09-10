@@ -50,10 +50,17 @@ node atlas/tools/lint-extension.mjs extension/extension.js --app <app> --index a
 
 | 工具 | 说明 |
 |---|---|
+| **`idiom.mjs`** | ★ **范式抽取器**：从全库 5000+ 个技能里挖「做 X 的标准写法」 |
 | `parsex-audit.mjs` | 全库扫描 `content` 的 `step` 残留（**只建模 else 分支**） |
 | `parsex-probe.mjs` | 单个技能的 parsex 替换轨迹 |
 | `sim-content.mjs` | 复刻分支判定 + 真跑 generator |
 | `liuli-content-support.mjs` | 8 种 content 写法的双分支支持矩阵 |
+
+### 视觉（兜底）
+
+| 工具 | 说明 |
+|---|---|
+| `see.ps1` + `see-prompts.json` | 用本地 llama.cpp 的 Qwen2-VL 看图。**仅当模型路由切到非视觉模型时使用** —— 原生 `read_image` 精度远高于 2B 本地模型 |
 
 ### 写操作（不属于只读体检）
 
@@ -134,6 +141,42 @@ node atlas/tools/lint-extension.mjs extension/extension.js --app <app> --index a
 所以 `damageBegin` = `damage`+`Begin`、`damageEnd` = `damage`+`End`、
 `phaseDiscardBefore` = `phaseDiscard`+`Before` 全部合法。
 C8 的白名单因此是 `字面量 ∪ {基名+后缀}`；漏掉这条合成规则会把一大批正常技能误判。
+
+---
+
+## `idiom.mjs` · 范式抽取器
+
+**为什么要它**：无名杀技能写错，绝大多数不是逻辑问题，而是**引擎约定**问题。
+这些约定在 5000+ 个技能里已被重复过成千上万次 —— **普查语料比推理引擎行为可靠**。
+
+```bash
+node atlas/tools/idiom.mjs --char "<游戏>/resources/app/character" --idiom "额外出牌阶段"
+node atlas/tools/idiom.mjs --find "phaseDiscardBefore"        # 按正则找
+node atlas/tools/idiom.mjs --mine --top 25                     # 全库高频 3-gram 挖矿
+# 常用开关：--show N / --snippet / --outliers / --json
+```
+
+`--char` 首次给一次即可，会缓存在 `atlas/index/.char-dir`。
+
+内置惯用法：`额外出牌阶段` `跳过弃牌阶段` `伤害+1` `防止伤害` `加标记` `限定技`
+`觉醒技` `锁定技但可选发动` `拼点` `额外回合` `转换技` `观看牌堆并排序`
+
+### 三条设计要点（都是踩出来的）
+
+1. **锚定聚类，不是行窗口。**
+   要先找到**匹配的那个调用链**当锚点，再取 `chains[anchor .. anchor+2]`。
+   用固定行窗口会把前置的无关调用（`player.phaseDraw` 之类）混进来，
+   17 个技能碎成 14 类，等于没聚。
+
+2. **锚定窗口必须用不去重的调用序列。**
+   技能里前面若已出现 `event.next.remove`，去重版会让它从锚点之后的窗口里消失，
+   签名被截断成 `player.phaseUse` 就没了，不同写法会被错误并箱（实测误并 3 个）。
+
+3. **多数派不等于正确。**
+   工具在最大派不过半时会明确输出「⚠ 无压倒性写法」，并提示按引擎语义判断。
+   实例：`额外出牌阶段` 全库 17 处，`trigger.next.push` 8 处 vs
+   `trigger.getParent().next` 7 处 —— **47%，没有标准答案**，
+   最终选哪支靠 `event.next` 队列的消费时机语义，不靠票数。
 
 ---
 

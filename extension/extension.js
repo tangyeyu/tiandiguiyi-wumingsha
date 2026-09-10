@@ -76,8 +76,9 @@
 //                    原 mgj_eff1 / mgj_extra_phase 在发动后 removeMark（回一次血/多一个
 //                    出牌阶段就没了，且 ceX() 凭空掉 1），已移除。
 //                    另：② 的插队姿势由 trigger.getParent().next.unshift(next) 改回
-//                    引擎惯用法 trigger.next.push(next)（本包 17 处「额外出牌阶段」皆然，
-//                    含 sb.js「当先」——卡面与②逐字同义）。
+//                    引擎惯用法 trigger.next.push(next)（全库 8 : 7 两派中的一支，
+//                    判据在游戏主循环：trigger.next 在**步与步之间**被消费；
+//                    ⚠ 早先「17 处全部一致」的说法是抽样代替普查的错误断言，已勘误）。
 //  B16 mgj_skip      ④ 的标记活不过持有者的回合。原实现只在 phaseDiscardBefore 消耗标记，
 //                    若弃牌阶段被别的东西跳过（player.skip('phaseDiscard')），该事件走
 //                    game.js:41724 的 Skipped 分支、XBefore/XBegin 都不发射 → 标记不被消耗
@@ -410,15 +411,24 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								// ── B12：①永久化（同 mgj_eff1，不再 removeMark）
-								// ── B12b：插队姿势改回引擎惯用法 trigger.next.push(next) ──
-								// 本包内「额外执行一个出牌阶段」共 17 处，全部是这个写法，例如
-								//   sb.js:3993-3997   当先 —— 卡面「回合开始时，执行一个额外的出牌阶段」
-								//   jsrg.js:356-359   离叛
-								//   mobile.js:11704 / yijiang.js:2241 / clan.js:2198 …
-								// 其中 sb.js「当先」的卡面与②逐字同义，可直接比照。
-								// 原写法 trigger.getParent().next.unshift(next) 把 phaseUse 插进
-								// phaseLoop（phaseBegin 的父事件）的队列 —— 那是整回合跑完之后才消费的队列，
-								// 等于「出牌阶段排在结束阶段之后」，与本包 17 处先例都不同，属未经验证的姿势。
+								// ── B12b：插队姿势改为 trigger.next.push(next) ──
+								// ⚠ 勘误：早先这里写的是「本包 17 处全部是这个写法」——**那是错的**，
+								//   我当时只读了 sb.js / jsrg.js 两处就推广到全库（抽样代替普查）。
+								//   用 atlas/tools/idiom.mjs 做全库聚类后，真实分布是：
+								//     event.next.remove → trigger.next.push          8 处
+								//     event.next.remove → trigger.getParent() → next…  7 处
+								//     其他机制（insertPhase / 直接 phaseUse）          2 处
+								//   即 8 : 7，**不存在压倒性写法**，语料不能当判决用。
+								//
+								//   最终选 trigger.next.push 的依据是**引擎主循环语义**，不是票数：
+								//   event.next 队列是在「当前事件每一步之间」被消费的（game.js 41700 附近）；
+								//   trigger 是**触发事件自身**（game.js:41675 trigger=event._trigger，
+								//   {player:'phaseBegin'} 的触发事件即 phaseLoop），所以挂 trigger.next 会落在
+								//   phaseLoop 的 step 7（触发 phaseBegin）与 step 8（建立 phaseList 各阶段，
+								//   game.js:15965-15968）之间 —— 正是「紧接着回合开始」；
+								//   而 trigger.getParent().next 是父事件队列，要等 phaseLoop 整体跑完，
+								//   即排到整个回合之后。同派先例：sb.js:3951 琉璃 / jsrg.js:317 离叛 /
+								//   yijiang.js:7399 当先（卡面与②逐字同义）。
 								var ce = trigger.player;
 								var next = ce.phaseUse();
 								event.next.remove(next);
