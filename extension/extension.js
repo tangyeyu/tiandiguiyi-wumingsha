@@ -6,10 +6,23 @@
 //       武将数组挂全部技能（含隐藏子技能），保证触发与被展示
 //
 // 本版为**重写版**：仅修复实现错误，三个技能的效果、数值、文案一律未改。
-// 写法：需要等待子事件的 content 一律改用 **generator**（function* + yield）。
-//       琉璃版 5.5 原生支持 generator（game.js:12164-12183），
-//       它不经过源码二次编译，天然规避 step 的全部陷阱。
-//       无需等待的 content 仍用普通 function（与官方保持同样的简洁性）。
+//
+// ── 写法选择（重要，勿再改回 generator）─────────────────
+// 琉璃版 5.5 的 parsex 有**两条分支**，由 localStorage 的 finalParsex 决定
+// （game.js:12070-12071）：
+//
+//   · finalParsex == 'old'（game.js:12072-12090）
+//       纯正则替换、**无 generator 判断**、**无 try/catch**。
+//       generator 函数会被 str.slice(str.indexOf('{')+1) 从解构参数 { player } 处切错位
+//       → new Function 抛 SyntaxError（硬报错）。
+//
+//   · 其他值（else 分支，game.js:12091-12189）
+//       先判 gnc.isGeneratorFunc → generator 走独立分支；普通函数走 Legacy()，
+//       而 Legacy() 带 try/catch，非法替换会被**静默跳过**。
+//
+// 结论：**generator 写法只在 else 分支可用**。要让扩展在两种配置下都正常，
+// 必须用「普通函数 + 'step N'」，且步骤标记一律顶格、不嵌套、不重复。
+// 这正是本文件采用的写法。
 //
 // ── 修复清单（详见 atlas/04-天地归一审计.md）────────────────
 //  B1  mgj_zhuce     步骤标记写在 if/else 块内 → parsex 编译失败、13 个 step 全残留
@@ -110,12 +123,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// B7：防重复标记改用 storage（原为无技能定义的裸标记 mgj_ce_bound）
 								return player.hasSkill('mgj_dingce') && !player.storage.mgj_ce_bound;
 							},
-							// 原为两步 step；本处仅一次选择，generator 直接顺序表达
-							content: function* (event, { player }) {
-								var result = yield player.chooseTarget('选择一名其他角色获得「策」', function (card, player, target) {
+							// 步骤标记一律写在本函数体顶层（不嵌套在 if/else 内）。
+							// 这样在 parsex 的**两条分支**下都能正确编译：
+							//   · finalParsex=='old' 分支（game.js:12072-12090）：纯正则替换、无 try/catch
+							//   · Legacy() 分支（game.js:12094-12133）：带 try/catch，非法替换会被静默跳过
+							// generator 写法只在 Legacy 分支可用，old 分支会把解构参数 { player } 当成函数体切错位。
+							content: function () {
+								'step 0'
+								player.chooseTarget('选择一名其他角色获得「策」', function (card, player, target) {
 									return target != player;
 								}).set('ai', function () { return 1; });
-
+								'step 1'
 								var target = null;
 								if (result && result.targets && result.targets.length) {
 									target = result.targets[0];
@@ -130,6 +148,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									player.storage.mgj_ce_bound = true;
 									game.log(player, '令', target, '获得了标记', '#g【策】');
 								}
+								event.finish();
 							},
 						},
 						// —— 定策·却刃：相互免伤 ——
@@ -163,14 +182,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								return isSoul(player) && findCeTarget() != null;
 							},
-							content: function* (event, { player }) {
+							content: function () {
 								var ce = findCeTarget();
-								if (!ce) return;
-								var result = yield player.chooseBool('是否移除「策」标记？').set('ai', function () { return false; });
+								'step 0'
+								if (!ce) { event.finish(); return; }
+								player.chooseBool('是否移除「策」标记？').set('ai', function () { return false; });
+								'step 1'
 								if (result && result.bool) {
 									ce.removeMark('mgj_ce', 1);
 									game.log(player, '移除了', ce, '的标记', '#g【策】');
 								}
+								event.finish();
 							},
 						},
 
@@ -182,52 +204,61 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							// B1：原实现把 'step 1'..'step 7' 写在 if/else 块内。
 							// parsex 把 'step N' 替换成 break;case N:，而 JS 禁止 case 标签出现在
-							// switch 内嵌套的块中 → new Function 抛错 → parsex 的 try/catch
-							// 静默跳过 → 13 个 step 全部残留为惰性字符串、结束步停在 K=1，
-							// content 退化为单个 case 0 直线代码：四个 chooseBool 在同一 step 内
-							// 连续创建，其后的 if(result.bool) 读到的仍是初值 {} → 四个效果一个都不会被添加。
-							// 改为 generator 顺序流后，每个询问的结果由 yield 直接返回。
-							content: function* (event, { player }) {
+							// switch 内嵌套的块中 → 该处替换非法：
+							//   · finalParsex=='old' 分支（game.js:12072-12090）：无 try/catch → 直接抛 SyntaxError
+							//   · Legacy() 分支（game.js:12094-12133）：有 try/catch → 静默跳过，
+							//     13 个 step 全残留、结束步停在 K=1，content 退化为单个 case 0 直线代码：
+							//     四个 chooseBool 在同一 step 内连续创建，其后的 if(result.bool)
+							//     读到的仍是初值 {} → 四个效果一个都不会被添加
+							//
+							// 修法：步骤标记一律顶格，且**每一步都重复写自己的条件**。
+							// 后者是必须的 —— 若第 N 步没弹询问，第 N+1 步的 result 会是上一步遗留的旧值，
+							// 不重复条件就可能错误地"落实"一个根本没问过的效果。
+							content: function () {
 								var ce = findCeTarget();
-								if (!ce) return;
-
-								// 效果1：回复体力（限一次）
+								'step 0'
+								if (!ce) { event.finish(); return; }
+								// 效果1：回复体力（限一次）—— 只在未加过时询问
 								if (ce.countMark('mgj_picked1') < 1) {
-									var r1 = yield player.chooseBool('给「策」添加效果【回复体力】（限一次）？')
-										.set('ai', function () { return true; });
-									if (r1 && r1.bool) {
-										ce.addMark('mgj_eff1', 1);
-										ce.addMark('mgj_picked1', 1);
-										game.log(player, '给「策」添加了效果', '#g【回复体力】');
-									}
+									player.chooseBool('给「策」添加效果【回复体力】（限一次）？').set('ai', function () { return true; });
 								}
+								'step 1'
+								if (ce.countMark('mgj_picked1') < 1 && result && result.bool) {
+									ce.addMark('mgj_eff1', 1);
+									ce.addMark('mgj_picked1', 1);
+									game.log(player, '给「策」添加了效果', '#g【回复体力】');
+								}
+								'step 2'
 								// 效果2：额外执行一个出牌阶段（不摸牌，限一次）
 								if (ce.countMark('mgj_picked2') < 1) {
-									var r2 = yield player.chooseBool('给「策」添加效果【额外执行一个出牌阶段：不摸牌】（限一次）？')
-										.set('ai', function () { return true; });
-									if (r2 && r2.bool) {
-										ce.addMark('mgj_eff2', 1);
-										ce.addMark('mgj_picked2', 1);
-										game.log(player, '给「策」添加了效果', '#g【额外出牌阶段】');
-									}
+									player.chooseBool('给「策」添加效果【额外执行一个出牌阶段：不摸牌】（限一次）？').set('ai', function () { return true; });
 								}
+								'step 3'
+								if (ce.countMark('mgj_picked2') < 1 && result && result.bool) {
+									ce.addMark('mgj_eff2', 1);
+									ce.addMark('mgj_picked2', 1);
+									game.log(player, '给「策」添加了效果', '#g【额外出牌阶段】');
+								}
+								'step 4'
 								// 效果3：使用牌造成的伤害+1（限一次，永久）
 								if (ce.countMark('mgj_picked3') < 1) {
-									var r3 = yield player.chooseBool('给「策」添加效果【使用牌造成的伤害+1】（限一次，永久）？')
-										.set('ai', function () { return true; });
-									if (r3 && r3.bool) {
-										ce.addMark('mgj_eff3_perm', 1);
-										ce.addMark('mgj_picked3', 1);
-										game.log(player, '给「策」添加了效果', '#g【伤害+1】');
-									}
+									player.chooseBool('给「策」添加效果【使用牌造成的伤害+1】（限一次，永久）？').set('ai', function () { return true; });
 								}
-								// 效果4：跳过一次弃牌阶段（卡面未限次，故保持不限次）
-								var r4 = yield player.chooseBool('给「策」添加效果【跳过一次弃牌阶段】？')
-									.set('ai', function () { return true; });
-								if (r4 && r4.bool) {
+								'step 5'
+								if (ce.countMark('mgj_picked3') < 1 && result && result.bool) {
+									ce.addMark('mgj_eff3_perm', 1);
+									ce.addMark('mgj_picked3', 1);
+									game.log(player, '给「策」添加了效果', '#g【伤害+1】');
+								}
+								'step 6'
+								// 效果4：跳过一次弃牌阶段（卡面未限次，故每次都问）
+								player.chooseBool('给「策」添加效果【跳过一次弃牌阶段】？').set('ai', function () { return true; });
+								'step 7'
+								if (result && result.bool) {
 									ce.addMark('mgj_eff4_perm', 1);
 									game.log(player, '给「策」添加了效果', '#g【跳过弃牌阶段】');
 								}
+								event.finish();
 							},
 						},
 						// —— 铸策·愈：回合开始回复体力 ——
