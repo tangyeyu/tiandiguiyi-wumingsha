@@ -139,11 +139,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						]],
 						// 转·曹髦。三个卡面技能 + 四个隐藏子技能（见心得 §4.3：
 						// 技能必须列进本数组才会被触发，隐藏子技能同样要列）
+						//
+						// [4] 里的 'ext:天地归一/zhuan_caomao.jpg' 是**扩展武将配图的官方途径**：
+						//   game.js:8932-8938 扫描 [4] 的每个值，遇到 ext: 前缀就赋值 extimage；
+						//   game.js:8953  src = extimage.replace(/ext:/, 'extension/')
+						//   ⇒ extension/天地归一/zhuan_caomao.jpg
+						//   引擎源码里那行注释就是「这里是扩展武将逆转乾坤的关键」。
+						//   这样图片随扩展走，拷给别人也不会丢；同时另存了一份到
+						//   image/character/zhuan_caomao.jpg 作兜底（默认路径 game.js:8961）。
+						// 立绘规格：本目录 1660 张图全是 1:1.83 竖版（138x253 / 300x550 / 200x367…），
+						//   故原图 842x819 近方形已居中裁为 300x550 再入库。
 						zhuan_caomao: ['male', 'wei', 4, [
 							'cm_juejing', 'cm_juejing_draw', 'cm_juejing_ward',
 							'cm_qiji', 'cm_qiji_guard', 'cm_qiji_seize',
 							'cm_taozei'
-						]],
+						], ['ext:天地归一/zhuan_caomao.jpg']],
 					},
 					characterIntro: {
 						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你选择一名其他角色令其获得「策」，你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你与「策」各摸X+1张牌（X为「策」的效果数，至多4）。',
