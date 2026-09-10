@@ -24,6 +24,21 @@
 // 必须用「普通函数 + 'step N'」，且步骤标记一律顶格、不嵌套、不重复。
 // 这正是本文件采用的写法。
 //
+// ── 铁律二：content 里**不能引用包闭包里的任何变量/函数** ─────────────
+// parsex / Legacy() 会把 content 的函数**源码**抠出来，用
+//     new Function('event','step',..., 'get','ai', str)
+// 重新编译（game.js:12131）。新函数运行在**全局作用域**，
+// 包闭包里定义的 findCeTarget / ceX / isSoul 等一律变成 undefined：
+//     Uncaught ReferenceError: findCeTarget is not defined
+//     at Object.eval [as content] (eval at Legacy (game.js:12131:14))
+//
+// 对比：**filter / check / ai 不经过编译**（lib.skill[k] 保存的是原函数对象），
+// 所以它们可以安全地使用闭包函数。这就是"filter 正常、content 炸"的原因。
+//
+// 因此：凡是 content 里要用的辅助逻辑，一律**内联**，或挂到全局对象
+// （lib / game / window）上 —— 绝不放进包闭包。
+// filters 里仍用闭包版（更简洁），两者互不影响。
+//
 // ── 修复清单（详见 atlas/04-天地归一审计.md）────────────────
 //  B1  mgj_zhuce     步骤标记写在 if/else 块内 → parsex 编译失败、13 个 step 全残留
 //                    → 四个效果一个都不会被添加。改为 generator 顺序流。
@@ -198,7 +213,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								return isSoul(player) && findCeTarget() != null;
 							},
 							content: function () {
-								var ce = findCeTarget();
+								// ★ 同 mgj_zhuce：content 被 new Function 重编译，不能引用闭包函数
+								var ce = null;
+								for (var i = 0; i < game.players.length; i++) {
+									if (game.players[i].hasMark('mgj_ce')) { ce = game.players[i]; break; }
+								}
 								'step 0'
 								if (!ce) { event.finish(); return; }
 								player.chooseBool('是否移除「策」标记？').set('ai', function () { return false; });
@@ -230,7 +249,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							// 后者是必须的 —— 若第 N 步没弹询问，第 N+1 步的 result 会是上一步遗留的旧值，
 							// 不重复条件就可能错误地"落实"一个根本没问过的效果。
 							content: function () {
-								var ce = findCeTarget();
+								// ★ content 会被 parsex/Legacy 用 new Function 重新编译（game.js:12131），
+								//   新函数运行在**全局作用域** → 包闭包里的 findCeTarget / ceX 会变成 undefined。
+								//   因此此处把查找逻辑内联，不引用任何闭包函数。
+								//   （filter 不经过编译，仍可安全使用闭包函数）
+								var ce = null;
+								for (var i = 0; i < game.players.length; i++) {
+									if (game.players[i].hasMark('mgj_ce')) { ce = game.players[i]; break; }
+								}
 								'step 0'
 								if (!ce) { event.finish(); return; }
 								// 效果1：回复体力（限一次）—— 只在未加过时询问
@@ -376,8 +402,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								return findCeTarget() != null;
 							},
 							content: function () {
-								var ce = findCeTarget();
-								var x = ce ? ceX(ce) : 0;
+								// ★ 同 mgj_zhuce：content 被 new Function 重编译，findCeTarget / ceX 均不可用
+								var ce = null;
+								for (var i = 0; i < game.players.length; i++) {
+									if (game.players[i].hasMark('mgj_ce')) { ce = game.players[i]; break; }
+								}
+								var x = 0;
+								if (ce) {
+									x = ce.countMark('mgj_eff1') + ce.countMark('mgj_eff2') +
+										ce.countMark('mgj_eff3_perm') + ce.countMark('mgj_eff4_perm');
+								}
 								player.draw(x + 1, 'nodelay');
 								if (ce) ce.draw(x + 1, 'nodelay');
 								event.finish();
