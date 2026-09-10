@@ -760,14 +760,51 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							sub: true,
 							trigger: { player: 'damageBegin' },
 							filter: function (event, player) {
-								return player.countCards('j') > 0;
+								// 与 content 保持同一套枚举（都走判定区 DOM 节点），避免两者判据不一致
+								var node = player.node && player.node.judges;
+								if (!node) return false;
+								for (var i = 0; i < node.childNodes.length; i++) {
+									var c = node.childNodes[i];
+									if (!c || !c.name) continue;
+									if (c.classList && (c.classList.contains('removing') || c.classList.contains('feichu'))) continue;
+									return true;
+								}
+								return false;
 							},
 							content: function () {
 								'step 0'
-								player.chooseToDiscard('j', '奇技：弃置一张判定区内的牌，并免疫此伤害')
+								// ★ 不用 chooseToDiscard('j',…) —— 它的内部（game.js:16701-16709）会跑
+								//   lib.filter.cardDiscardable，判定不通过的牌会被
+								//   card.uncheck('chooseToDiscard') **灰掉、点不动**；
+								//   而判定区的**转化牌**（addJudge({name:…},[card]) 造出来的那张，
+								//   实物牌 .name 仍是原牌名、真名在 .viewAs 里）在这条链上容易判 false
+								//   ⇒ 实测症状「弃置不了判定区里的转化闪电」。
+								//   这里改为自己枚举判定区 DOM 节点（引擎的 getCards 也是按
+								//   node.judges 枚举的，game.js:24086-24092）→ chooseCard + 自己的
+								//   filterCard → 再 discard，整条链不经过 cardDiscardable / uncheck。
+								var node = player.node && player.node.judges;
+								var list = [];
+								if (node) {
+									for (var i = 0; i < node.childNodes.length; i++) {
+										var c = node.childNodes[i];
+										if (!c || !c.name) continue;
+										if (c.classList && (c.classList.contains('removing') || c.classList.contains('feichu'))) continue;
+										list.push(c);
+									}
+								}
+								if (!list.length) { event.finish(); return; }
+								event.cmJudge = list;
+								player.chooseCard('j', '奇技：弃置一张判定区内的牌，并免疫此伤害')
+									.set('filterCard', function (card) {
+										return _status.event.cmJudge && _status.event.cmJudge.contains(card);
+									})
 									.set('ai', function (card) { return 10 - get.value(card); });
 								'step 1'
-								if (result.bool) {
+								if (result.bool && result.cards && result.cards.length) {
+									player.discard(result.cards);
+									// 防伤的唯一不变量写法：取消**触发源事件**
+									// （idiom.mjs 查「防止伤害」：全库 19 处 16 种变体，
+									//   唯一都出现的就是 trigger.cancel()）
 									trigger.cancel();
 									game.log(player, '发动了', '#g【奇技】');
 								}
