@@ -10,6 +10,23 @@
 | `extension/extension.js` | 无名杀扩展文件（放入 `resources\app\extension\天地归一\`） |
 | `docs/开发心得.md` | **完整研发心得**：三次翻车经历 + 引擎源码级机制研究（注册链 / 触发链 / subSkill 自动注册 / 额外出牌阶段正确姿势 / trigger 双键） |
 | `docs/技能卡面.md` | 武将卡面文案（lycium 制卡器 2.5.4 定稿） |
+| `atlas/` | **技能实现图鉴**：跨武将包取样，逐行拆解"怎么写一个正确的技能"。见下方 |
+
+## 技能实现图鉴（`atlas/`）
+
+`docs/开发心得.md` 讲的是**扩展外围**（包怎么注册、翻译怎么写、为什么不能放 `character\`）。
+`atlas/` 补上另一半：**技能本体怎么写才对**。
+
+| 文档 | 内容 |
+|---|---|
+| [`atlas/01-引擎契约.md`](atlas/01-引擎契约.md) | `content` 的 `step` **编译**机制、19 个注入变量、事件段模型、声明式字段速查、最小正确骨架 |
+| [`atlas/02-范式库.md`](atlas/02-范式库.md) | 11 个范式 × 真实最小样例（跨 10 个武将包）逐行解析 + 陷阱 |
+| [`atlas/03-命名空间与冲突.md`](atlas/03-命名空间与冲突.md) | 实测 9 处技能名跨包覆盖 + 1 处悬空引用，附改名方案 |
+| [`atlas/index/`](atlas/index/) | 自动生成：34 包 / 1885 武将 / 5227 技能 的结构总览、范式普查、样例推荐、体检报告 |
+
+配套四个零依赖 Node 工具（词法扫描，**不执行**目标代码）：`index-packs` / `classify-skills` / `check-collisions` / `extract-skill`，
+用法见 [`atlas/README.md`](atlas/README.md)。
+
 
 ## 安装
 

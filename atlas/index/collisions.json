@@ -1,0 +1,202 @@
+{
+ "dupSkills": [
+  {
+   "name": "iwasawa_refenyin",
+   "defs": [
+    {
+     "pack": "diy",
+     "file": "diy.js",
+     "line": 10443
+    },
+    {
+     "pack": "xianding",
+     "file": "xianding.js",
+     "line": 10110
+    }
+   ]
+  },
+  {
+   "name": "iwasawa_fenyin",
+   "defs": [
+    {
+     "pack": "diy",
+     "file": "diy.js",
+     "line": 10509
+    },
+    {
+     "pack": "xianding",
+     "file": "xianding.js",
+     "line": 10176
+    }
+   ]
+  },
+  {
+   "name": "junkyuheng",
+   "defs": [
+    {
+     "pack": "diy",
+     "file": "diy.js",
+     "line": 17842
+    },
+    {
+     "pack": "extra",
+     "file": "extra.js",
+     "line": 12859
+    }
+   ]
+  },
+  {
+   "name": "junkdili",
+   "defs": [
+    {
+     "pack": "diy",
+     "file": "diy.js",
+     "line": 17890
+    },
+    {
+     "pack": "extra",
+     "file": "extra.js",
+     "line": 12907
+    }
+   ]
+  },
+  {
+   "name": "junkshengzhi",
+   "defs": [
+    {
+     "pack": "diy",
+     "file": "diy.js",
+     "line": 17962
+    },
+    {
+     "pack": "extra",
+     "file": "extra.js",
+     "line": 12979
+    }
+   ]
+  },
+  {
+   "name": "junkquandao",
+   "defs": [
+    {
+     "pack": "diy",
+     "file": "diy.js",
+     "line": 17999
+    },
+    {
+     "pack": "extra",
+     "file": "extra.js",
+     "line": 13016
+    }
+   ]
+  },
+  {
+   "name": "junkchigang",
+   "defs": [
+    {
+     "pack": "diy",
+     "file": "diy.js",
+     "line": 18022
+    },
+    {
+     "pack": "extra",
+     "file": "extra.js",
+     "line": 13039
+    }
+   ]
+  },
+  {
+   "name": "zhimeng",
+   "defs": [
+    {
+     "pack": "extra",
+     "file": "extra.js",
+     "line": 2818
+    },
+    {
+     "pack": "xianjian",
+     "file": "xianjian.js",
+     "line": 3865
+    }
+   ]
+  },
+  {
+   "name": "lingfeng",
+   "defs": [
+    {
+     "pack": "jiange",
+     "file": "jiange.js",
+     "line": 248
+    },
+    {
+     "pack": "swd",
+     "file": "swd.js",
+     "line": 1473
+    }
+   ]
+  }
+ ],
+ "dupChars": [],
+ "trulyDangling": [
+  {
+   "skill": "zuijian",
+   "refs": [
+    {
+     "pack": "xiake",
+     "char": "xk_fujianhan",
+     "skill": "zuijian",
+     "line": 10
+    }
+   ]
+  }
+ ],
+ "resolvedElsewhere": [
+  {
+   "skill": "dualside",
+   "where": [
+    "game/game.js"
+   ],
+   "refs": [
+    {
+     "pack": "diy",
+     "char": "key_yusa",
+     "skill": "dualside",
+     "line": 19
+    },
+    {
+     "pack": "diy",
+     "char": "key_misa",
+     "skill": "dualside",
+     "line": 20
+    },
+    {
+     "pack": "diy",
+     "char": "ns_yanliang",
+     "skill": "dualside",
+     "line": 147
+    },
+    {
+     "pack": "diy",
+     "char": "ns_wenchou",
+     "skill": "dualside",
+     "line": 148
+    }
+   ]
+  },
+  {
+   "skill": "qiwu",
+   "where": [
+    "mode/boss.js"
+   ],
+   "refs": [
+    {
+     "pack": "jiange",
+     "char": "jg_pangtong",
+     "skill": "qiwu",
+     "line": 6
+    }
+   ]
+  }
+ ],
+ "orphanCount": 1805
+}
