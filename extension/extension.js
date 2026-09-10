@@ -508,13 +508,56 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				lib.config.characters.add('tiandiguiyi');
 			}
 			lib.translate['tiandiguiyi_character_config'] = '天地归一';
-			// ============ 保底：手动展平 + 技能清单（注册链漏跑时兜底，幂等） ============
-			if (pkg && pkg.character) {
-				for (var cid in pkg.character) {
-					if (!lib.character[cid]) lib.character[cid] = pkg.character[cid];
-					for (var si = 0; si < pkg.character[cid][3].length; si++) {
-						var skn = pkg.character[cid][3][si];
-						if (!lib.skilllist.contains(skn)) lib.skilllist.add(skn);
+			// ============ 保底：手动展平（注册链漏跑时兜底，幂等） ============
+			//
+			// ★ 为什么必须自己展平 ──────────────────────────────────────
+			// 非 extension 的 game.import(type, content) 只做一件事：
+			//     lib.imported[type][content2.name] = content2;  delete content2.name;
+			//   （game.js:37529-37534）—— **它不碰 lib.character / lib.skill / lib.translate**。
+			// 真正的展平发生在启动期的**一次性**循环里（game.js:15126-15181，
+			//   读 lib.imported.character → 逐包写入 lib[j][k]），
+			// 而 lib.imported.character 在 game.js:11541 就被 delete 掉了，
+			// 扩展的 precontent 又是在那之后才执行的（扩展加载循环 game.js:11550 起）。
+			// ⇒ precontent 里 import 的包**不保证**被展平；技能能不能用、名字能不能显示，
+			//   全看是否赶上了那一趟。这里手动补一遍，与引擎逻辑对齐、且幂等。
+			//
+			// ★ 另外两条必须知道的引擎行为 ────────────────────────────────
+			//  1) game.js:15160-15162：translate 的键**恰好等于包名**时，引擎不会写
+			//     lib.translate[包名]，而是写成 lib.translate[包名+'_character_config']。
+			//     → 'tiandiguiyi':'天地归一' 会被改道，故上面手动补 _character_config。
+			//  2) 所有写入都用 `== undefined` 守卫，绝不覆盖已有定义 —— 若展平已跑过，
+			//     这里全部跳过；若没跑过，这里补上。两种时序结果一致。
+			if (pkg) {
+				// ── 技能：lib.skill[name] ──
+				if (pkg.skill) {
+					for (var sk in pkg.skill) {
+						if (lib.skill[sk] == undefined) lib.skill[sk] = pkg.skill[sk];
+					}
+				}
+				// ── 译名：lib.translate[key]（★ 名字能不能显示就看这里） ──
+				if (pkg.translate) {
+					for (var tk in pkg.translate) {
+						if (lib.translate[tk] == undefined) lib.translate[tk] = pkg.translate[tk];
+					}
+				}
+				// ── 武将简介：lib.characterIntro[name] ──
+				if (pkg.characterIntro) {
+					if (!lib.characterIntro) lib.characterIntro = {};
+					for (var ik in pkg.characterIntro) {
+						if (lib.characterIntro[ik] == undefined) lib.characterIntro[ik] = pkg.characterIntro[ik];
+					}
+				}
+				// ── 武将本体 + 技能清单 ──
+				if (pkg.character) {
+					for (var cid in pkg.character) {
+						if (!lib.character[cid]) lib.character[cid] = pkg.character[cid];
+						// 引擎会给 [4] 补空数组（game.js:15146-15148），缺了会在
+						// game.js:22842 的 info[4].contains(...) 上崩，故同样补上
+						if (!lib.character[cid][4]) lib.character[cid][4] = [];
+						var skl = lib.character[cid][3];
+						for (var si = 0; si < skl.length; si++) {
+							if (!lib.skilllist.contains(skl[si])) lib.skilllist.add(skl[si]);
+						}
 					}
 				}
 			}
