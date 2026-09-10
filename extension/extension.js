@@ -1,8 +1,37 @@
 'use strict';
 // ============================================================
 // 无名杀扩展：天地归一（武将包：谋郭嘉·魂）
-// 标准写法：扩展壳 + precontent 内 game.import('character')（雷霆万钧同款）
-// 武将数组挂全部技能（含隐藏子技能），保证触发与被展示
+//
+// 架构：扩展壳 + precontent 内 game.import('character')（雷霆万钧同款）
+//       武将数组挂全部技能（含隐藏子技能），保证触发与被展示
+//
+// 本版为**重写版**：仅修复实现错误，三个技能的效果、数值、文案一律未改。
+// 写法：需要等待子事件的 content 一律改用 **generator**（function* + yield）。
+//       琉璃版 5.5 原生支持 generator（game.js:12164-12183），
+//       它不经过源码二次编译，天然规避 step 的全部陷阱。
+//       无需等待的 content 仍用普通 function（与官方保持同样的简洁性）。
+//
+// ── 修复清单（详见 atlas/04-天地归一审计.md）────────────────
+//  B1  mgj_zhuce     步骤标记写在 if/else 块内 → parsex 编译失败、13 个 step 全残留
+//                    → 四个效果一个都不会被添加。改为 generator 顺序流。
+//  B2  mgj_nohurt    get.player() 不接受参数，source/target 塌缩为同一对象
+//                    → 判定恒 false。改为直接读 event.source / event.player。
+//  B3  mgj_nohurt    event.cancel() 取消的是技能自身事件 → 改为 trigger.cancel()。
+//  B4  mgj_eff1 / mgj_extra_phase / mgj_boost / mgj_skip
+//                    filter 的 player 是技能拥有者（谋郭嘉），而 mgj_ce / mgj_eff* 标记
+//                    都在「策」持有者身上 → 四个效果永不发动。
+//                    改为 {global:...} 触发 + 用 trigger.player / event.source 指代持有者。
+//  B5  mgj_boost     event.damage += 1 改的是引擎不读的字段
+//                    → 改为 trigger.num += 1（game.js:41674 伤害值为 event.num）。
+//  B6  mgj_lixue     漏 loseHpEnd → 「失去体力」不触发。已补。
+//  B7  mgj_ce_bound  无技能定义的裸标记（取不到 intro，无法显示）
+//                    → 改用 player.storage.mgj_ce_bound。
+//  B8  效果④命名 mgj_eff4_perm 含「永久」却会被消耗 —— 属命名瑕疵、无行为影响，
+//                    按「只修 bug」原则**未改名**，保留原标记名以免影响既有存档/录像。
+//  B9  mgj_ce_remove 在 die 事件内做玩家交互 —— 风险项而非已证缺陷，
+//                    按「只修 bug」原则**未改时机**。
+//  B10 mgj_zhuce     stepHead 使 var ce 每步重算 —— generator 天然只求值一次，
+//                    属无害归一化（原实现每步重算亦非有意设计）。
 // ============================================================
 game.import("extension", function (lib, game, ui, get, ai, _status) {
 	return {
@@ -12,6 +41,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 			var pkg;
 			game.import('character', function () {
 				// ---- 包内闭包辅助 ----
+				// 返回当前持有「策」标记的角色（同一时刻至多一人）；持有者死亡后自动为 null
 				var findCeTarget = function () {
 					for (var i = 0; i < game.players.length; i++) {
 						if (game.players[i].hasMark('mgj_ce')) {
@@ -20,6 +50,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 					}
 					return null;
 				};
+				// X = 「策」上已添加的效果数
 				var ceX = function (ce) {
 					return ce.countMark('mgj_eff1') + ce.countMark('mgj_eff2') +
 						ce.countMark('mgj_eff3_perm') + ce.countMark('mgj_eff4_perm');
@@ -63,29 +94,29 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							trigger: { global: 'gameStart', player: 'enterGame' },
 							filter: function (event, player) {
 								if (event.name != 'enterGame' && event.name != 'gameStart') return false;
-								return player.hasSkill('mgj_dingce') && !player.hasMark('mgj_ce_bound');
+								// B7：防重复标记改用 storage（原为无技能定义的裸标记 mgj_ce_bound）
+								return player.hasSkill('mgj_dingce') && !player.storage.mgj_ce_bound;
 							},
-							content: function () {
-								'step 0'
-								player.chooseTarget('选择一名其他角色获得「策」', function (card, player, target) {
+							// 原为两步 step；本处仅一次选择，generator 直接顺序表达
+							content: function* (event, { player }) {
+								var result = yield player.chooseTarget('选择一名其他角色获得「策」', function (card, player, target) {
 									return target != player;
 								}).set('ai', function () { return 1; });
-								'step 1'
-								if (result.targets && result.targets.length) {
-									var target = result.targets[0];
-									target.addMark('mgj_ce', 1);
-									player.addMark('mgj_ce_bound', 1);
-									game.log(player, '令', target, '获得了标记', '#g【策】');
+
+								var target = null;
+								if (result && result.targets && result.targets.length) {
+									target = result.targets[0];
 								}
 								else {
+									// 未选（或超时）：兜底给下家
 									var nb = player.getNext();
-									if (nb && nb != player) {
-										nb.addMark('mgj_ce', 1);
-										player.addMark('mgj_ce_bound', 1);
-										game.log(player, '令', nb, '获得了标记', '#g【策】');
-									}
+									if (nb && nb != player) target = nb;
 								}
-								event.finish();
+								if (target) {
+									target.addMark('mgj_ce', 1);
+									player.storage.mgj_ce_bound = true;
+									game.log(player, '令', target, '获得了标记', '#g【策】');
+								}
 							},
 						},
 						// —— 定策·却刃：相互免伤 ——
@@ -95,15 +126,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							popup: false,
 							trigger: { global: 'damageBegin' },
 							filter: function (event) {
-								var source = get.player(event.source);
-								var target = get.player(event.player);
+								// B2：原用 get.player(event.source) / get.player(event.player)，
+								// 而 get.player() 不接受参数（game.js:62081 直接 return _status.event.player），
+								// 导致 source 与 target 塌缩为同一对象、两行判定变成同一个恒 false 条件。
+								var source = event.source;
+								var target = event.player;
 								if (!source || !target) return false;
 								if (isSoul(source) && target.hasMark('mgj_ce')) return true;
 								if (isSoul(target) && source.hasMark('mgj_ce')) return true;
 								return false;
 							},
 							content: function () {
-								event.cancel();
+								// B3：技能 content 运行在新建事件中（game.js:15552-15555），
+								// event 是技能自身事件，trigger 才是伤害事件 → 必须 trigger.cancel()
+								trigger.cancel();
 							},
 						},
 						// —— 定策·解策：死亡时移除 ——
@@ -114,17 +150,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								return isSoul(player) && findCeTarget() != null;
 							},
-							content: function () {
+							content: function* (event, { player }) {
 								var ce = findCeTarget();
-								'step 0'
-								if (!ce) { event.finish(); return; }
-								player.chooseBool('是否移除「策」标记？').set('ai', function () { return false; });
-								'step 1'
-								if (result.bool) {
+								if (!ce) return;
+								var result = yield player.chooseBool('是否移除「策」标记？').set('ai', function () { return false; });
+								if (result && result.bool) {
 									ce.removeMark('mgj_ce', 1);
 									game.log(player, '移除了', ce, '的标记', '#g【策】');
 								}
-								event.finish();
 							},
 						},
 
@@ -134,76 +167,75 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								return findCeTarget() != null;
 							},
-							content: function () {
+							// B1：原实现把 'step 1'..'step 7' 写在 if/else 块内。
+							// parsex 把 'step N' 替换成 break;case N:，而 JS 禁止 case 标签出现在
+							// switch 内嵌套的块中 → new Function 抛错 → parsex 的 try/catch
+							// 静默跳过 → 13 个 step 全部残留为惰性字符串、结束步停在 K=1，
+							// content 退化为单个 case 0 直线代码：四个 chooseBool 在同一 step 内
+							// 连续创建，其后的 if(result.bool) 读到的仍是初值 {} → 四个效果一个都不会被添加。
+							// 改为 generator 顺序流后，每个询问的结果由 yield 直接返回。
+							content: function* (event, { player }) {
 								var ce = findCeTarget();
-								'step 0'
-								if (!ce) { event.finish(); return; }
+								if (!ce) return;
+
 								// 效果1：回复体力（限一次）
 								if (ce.countMark('mgj_picked1') < 1) {
-									player.chooseBool('给「策」添加效果【回复体力】（限一次）？').set('ai', function () { return true; });
-									'step 1'
-									if (result.bool) {
+									var r1 = yield player.chooseBool('给「策」添加效果【回复体力】（限一次）？')
+										.set('ai', function () { return true; });
+									if (r1 && r1.bool) {
 										ce.addMark('mgj_eff1', 1);
 										ce.addMark('mgj_picked1', 1);
 										game.log(player, '给「策」添加了效果', '#g【回复体力】');
 									}
-									'step 2'
-								} else {
-									'step 1'
-									'step 2'
 								}
 								// 效果2：额外执行一个出牌阶段（不摸牌，限一次）
 								if (ce.countMark('mgj_picked2') < 1) {
-									player.chooseBool('给「策」添加效果【额外执行一个出牌阶段：不摸牌】（限一次）？').set('ai', function () { return true; });
-									'step 3'
-									if (result.bool) {
+									var r2 = yield player.chooseBool('给「策」添加效果【额外执行一个出牌阶段：不摸牌】（限一次）？')
+										.set('ai', function () { return true; });
+									if (r2 && r2.bool) {
 										ce.addMark('mgj_eff2', 1);
 										ce.addMark('mgj_picked2', 1);
 										game.log(player, '给「策」添加了效果', '#g【额外出牌阶段】');
 									}
-									'step 4'
-								} else {
-									'step 3'
-									'step 4'
 								}
 								// 效果3：使用牌造成的伤害+1（限一次，永久）
 								if (ce.countMark('mgj_picked3') < 1) {
-									player.chooseBool('给「策」添加效果【使用牌造成的伤害+1】（限一次，永久）？').set('ai', function () { return true; });
-									'step 5'
-									if (result.bool) {
+									var r3 = yield player.chooseBool('给「策」添加效果【使用牌造成的伤害+1】（限一次，永久）？')
+										.set('ai', function () { return true; });
+									if (r3 && r3.bool) {
 										ce.addMark('mgj_eff3_perm', 1);
 										ce.addMark('mgj_picked3', 1);
 										game.log(player, '给「策」添加了效果', '#g【伤害+1】');
 									}
-									'step 6'
-								} else {
-									'step 5'
-									'step 6'
 								}
-								// 效果4：跳过一次弃牌阶段
-								player.chooseBool('给「策」添加效果【跳过一次弃牌阶段】？').set('ai', function () { return true; });
-								'step 7'
-								if (result.bool) {
+								// 效果4：跳过一次弃牌阶段（卡面未限次，故保持不限次）
+								var r4 = yield player.chooseBool('给「策」添加效果【跳过一次弃牌阶段】？')
+									.set('ai', function () { return true; });
+								if (r4 && r4.bool) {
 									ce.addMark('mgj_eff4_perm', 1);
 									game.log(player, '给「策」添加了效果', '#g【跳过弃牌阶段】');
 								}
-								event.finish();
 							},
 						},
 						// —— 铸策·愈：回合开始回复体力 ——
+						// B4：原 trigger:{player:'phaseBegin'} + filter 判 player.hasMark('mgj_ce')，
+						// 但 player 是技能拥有者（谋郭嘉），而 mgj_ce / mgj_eff1 都在「策」持有者身上
+						// → 条件恒 false、效果永不发动。改为监听全场、用 trigger.player 指代持有者。
 						mgj_eff1: {
 							forced: true,
 							sub: true,
 							popup: false,
-							trigger: { player: 'phaseBegin' },
-							filter: function (event, player) {
-								return player.hasMark('mgj_ce') && player.countMark('mgj_eff1') > 0;
+							trigger: { global: 'phaseBegin' },
+							filter: function (event) {
+								var ce = findCeTarget();
+								return ce != null && event.player == ce && ce.countMark('mgj_eff1') > 0;
 							},
 							content: function () {
-								if (player.countMark('mgj_eff1') > 0) {
-									player.recover(1);
-									player.removeMark('mgj_eff1', 1);
-									game.log(player, '消耗了「策」效果', '#g【回复体力】');
+								var ce = trigger.player;
+								if (ce.countMark('mgj_eff1') > 0) {
+									ce.recover(1);
+									ce.removeMark('mgj_eff1', 1);
+									game.log(ce, '消耗了「策」效果', '#g【回复体力】');
 								}
 								event.finish();
 							},
@@ -213,16 +245,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true,
 							sub: true,
 							popup: false,
-							trigger: { player: 'phaseBegin' },
-							filter: function (event, player) {
-								return player.hasMark('mgj_ce') && player.countMark('mgj_eff2') > 0;
+							trigger: { global: 'phaseBegin' },
+							filter: function (event) {
+								var ce = findCeTarget();
+								return ce != null && event.player == ce && ce.countMark('mgj_eff2') > 0;
 							},
 							content: function () {
-								var next = player.phaseUse();
+								var ce = trigger.player;
+								// 额外出牌阶段的插队姿势（作者心得 §4.6，经验证有效）：
+								// phaseUse() 默认排到事件流末尾，需先摘出、再插到当前流程队首
+								var next = ce.phaseUse();
 								event.next.remove(next);
 								trigger.getParent().next.unshift(next);
-								player.removeMark('mgj_eff2', 1);
-								game.log(player, '消耗了「策」效果', '#g【额外出牌阶段】');
+								ce.removeMark('mgj_eff2', 1);
+								game.log(ce, '消耗了「策」效果', '#g【额外出牌阶段】');
 							},
 						},
 						// —— 铸策·锐：使用牌造成的伤害+1（单目标） ——
@@ -230,16 +266,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true,
 							sub: true,
 							popup: false,
-							trigger: { source: 'damageBegin' },
-							filter: function (event, player) {
-								if (!player.hasMark('mgj_ce') || player.countMark('mgj_eff3_perm') < 1) return false;
+							// B4：原 {source:'damageBegin'} 只在自己是伤害来源时触发；
+							// 效果应作用于「策」持有者造成的伤害 → 改监听全场并比对 event.source
+							trigger: { global: 'damageBegin' },
+							filter: function (event) {
+								var ce = findCeTarget();
+								if (ce == null || event.source != ce) return false;
+								if (ce.countMark('mgj_eff3_perm') < 1) return false;
 								if (!event.card) return false;
+								// 卡面：仅「使用牌」造成的伤害，且单目标（排除南蛮/万箭等 AOE）
 								var info = get.info(event.card);
 								if (!info || info.selectTarget != 1) return false;
 								return true;
 							},
 							content: function () {
-								event.damage += 1;
+								// B5：引擎的伤害值是 event.num（game.js:41674 var num=event.num），
+								// event.damage 在 game.js 中出现 0 次 → 原写法是空操作
+								trigger.num += 1;
 							},
 						},
 						// —— 铸策·逸：跳过一次弃牌阶段 ——
@@ -247,21 +290,27 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true,
 							sub: true,
 							popup: false,
-							trigger: { player: 'phaseDiscardBefore' },
-							filter: function (event, player) {
-								return player.hasMark('mgj_ce') && player.countMark('mgj_eff4_perm') > 0;
+							trigger: { global: 'phaseDiscardBefore' },
+							filter: function (event) {
+								var ce = findCeTarget();
+								return ce != null && event.player == ce && ce.countMark('mgj_eff4_perm') > 0;
 							},
 							content: function () {
+								// 取消弃牌阶段必须取消触发源事件（此处原实现即正确）
 								trigger.cancel();
-								player.removeMark('mgj_eff4_perm', 1);
-								game.log(player, '消耗了「策」效果', '#g【跳过弃牌阶段】');
+								var ce = trigger.player;
+								ce.removeMark('mgj_eff4_perm', 1);
+								game.log(ce, '消耗了「策」效果', '#g【跳过弃牌阶段】');
 							},
 						},
 
 						// ============ 沥血 ============
 						mgj_lixue: {
 							forced: true,
-							trigger: { player: ['damageEnd', 'recover'] },
+							// B6：loseHp 是独立事件（game.js:26455 createEvent('loseHp')），
+							// 「失去体力」不产生 damage 事件 → 原文只挂 damageEnd/recover 会漏掉它，
+							// 与卡面「体力值发生变动」不符。补 loseHpEnd。
+							trigger: { player: ['damageEnd', 'recover', 'loseHpEnd'] },
 							filter: function (event, player) {
 								return findCeTarget() != null;
 							},

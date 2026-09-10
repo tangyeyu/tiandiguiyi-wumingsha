@@ -22,14 +22,18 @@ const EXTRAS = process.argv.slice(4);
 const COMMENT_RE = /((?:(?:^[ \t]*)?(?:\/\*[^*]*\*+(?:[^\/*][^*]*\*+)*\/(?:[ \t]*\r?\n(?=[ \t]*(?:\r?\n|\/\*|\/\/)))?|\/\/(?:[^\\]|\\(?:\r?\n)?)*?(?:\r?\n(?=[ \t]*(?:\r?\n|\/\*|\/\/))|(?=\r?\n))))+)|("(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|(?:\r?\n|[\s\S])[^\/"'\\\s]*)/mg;
 
 /* ---------- 照抄 game.js:12104-12129 的 step 替换 ---------- */
-function parsex(skillName, fnSrc) {
+/* isGenerator：generator content 走 game.js:12164 的独立分支，**不做源码编译**，天然免疫 step 陷阱 */
+function parsex(skillName, fnSrc, isGenerator) {
+  if (isGenerator) {
+    return { leftover: [], leftoverCount: 0, K: null, note: 'generator 分支：不编译源码' };
+  }
   let str = fnSrc.toString().replace(COMMENT_RE, '$2').trim();
   str = str.slice(str.indexOf('{') + 1);
   const leftover = [];
   let skip = 0, K = 0;
 
   if (str.indexOf('step 0') === -1) {
-    return { leftover: [], K: null, note: '无 step 0（走单步分支）' };
+    return { leftover: [], leftoverCount: 0, K: null, note: '无 step 0（走单步分支）' };
   }
   for (let k = 0; k < 99; k++) {
     const reg = new RegExp(`['"]step ${k}['"]`);
@@ -54,9 +58,9 @@ function parsex(skillName, fnSrc) {
 }
 
 /* ---------- 字符串/注释感知的括号配对 ---------- */
-function findFunctionBody(text, startIdx) {
-  const braceStart = text.indexOf('{', startIdx);
-  if (braceStart < 0) return null;
+/* braceStart 直接给「函数体开括号」的下标（不再 indexOf，避免命中参数里的 { player }） */
+function findFunctionBody(text, braceStart) {
+  if (braceStart < 0 || text[braceStart] !== '{') return null;
   let depth = 0, i = braceStart;
   while (i < text.length) {
     const c = text[i];
@@ -74,15 +78,21 @@ function findFunctionBody(text, startIdx) {
   return null;
 }
 
-const CONTENT_RE = /(?<![a-zA-Z_$])content\s*(?::\s*function\s*)?\([^)]*\)\s*\{/g;
+// 支持三种写法：content:function(...){ / content:function*(...){ / content(...){
+// 结尾的 \{ 是函数体开括号；generator 由 function 后的 * 判定
+const CONTENT_RE = /(?<![a-zA-Z_$])(content)\s*(?::\s*function\s*(\*)?\s*|(\*)\s*)?\([^)]*\)\s*\{/g;
 
 function extractContents(src) {
   const out = [];
   let m;
   CONTENT_RE.lastIndex = 0;
   while ((m = CONTENT_RE.exec(src)) !== null) {
-    const body = findFunctionBody(src, m.index);
-    if (body) out.push({ text: src.slice(m.index, body.close + 1), at: m.index });
+    const braceStart = m.index + m[0].length - 1;
+    const body = findFunctionBody(src, braceStart);
+    if (body) {
+      const isGenerator = !!(m[2] || m[3]);
+      out.push({ text: src.slice(m.index, body.close + 1), at: m.index, isGenerator });
+    }
   }
   return out;
 }
@@ -100,7 +110,7 @@ for (const dir of EXTRAS) {
   }
 }
 
-let totalSkills = 0, withSteps = 0, broken = 0;
+let totalSkills = 0, withSteps = 0, broken = 0, generators = 0, asyncCount = 0;
 const brokenList = [];
 
 for (const t of targets) {
@@ -108,10 +118,12 @@ for (const t of targets) {
   const contents = extractContents(t.src);
   for (const c of contents) {
     totalSkills++;
+    if (/content\s*(?::\s*async\s*function\s*|:\s*async\s+|async\s+)\S*/.test(c.text)) asyncCount++;
+    if (c.isGenerator) { generators++; continue; }   // generator 分支不做源码编译，天然免疫
     const stepN = (c.text.match(/['"]step ([1-9][0-9]*)['"]/g) || []).length;
     if (!stepN) continue;
     withSteps++;
-    const r = parsex('?', c.text);
+    const r = parsex('?', c.text, false);
     if (r.leftoverCount > 0 || (r.leftover && r.leftover.length)) {
       broken++;
       const line = t.src.slice(0, c.at).split('\n').length;
@@ -122,7 +134,9 @@ for (const t of targets) {
 
 console.log(`扫描 ${targets.length} 个文件`);
 console.log(`含 content 的技能数：${totalSkills}`);
-console.log(`其中含 'step >=1' 的技能：${withSteps}`);
+console.log(`  ├ generator content（不编译源码）：${generators}`);
+console.log(`  ├ 疑似 async content（琉璃版不支持）：${asyncCount}`);
+console.log(`  └ 含 'step >=1' 的技能：${withSteps}`);
 console.log(`❌ 编译后仍有残留 step 字面量（= 状态机错位）：${broken}`);
 console.log('');
 if (brokenList.length) {
