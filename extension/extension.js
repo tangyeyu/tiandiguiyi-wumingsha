@@ -78,6 +78,17 @@
 //                    另：② 的插队姿势由 trigger.getParent().next.unshift(next) 改回
 //                    引擎惯用法 trigger.next.push(next)（本包 17 处「额外出牌阶段」皆然，
 //                    含 sb.js「当先」——卡面与②逐字同义）。
+//  B16 mgj_skip      ④ 的标记活不过持有者的回合。原实现只在 phaseDiscardBefore 消耗标记，
+//                    若弃牌阶段被别的东西跳过（player.skip('phaseDiscard')），该事件走
+//                    game.js:41724 的 Skipped 分支、XBefore/XBegin 都不发射 → 标记不被消耗
+//                    → 下一轮铸策再叠一个 → X 漂到 5，打破「一血最多5牌」的上界
+//                    （X = ①②③+④ ≤ 4 ⇒ 摸 X+1 ≤ 5 张）。
+//                    改为一技能监听两时机并分支：
+//                      phaseDiscardBefore → trigger.cancel() + 消耗 1 个标记
+//                      phaseLoopEnd       → 清空未使用的标记（X ≤ 4 的保证）
+//                    分支依据是 event.triggername，**不是** trigger.name ——
+//                    trigger 是真实事件（game.js:41675 trigger=event._trigger），
+//                    时机名在 event.triggername（game.js:15554）。
 // ============================================================
 game.import("extension", function (lib, game, ui, get, ai, _status) {
 	return {
@@ -115,7 +126,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						]],
 					},
 					characterIntro: {
-						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你选择一名其他角色令其获得「策」，你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在）。<br>沥血：锁定技，当你体力值发生变动时，你与「策」各摸X+1张牌（X为「策」的效果数）。',
+						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你选择一名其他角色令其获得「策」，你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你与「策」各摸X+1张牌（X为「策」的效果数，至多4）。',
 					},
 					translate: {
 						'tiandiguiyi': '天地归一',
@@ -427,22 +438,52 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								trigger.num += 1;
 							},
 						},
-						// —— 铸策·逸：跳过一次弃牌阶段 ——
+						// —— 铸策·逸：跳过一次弃牌阶段（④，唯一真正的消耗品） ——
+						//
+						// ── B16：④ 的标记活不过持有者的回合 ────────────────────────
+						// 设计语义（作者确认）：④ 添加次数不限，但标记在**持有者回合结束时被弃掉**，
+						// 因此 mgj_eff4_perm 恒 ∈ {0,1} ⇒ X = ①②③ + ④ ≤ 4 ⇒ 沥血一次体力变动
+						// 至多摸 X+1 = 5 张。「最多一血5牌」这个上界就是靠这条保证的。
+						//
+						// 原实现只在 phaseDiscardBefore 消耗标记，存在漏洞：
+						//   若弃牌阶段被**别的东西**跳过（player.skip('phaseDiscard')），
+						//   该事件会走 game.js:41724 的 `event.trigger(next.name+'Skipped')` 分支，
+						//   而 XBefore / XBegin 都不发射（game.js:41747-41763）
+						//   → 标记不被消耗、下一轮铸策再叠一个 → X 漂到 5，
+						//   正好打破上面那个上界。故补 phaseLoopEnd 兜底清空。
+						//
+						// 时机可信度：phaseLoop 由 game.js:43537-43541 创建且 next.player=player；
+						//   其 'End' 由 game.js:41714 的 event.name+'End' 合成 → 每回合恰好一次。
+						//
+						// 分支依据：★ 不能用 trigger.name —— trigger 是**真实事件**
+						//   （phaseDiscard / phaseLoop，见 game.js:41675 trigger=event._trigger），
+						//   触发时机名在 event.triggername（game.js:15554 next.triggername=...）。
 						mgj_skip: {
 							forced: true,
 							sub: true,
 							popup: false,
-							trigger: { global: 'phaseDiscardBefore' },
+							trigger: { global: ['phaseDiscardBefore', 'phaseLoopEnd'] },
 							filter: function (event) {
 								var ce = findCeTarget();
 								return ce != null && event.player == ce && ce.countMark('mgj_eff4_perm') > 0;
 							},
 							content: function () {
-								// 取消弃牌阶段必须取消触发源事件（此处原实现即正确）
-								trigger.cancel();
 								var ce = trigger.player;
-								ce.removeMark('mgj_eff4_perm', 1);
-								game.log(ce, '消耗了「策」效果', '#g【跳过弃牌阶段】');
+								if (event.triggername == 'phaseDiscardBefore') {
+									// 用到一次：取消该弃牌阶段并消耗一个标记
+									// （取消弃牌阶段必须取消**触发源事件**）
+									trigger.cancel();
+									ce.removeMark('mgj_eff4_perm', 1, false);
+									game.log(ce, '消耗了「策」效果', '#g【跳过弃牌阶段】');
+								}
+								else {
+									// 回合结束：没用掉的标记一律弃置 —— 这是 X ≤ 4 的保证
+									var n = ce.countMark('mgj_eff4_perm');
+									if (n > 0) {
+										ce.removeMark('mgj_eff4_perm', n, false);
+										game.log(ce, '回合结束，弃掉了未使用的「策」效果', '#g【跳过弃牌阶段】');
+									}
+								}
 							},
 						},
 
@@ -500,7 +541,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						mgj_eff4_perm: {
 							charlotte: true,
 							sub: true,
-							intro: { name: '铸策·逸', content: '你的弃牌阶段开始时，移去此标记并跳过该阶段。' },
+							intro: { name: '铸策·逸', content: '你的弃牌阶段开始时，移去此标记并跳过该阶段。若到你回合结束时仍未用掉，直接弃置（故至多同时存在 1 个）。' },
 						},
 					},
 				};
