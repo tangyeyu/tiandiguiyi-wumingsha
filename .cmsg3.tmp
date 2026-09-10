@@ -1,0 +1,55 @@
+feat: 新增武将「转·曹髦」（决境 / 奇技 / 讨贼）
+
+设计来源：用户手写卡面两页照片（已逐字抄录并逐条确认 7 处歧义后实现）。
+
+═══ 逐条确认结果 ═══
+1. 武将名 = 转·曹髦（4 血，魏）
+2. 右上「每轮开始时」= 改**决境**的触发时机（原写「游戏开始时」）
+3. 决境「判定成功」= 判定牌为黑桃 2~9（闪电**生效**）时触发
+4. 奇技「区域内的一张牌」= 手牌区 / 装备区 / 判定区 三区任选
+5. 第三技能名 = **讨贼**（不是「过赎」）
+6. 「≥2 点伤害→①②二选一」= 奇技的第三段
+7. 讨贼的「打出牌堆底的牌」= **使用**（不是响应式的「打出」）
+
+═══ 技能构成（3 卡面技能 + 4 隐藏子技能，全部列入武将数组）═══
+cm_juejing       决境        每轮开始：全场各摸 1 张，曹髦把摸到的那张转为闪电对自己使用
+cm_juejing_draw  决境·察电   场上任何闪电判定时摸 1 张
+cm_juejing_ward  决境·渡劫   自己的闪电判定成功 → 免伤 + 清空全场判定区的闪电 + 永久失去决境
+cm_qiji          奇技        锁定技；回合结束时夺取本回合未被自己伤害过的角色各一张牌
+cm_qiji_guard    奇技·卸厄   受伤时可弃判定区一张牌免伤（locked 但非 forced）
+cm_qiji_seize    奇技·趁危   有人受 ≥2 点伤害时，摸 X（体力值）或 Y（全场判定区内牌数）
+cm_taozei        讨贼        锁定技；每轮开始可把任意牌压入牌堆底，累计 > 体力上限后
+                            可无视次数与距离使用牌堆底的牌，循环直到无法使用
+cm_taozei_free   讨贼·纵     无限制载体：mod.cardUsable + mod.targetInRange
+
+═══ 本轮新查证的引擎事实（全部有源码行号）═══
+· roundStart 每轮一次：game.js:15857 / 34542 的 event.trigger('roundStart')，
+  由 15844-15846 的 isRound 判定驱动；现有先例 game.js:34464 / 44184
+· 牌堆顶/底：game.js:21521-21524（引擎自带的「移动到牌堆顶/底」功能）
+    ui.cardPile.insertBefore(card, ui.cardPile.firstChild)  → 顶（最先摸到）
+    ui.cardPile.appendChild(card)                           → 底（最后摸到）
+  故「牌堆底的牌」= ui.cardPile.lastChild
+· judge 事件的 event.card 是**被判定对象**（闪电本身），不是翻出的判定牌：
+  game.js:26873-26894 —— next.card 接收 card 参数，next.judge = get.judge(next.card)
+· mod 靠**名字字符串**经 game.checkMod 分派，字面量 mod.xxx 在引擎里从不出现：
+    cardUsable    game.js:28973 / 33210 / 33227
+    targetInRange 武将包内 180 处使用，diy.js:1318 直接就是 targetInRange:()=>true
+· getHistory('sourceDamage', fn)：game.js:20819 source.getHistory('sourceDamage').push(event)
+· gainPlayerCard(target, position, forced)：game.js:25364-25393 按参数类型自动识别，
+  position 串 → 三区，boolean → forced
+· 防止伤害的唯一不变量写法是 trigger.cancel()：idiom.mjs 查全库 19 处、16 种变体，
+  唯一都出现的就是它（event.cancel() 取消的是技能自身事件）
+
+═══ 设计取舍说明 ═══
+· cm_qiji_guard / cm_qiji_seize 用 locked:true 而非 forced —— 卡面正文写「你可以」，
+  与 B17（沥血）同一套处理：locked 只是身份标签，强制发动只看 forced（两者正交）
+· 决境「令全场摸一张牌」但只有曹髦自己上闪电。理由：决境是**每轮**触发，
+  若全场每人每轮各上一张闪电，判定区会无限堆积；且「对自己使用」的主语是曹髦。
+  「弃置在场角色判定区内的闪电」因此仍有意义 —— 闪电判定失败会迁移到下家。
+· 用 get.autoViewAs({name:'shandian'},[got]) 而非 game.createCard —— 这样真正
+  进判定区的是**被摸到的那张实物牌**，才是卡面说的「将此牌转为」。
+
+═══ 体检 ═══
+lint-extension 九项全绿：S ✅ / C1 16 个 content 双分支通过 / C2 无闭包逃逸 /
+C3 2 个武将结构合法 / C4 21 个技能注册完整 / C5 仅 sub 技能 INFO /
+C6 8 个标记有显示路径 / C7 与 34 个包无重名 / C8 14 个时机名全部合法

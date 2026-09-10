@@ -137,9 +137,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'mgj_nohurt', 'mgj_ce_remove', 'mgj_eff1',
 							'mgj_extra_phase', 'mgj_boost', 'mgj_skip'
 						]],
+						// 转·曹髦。三个卡面技能 + 四个隐藏子技能（见心得 §4.3：
+						// 技能必须列进本数组才会被触发，隐藏子技能同样要列）
+						zhuan_caomao: ['male', 'wei', 4, [
+							'cm_juejing', 'cm_juejing_draw', 'cm_juejing_ward',
+							'cm_qiji', 'cm_qiji_guard', 'cm_qiji_seize',
+							'cm_taozei'
+						]],
 					},
 					characterIntro: {
 						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你选择一名其他角色令其获得「策」，你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你与「策」各摸X+1张牌（X为「策」的效果数，至多4）。',
+						zhuan_caomao: '转·曹髦。<br>决境：每轮开始时，令全场摸一张牌，并将此牌转为闪电对自己使用；有人在闪电判定时你摸牌；你自己的闪电判定成功时免伤、清场闪电并永久失去决境。<br>奇技：锁定技，回合结束时夺取本回合未被你伤害过的角色各一张牌；受伤时可弃判定区牌免伤；有人受≥2点伤害时，你可摸X（体力值）或Y（全场判定区牌数）张。<br>讨贼：锁定技，每轮开始可把任意牌压入牌堆底，累计超过体力上限后即可无视次数与距离使用牌堆底的牌。',
 					},
 					translate: {
 						'tiandiguiyi': '天地归一',
@@ -169,6 +177,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'mgj_eff3_perm_bg': '锐',
 						'mgj_eff4_perm': '铸策·逸',
 						'mgj_eff4_perm_bg': '逸',
+						// ── 转·曹髦 ──（技能描述一律逐字照抄卡面）
+						'zhuan_caomao': '转·曹髦',
+						'cm_juejing': '决境',
+						'cm_juejing_info': '每轮开始时，你令全场摸一张牌，并将此牌转为闪电对自己使用。当场上进行闪电判定时，你摸一张牌。当你进行闪电判定时，判定成功，你免疫此次伤害，并且你弃置在场角色判定区内的闪电，然后你失去技能「决境」。',
+						'cm_qiji': '奇技',
+						'cm_qiji_info': '锁定技。回合结束时，你获得此回合内你未对其造成伤害的角色区域内的一张牌。当你受到伤害时，你可以弃置自己判定区内的一张牌，并免疫此伤害。当场上有角色受到的伤害不小于两点，你可以执行以下选项的其中之一：①摸X张牌（X为你的体力值）；②摸Y张牌（Y为全场角色判定区内牌数的总和）。',
+						'cm_taozei': '讨贼',
+						'cm_taozei_info': '锁定技。每轮开始时，你可以将任意牌置于牌堆底。当你以此法放于牌堆底的牌大于你的体力上限，你可以无视次数、距离限制使用牌堆底的牌，直到无法使用此牌为止。',
+						// 隐藏子技能（sub:true，刻意不给 _info —— lint 的 C5 对 sub 技能降级为 INFO）
+						'cm_juejing_draw': '决境·察电',
+						'cm_juejing_ward': '决境·渡劫',
+						'cm_qiji_guard': '奇技·卸厄',
+						'cm_qiji_seize': '奇技·趁危',
 					},
 					skill: {
 						// ============ 定策 ============
@@ -546,6 +567,231 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.draw(x + 1, 'nodelay');
 								if (ce) ce.draw(x + 1, 'nodelay');
 								event.finish();
+							},
+						},
+
+						// ============ 转·曹髦 ============
+						//
+						// ⚠ 全部 content 遵守两条铁律（atlas/01-引擎契约.md §2.0）：
+						//   铁律一：普通函数 + 'step N' 全在顶层，绝不用 generator / 参数解构
+						//   铁律二：content 里读不到包级闭包变量，辅助逻辑一律就地展开
+						// 跨步数据一律挂 event（§2.0.1：每个 step 是独立编译的函数体）。
+						//
+						// ── 决境 ──
+						// 「每轮开始时」= roundStart：game.js:15857 / 34542 两处 event.trigger('roundStart')，
+						//   由 15844-15846 的 isRound 判定驱动（轮到 _status.roundStart 那位玩家时）
+						//   ⇒ 每轮恰好一次 ✓ 现有先例：game.js:34464、44184 的 trigger:{global:'roundStart'}
+						cm_juejing: {
+							locked: true,
+							forced: true,
+							trigger: { global: 'roundStart' },
+							filter: function (event, player) {
+								return player.isIn();
+							},
+							content: function () {
+								'step 0'
+								event.cmBefore = player.getCards('h').slice(0);
+								game.log(player, '发动了', '#g【决境】');
+								for (var i = 0; i < game.players.length; i++) {
+									if (game.players[i].isIn()) game.players[i].draw(1, 'nodelay');
+								}
+								'step 1'
+								// 差集法找出曹髦自己刚摸到的那张牌（不依赖 draw 事件的内部字段）
+								var before = event.cmBefore || [];
+								var now = player.getCards('h');
+								var got = null;
+								for (var i = 0; i < now.length; i++) {
+									var found = false;
+									for (var j = 0; j < before.length; j++) {
+										if (before[j] == now[i]) { found = true; break; }
+									}
+									if (!found) { got = now[i]; break; }
+								}
+								if (got && player.isIn()) {
+									// 「将此牌转为闪电对自己使用」：用被摸到的**实物牌**造虚拟牌，
+									// 于是真正进判定区的是那张牌本身（而不是另生成一张闪电）
+									player.useCard(get.autoViewAs({ name: 'shandian' }, [got]), player);
+								}
+							},
+						},
+						// 决境·察电：场上任何一张闪电判定时，你摸一张牌
+						// judge 事件的 event.card 是**被判定对象**（闪电本身），不是翻出的判定牌
+						cm_juejing_draw: {
+							forced: true,
+							sub: true,
+							popup: false,
+							trigger: { global: 'judgeBefore' },
+							filter: function (event, player) {
+								return player.isIn() && player.hasSkill('cm_juejing') &&
+									event.card && event.card.name == 'shandian';
+							},
+							content: function () {
+								player.draw(1);
+							},
+						},
+						// 决境·渡劫：自己的闪电判定成功 → 免伤 + 清场闪电 + 永久失去决境
+						cm_juejing_ward: {
+							forced: true,
+							sub: true,
+							popup: false,
+							trigger: { player: 'damageBegin' },
+							filter: function (event, player) {
+								return player.hasSkill('cm_juejing') && event.nature == 'thunder' &&
+									event.card && event.card.name == 'shandian';
+							},
+							content: function () {
+								'step 0'
+								// 防伤的唯一不变量写法：取消**触发源事件**。
+								// idiom.mjs 查「防止伤害」：全库 19 处、16 种变体，
+								// 唯一都出现的就是 trigger.cancel()（event.cancel() 取消的是技能自身事件）
+								trigger.cancel();
+								game.log(player, '免疫了闪电伤害，渡劫成功');
+								'step 1'
+								// 弃置**在场角色**判定区内的闪电（含因判定失败迁移到别人头上的那张）
+								for (var i = 0; i < game.players.length; i++) {
+									var p = game.players[i];
+									if (!p.isIn()) continue;
+									var js = p.getCards('j');
+									for (var j = 0; j < js.length; j++) {
+										if (js[j].name == 'shandian') p.discard(js[j]);
+									}
+								}
+								'step 2'
+								player.removeSkill('cm_juejing');
+								game.log(player, '失去了技能', '#g【决境】');
+							},
+						},
+
+						// ── 奇技 ──
+						// ① 回合结束时，夺取本回合未被你伤害过的角色各一张牌（锁定、必然发动）
+						cm_qiji: {
+							locked: true,
+							forced: true,
+							trigger: { player: 'phaseJieshuAfter' },
+							filter: function (event, player) {
+								for (var i = 0; i < game.players.length; i++) {
+									var p = game.players[i];
+									if (p == player || !p.isIn()) continue;
+									// getHistory 天然按**本回合**分段；sourceDamage = 你造成的伤害
+									if (player.getHistory('sourceDamage', function (evt) { return evt.player == p; }).length == 0) return true;
+								}
+								return false;
+							},
+							content: function () {
+								var targets = [];
+								for (var i = 0; i < game.players.length; i++) {
+									var p = game.players[i];
+									if (p == player || !p.isIn()) continue;
+									// ★ 这里的内层匿名函数闭包捕获的是 content 体内的 var p，
+									//   属**同一函数体**的局部变量，不是包级闭包 → 不受铁律二约束
+									if (player.getHistory('sourceDamage', function (evt) { return evt.player == p; }).length == 0) targets.push(p);
+								}
+								if (!targets.length) { event.finish(); return; }
+								game.log(player, '发动了', '#g【奇技】');
+								for (var i = 0; i < targets.length; i++) {
+									// 'hej' = 手牌/装备/判定三区任选一张（game.js:25380 的 position 参数）
+									player.gainPlayerCard(targets[i], 'hej', true);
+								}
+							},
+						},
+						// ② 受伤时弃判定区一张牌免伤。卡面写「你可以」→ 非 forced + locked（同沥血 B17）
+						cm_qiji_guard: {
+							locked: true,
+							sub: true,
+							trigger: { player: 'damageBegin' },
+							filter: function (event, player) {
+								return player.countCards('j') > 0;
+							},
+							content: function () {
+								'step 0'
+								player.chooseToDiscard('j', '奇技：弃置一张判定区内的牌，并免疫此伤害')
+									.set('ai', function (card) { return 10 - get.value(card); });
+								'step 1'
+								if (result.bool) {
+									trigger.cancel();
+									game.log(player, '发动了', '#g【奇技】');
+								}
+							},
+						},
+						// ③ 有人受 ≥2 点伤害时，二选一摸牌。「你可以」→ 非 forced
+						cm_qiji_seize: {
+							locked: true,
+							sub: true,
+							trigger: { global: 'damageEnd' },
+							filter: function (event, player) {
+								return player.isIn() && event.num >= 2;
+							},
+							content: function () {
+								'step 0'
+								var x = player.hp;
+								var y = 0;
+								for (var i = 0; i < game.players.length; i++) {
+									if (game.players[i].isIn()) y += game.players[i].countCards('j');
+								}
+								event.cmX = x;
+								event.cmY = y;
+								player.chooseControl('①摸' + x + '张牌（X为你的体力值）', '②摸' + y + '张牌（Y为全场判定区内牌数的总和）')
+									.set('prompt', '奇技：选择一项')
+									.set('ai', function () { return 0; });
+								'step 1'
+								var idx = (result && typeof result.index == 'number') ? result.index : 0;
+								player.draw(idx == 1 ? event.cmY : event.cmX);
+								game.log(player, '发动了', '#g【奇技】');
+							},
+						},
+
+						// ── 讨贼 ──
+						// 牌堆顶/底（game.js:21521-21524 是引擎自带的实现）：
+						//   ui.cardPile.insertBefore(card, ui.cardPile.firstChild)   → 牌堆顶（最先摸到）
+						//   ui.cardPile.appendChild(card)                            → 牌堆底（最后摸到）
+						// 故「牌堆底的牌」= ui.cardPile.lastChild
+						cm_taozei: {
+							locked: true,
+							forced: true,
+							trigger: { global: 'roundStart' },
+							filter: function (event, player) {
+								return player.isIn() && player.countCards('he') > 0;
+							},
+							content: function () {
+								'step 0'
+								player.chooseToDiscard('he', [1, Infinity], '讨贼：可将任意张牌置于牌堆底')
+									.set('ai', function (card) { return -get.value(card); });
+								'step 1'
+								if (!result.bool || !result.cards || !result.cards.length) { event.finish(); return; }
+								var cards = result.cards;
+								if (typeof player.storage.cm_taozei_n != 'number') player.storage.cm_taozei_n = 0;
+								player.storage.cm_taozei_n += cards.length;
+								player.lose(cards, ui.cardPile, 'visible');
+								for (var i = 0; i < cards.length; i++) ui.cardPile.appendChild(cards[i]);
+								game.log(player, '将', get.cnNumber(cards.length), '张牌置于牌堆底（累计', player.storage.cm_taozei_n, '张）');
+								'step 2'
+								// 「以此法放于牌堆底的牌大于你的体力上限」→ 获得本轮的使用许可
+								if (player.storage.cm_taozei_n <= player.maxHp) { event.finish(); return; }
+								player.addTempSkill('cm_taozei_free');
+								'step 3'
+								// 循环：反复使用牌堆底的牌，直到无法使用为止
+								if (!player.isIn()) { event.finish(); return; }
+								var card = ui.cardPile.lastChild;
+								if (!card || !card.name) { event.finish(); return; }
+								if (!player.canUse(card, player, false)) { event.finish(); return; }
+								player.chooseToUse('讨贼：使用牌堆底的牌「' + get.translation(card) + '」（无视次数与距离限制）')
+									.set('ai', function () { return 1; });
+								'step 4'
+								if (!result.bool) { event.finish(); return; }
+								event.goto(3);
+							},
+						},
+						// 「无视次数、距离限制」的载体：无名杀用 mod 实现，
+						// 卡面要的两条正好各对应一个 —— cardUsable（次数）/ targetInRange（距离）。
+						// mod 技能按惯例不进武将数组（它不靠触发，靠被拥有时被 getSkills 读到）
+						cm_taozei_free: {
+							charlotte: true,
+							sub: true,
+							mod: {
+								// 返回 num+99 而非 Infinity —— 无名杀里大量先例用大常数，
+								// 避免 Infinity 参与某些数值比较时出边界问题
+								cardUsable: function (card, player, num) { return num + 99; },
+								targetInRange: function (card, player, target) { return true; },
 							},
 						},
 
