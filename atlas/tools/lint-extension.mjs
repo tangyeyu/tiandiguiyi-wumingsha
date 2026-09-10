@@ -369,6 +369,29 @@ for (const [sk, blk] of skillEntries) {
   }
 }
 
+/* ───────────────── C10. canUse 的第二个参数是「目标」不是「是否忽略」───────────────── */
+// 实测症状：讨贼达标后不触发从牌堆底使用牌，零报错。
+// 根因：player.canUse(card, player, false) —— 第二参数是**目标**
+//   game.js:27651-27659  canUse:function(card,target,distance,includecard){
+//       ...
+//       return lib.filter[...](card,this,target);   // ← 目标合法性
+//   }
+//   传自己 = 「能否对**自己**使用这张牌」，杀/决斗/顺手牵羊这类牌对自己非法 ⇒ 恒 false。
+//   想忽略距离应该传第三参数 distance=false，想判「这张牌能不能用」应该用
+//   hasUseTarget（game.js:27660-27665，遍历全场找合法目标）。
+// 判据：接收者与第二个实参是**同一个标识符** → 高度可疑（偶尔是对自己用桃的正当检查，
+//   故只报 WARN 并要求人工确认，不判 ERROR）。
+for (const [sk, blk] of skillEntries) {
+  for (const m of blk.matchAll(/([A-Za-z_$][\w$]*)\s*\.\s*canUse\s*\(\s*([^,()]+?)\s*,\s*([A-Za-z_$][\w$]*)\s*[,)]/g)) {
+    if (m[1] !== m[3]) continue;   // 接收者与目标不是同一个 → 正常
+    W('C10', `技能 \`${sk}\` 写了 \`${m[1]}.canUse(…, ${m[3]}, …)\` —— `
+      + `canUse 的第二个参数是**目标**（game.js:27651-27659 末行走 lib.filter.targetEnabled），`
+      + `传自己等于「能否对自己使用这张牌」，杀/决斗/顺手牵羊一类对自己非法 ⇒ 恒 false、后续整段不执行`, {
+      hint: '判「这张牌能不能用」改用 hasUseTarget(card, false, false)；要忽略距离应传第三参数 distance=false',
+    });
+  }
+}
+
 /* ───────────────── 输出 ───────────────── */
 const byCode = (c) => findings.filter((f) => f.code === c);
 const errs = findings.filter((f) => f.level === 'ERROR');
@@ -419,6 +442,9 @@ if (JSON_OUT) {
     c9.length === 0
       ? (virtualNames.size ? `${virtualNames.size} 个虚拟牌名的比较均正确处理了 viewAs` : '本文件未造过虚拟牌')
       : `${c9.length} 处漏了 viewAs`);
+
+  const c10 = byCode('C10');
+  mark('C10 canUse 参数', c10.length === 0, c10.length === 0 ? '无「目标误当忽略」的调用' : `${c10.length} 处可疑`);
 
   L.push('');
   if (findings.length === 0) {

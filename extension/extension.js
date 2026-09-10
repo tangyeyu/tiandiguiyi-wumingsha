@@ -833,12 +833,36 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!player.isIn()) { event.finish(); return; }
 								var card = ui.cardPile.lastChild;
 								if (!card || !card.name) { event.finish(); return; }
-								if (!player.canUse(card, player, false)) { event.finish(); return; }
-								player.chooseToUse('讨贼：使用牌堆底的牌「' + get.translation(card) + '」（无视次数与距离限制）')
-									.set('ai', function () { return 1; });
+								// ★ 判「这张牌能不能用」要用 hasUseTarget，**不能**用 canUse(card, player)：
+								//   canUse 的第二个参数是**目标**（game.js:27651-27659，最后一行
+								//   lib.filter.targetEnabled(card,this,target)），传自己等于「能否对自己使用这张牌」——
+								//   杀/决斗/顺手牵羊这类牌对自己非法 ⇒ 恒 false ⇒ 后续整段不执行。
+								//   实测症状：讨贼达标后不触发从牌堆底使用牌。
+								//   hasUseTarget（game.js:27660-27665）才是「场上存在某个合法目标」。
+								//   distance=false 忽略距离，includecard=false 不再查次数（次数由 mod.cardUsable 放开）
+								if (!player.hasUseTarget(card, false, false)) { event.finish(); return; }
+								// 先从牌堆摘出，否则使用后那张牌还会留在牌堆里
+								ui.cardPile.removeChild(card);
+								event.cmCard = card;
+								game.log(player, '讨贼：从牌堆底取用', card);
+								// ★ 用 chooseUseTarget 而不是 chooseToUse：
+								//   前者能把「用哪张牌」锁死成传入的这张（game.js:25034 next.card=...），
+								//   后者会放玩家用手牌里的任意牌，与「使用牌堆底的牌」不符。
+								//   字符串 'nodistance' → next.nodistance=true（game.js:25056-25057），
+								//   正是卡面的「无视距离限制」。
+								player.chooseUseTarget(card, 'nodistance');
 								'step 4'
-								if (!result.bool) { event.finish(); return; }
-								event.goto(3);
+								if (result.bool) {
+									// 已使用 → 引擎会把它送进弃牌堆
+									game.updateRoundNumber();
+									event.goto(3);
+								}
+								else {
+									// 取消 → 把牌放回牌堆底，收工
+									var back = event.cmCard;
+									if (back) ui.cardPile.appendChild(back);
+									event.finish();
+								}
 							},
 						},
 						// 「无视次数、距离限制」的载体：无名杀用 mod 实现，
