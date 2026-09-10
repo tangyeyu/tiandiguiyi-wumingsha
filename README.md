@@ -23,6 +23,7 @@
 | [`atlas/02-范式库.md`](atlas/02-范式库.md) | 11 个范式 × 真实最小样例（跨 10 个武将包）逐行解析 + 陷阱 |
 | [`atlas/03-命名空间与冲突.md`](atlas/03-命名空间与冲突.md) | 实测 9 处技能名跨包覆盖 + 1 处悬空引用，附改名方案 |
 | [`atlas/04-天地归一审计.md`](atlas/04-天地归一审计.md) | **本扩展自身的错误清单**（10 处），含 1 处 `parsex` 编译失败与 4 处静默失效 |
+| [`atlas/05-官方规范与琉璃版对照.md`](atlas/05-官方规范与琉璃版对照.md) | 官方 `libnoname/noname` 已转向 `async content`，本篇逐条对齐**哪些官方写法在琉璃版会失败** |
 | [`atlas/index/`](atlas/index/) | 自动生成：34 包 / 1885 武将 / 5227 技能 的结构总览、范式普查、样例推荐、体检报告 |
 
 配套四个零依赖 Node 工具（词法扫描，**不执行**目标代码）：`index-packs` / `classify-skills` / `check-collisions` / `extract-skill`，
