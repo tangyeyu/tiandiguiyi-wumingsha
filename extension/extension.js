@@ -89,6 +89,18 @@
 //                    分支依据是 event.triggername，**不是** trigger.name ——
 //                    trigger 是真实事件（game.js:41675 trigger=event._trigger），
 //                    时机名在 event.triggername（game.js:15554）。
+//  B17 mgj_lixue    forced:true 是错的。卡面沥血写的是「锁定技，但你体力值发生变动时，
+//                    **你可以**与拥有「策」的角色一起摸X+1张牌」——
+//                    「你可以」= 可自选不发动，「锁定技」只是身份标签（防止被"封非锁定技"
+//                    的效果封掉）。引擎里这本就是两个正交字段：
+//                      get.is.locked()（game.js:64837-64845）只决定分类，
+//                        64841 if(info.trigger&&info.forced) return true;
+//                        64843 if(info.locked) return true;
+//                        并被 game.js:60262 用来加「锁定技」字样；
+//                      强制发动只看 forced：game.js:15415 不满足才走 chooseBool 询问。
+//                    故改为 去掉 forced + 显式 locked:true。
+//                    同时按卡面原文重写 mgj_zhuce_info / mgj_lixue_info
+//                    （原 mgj_zhuce_info 是自行编的措辞，与卡面不符）。
 // ============================================================
 game.import("extension", function (lib, game, ui, get, ai, _status) {
 	return {
@@ -134,9 +146,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'mgj_dingce': '定策',
 						'mgj_dingce_info': '锁定技。游戏开始时，你选择一名其他角色令其获得「策」标记。当你死亡时，你可以选择是否移除「策」。你与拥有「策」的角色相互间无法造成伤害。',
 						'mgj_zhuce': '铸策',
-						'mgj_zhuce_info': '你的回合开始时，你给「策」添加以下其中一项效果：①给「策」添加【回复体力】（限一次）；②给「策」添加【额外执行一个出牌阶段：不摸牌】（限一次）；③给「策」添加【使用牌造成的伤害+1】（限一次，永久）；④给「策」添加【跳过一次弃牌阶段】。',
+						'mgj_zhuce_info': '回合开始时，你给「策」添加以下其中一项效果：1.回合开始时，恢复一点体力 2.回合开始时，执行一个额外的出牌阶段。 3.当你使用造成伤害时，若此牌指定的目标数为1，则此牌造成的伤害+1 4.跳过一次弃牌阶段（前三个选项限一次并永久存在）',
 						'mgj_lixue': '沥血',
-						'mgj_lixue_info': '锁定技。当你体力值发生变动时，你与拥有「策」的角色各摸X+1张牌（X为「策」的效果数量）。',
+						'mgj_lixue_info': '锁定技。当你体力值发生变动时，你可以与拥有「策」的角色一起摸X+1张牌（X为「策」的效果数量）。',
 						'mgj_nohurt': '定策·却刃',
 						'mgj_ce_remove': '定策·解策',
 						'mgj_eff1': '铸策·愈',
@@ -488,8 +500,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 
 						// ============ 沥血 ============
+						// ── B17：可选发动 + 锁定技身份（两个正交字段）────────────────
+						// 卡面原文：「锁定技，但你体力值发生变动时，**你可以**与拥有"策"的角色
+						//            一起摸X+1张牌（X为"策"的效果数量）」
+						// 「你可以」= 可选择不发动；「锁定技」= 只是身份标签，让**封非锁定技**
+						// 的效果封不到它。引擎里这本来就是两个字段：
+						//   get.is.locked()（game.js:64837-64845）只决定**分类**——
+						//     64841  if(info.trigger&&info.forced) return true;
+						//     64843  if(info.locked) return true;
+						//     并被 game.js:60262 用来往技能栏加「锁定技」字样；
+						//   而**强制发动**只看 forced：game.js:15415 `if(!event.revealed&&!info.forced)`
+						//     不满足才走 chooseBool 询问分支。
+						// 故原 `forced:true` 是错的（那会连"你可以"一起吃掉）；
+						// 正确写法 = 去掉 forced + 显式 locked:true。
 						mgj_lixue: {
-							forced: true,
+							locked: true,
 							// B6：loseHp 是独立事件（game.js:26455 createEvent('loseHp')），
 							// 「失去体力」不产生 damage 事件 → 原文只挂 damageEnd/recover 会漏掉它，
 							// 与卡面「体力值发生变动」不符。补 loseHpEnd。

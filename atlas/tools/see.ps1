@@ -2,10 +2,15 @@
   see.ps1 -- Look at an image through the local llama.cpp vision model.
 
   WHY THIS EXISTS
-    The agent's chat model does not declare image input; harness `read_image`
-    fails with: model "deepseek-v4-flash" does not declare image input.
-    The Qwen2-VL build under C:\Users\luoti\Desktop\llama.cpp is therefore the
-    only vision channel available on this machine.
+    FALLBACK ONLY. This was written during a window when the agent's chat model
+    rejected image input (`read_image` failed with: model "deepseek-v4-flash"
+    does not declare image input), so the local Qwen2-VL build under
+    C:\Users\luoti\Desktop\llama.cpp was the only working vision channel.
+
+    The model route later began accepting images natively and harness
+    `read_image` took over again -- it is strictly better than a 2B local model
+    for OCR, so prefer it. Keep this script for sessions routed to a
+    non-vision model. Do not reach for it by default.
 
   USAGE  (this box has Windows PowerShell 5.1; `pwsh` is NOT installed)
     powershell -NoProfile -ExecutionPolicy Bypass -File see.ps1 `
