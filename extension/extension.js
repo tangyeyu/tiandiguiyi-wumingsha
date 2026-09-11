@@ -112,10 +112,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 			game.import('character', function () {
 				// ---- 包内闭包辅助 ----
 				// 返回当前持有「策」标记的角色（同一时刻至多一人）；持有者死亡后自动为 null
+				// ★★ 死亡玩家不在 game.players 里 —— die 的广播把玩家移出 game.players 并推进
+				//   game.dead（game.js:21119-21120），标记则留在 player.storage 里（无人清理）。
+				//   只遍历 game.players 会导致：持有者一死，「策」就"找不到"了，
+				//   依赖 findCeTarget() 的 filter 全体恒 false（实测症状：持有者死后，
+				//   自己体力值变动也不再摸牌）。所以必须连 game.dead 一起找。
 				var findCeTarget = function () {
 					for (var i = 0; i < game.players.length; i++) {
 						if (game.players[i].hasMark('mgj_ce')) {
 							return game.players[i];
+						}
+					}
+					var dead = game.dead || [];
+					for (var j = 0; j < dead.length; j++) {
+						if (dead[j] && dead[j].hasMark('mgj_ce')) {
+							return dead[j];
 						}
 					}
 					return null;
@@ -556,18 +567,52 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 正确写法 = 去掉 forced + 显式 locked:true。
 						mgj_lixue: {
 							locked: true,
-							// B6：loseHp 是独立事件（game.js:26455 createEvent('loseHp')），
-							// 「失去体力」不产生 damage 事件 → 原文只挂 damageEnd/recover 会漏掉它，
-							// 与卡面「体力值发生变动」不符。补 loseHpEnd。
-							trigger: { player: ['damageEnd', 'recover', 'loseHpEnd'] },
+							// ── 触发时机：只用 changeHp ─────────────────────────────
+							// 卡面写的是「体力值发生变动时」，而引擎里**唯一**忠于这句话的事件
+							// 就是 changeHp：changeHp 的内容里 event.trigger('changeHp')
+							// （game.js:21008），位于 player.hp 真的改完之后，且三条路径都汇到它：
+							//   · damage     → player.changeHp(-num,false)（game.js:20833）
+							//   · recover    → player.changeHp(num,false)（game.js:20924，num>0 才走，
+							//                  所以体力已满时不会触发 —— 符合"没变动就不触发"）
+							//   · loseHp     → player.changeHp(-num)（game.js:20945）
+							//   · loseMaxHp 导致当前体力溢出也会经 changeHp 结算
+							//
+							// ★ 原写法 trigger:{player:['damageEnd','recover','loseHpEnd']} 里有两个死事件：
+							//   · 'recover'    —— 全库没有任何 `.trigger('recover')`。recover 只是被
+							//                     createEvent('recover')（game.js:26366）创建，
+							//                     它的内容只发 changeHp，从不发 'recover'
+							//                     ⇒ 监听它等于永不触发，这就是「回复体力不摸牌」的根因。
+							//   · 'loseHpEnd'  —— 引擎里根本不存在这个事件（不存在 loseHp* 的合成后缀
+							//                     发射），同样是死事件；而 loseHp 已经经 changeHp 覆盖。
+							//   注：atlas/tools 的 C8 会放行这两个名字，因为 C8 的合法集同时收了
+							//   createEvent 的名字 —— 被 create 但从未 trigger 的事件是它的盲区。
+							//
+							//   只挂 changeHp 也顺带避免了重复计数：若同时挂 damageEnd 与 changeHp，
+							//   一次伤害会摸两次牌（damageEnd 一次、changeHp 一次）。
+							//   代价：多点伤害/多点回复会按"每次体力变动"各触发一次（酒杀=2 次），
+							//   这与卡面「体力值发生变动时」的字面读法一致。
+							//
+							// ★ forceDie:true 是必须的：引擎在 createTrigger 里对死亡玩家直接 return
+							//   （game.js:40320 `if(player.isDead()&&!info.forceDie) return;`），
+							//   而"体力值变动"完全可能发生在自己濒死/已阵亡的结算途中。
+							forceDie: true,
+							trigger: { player: 'changeHp' },
 							filter: function (event, player) {
 								return findCeTarget() != null;
 							},
 							content: function () {
 								// ★ 同 mgj_zhuce：content 被 new Function 重编译，findCeTarget / ceX 均不可用
+								//   必须与 findCeTarget 同一套查找（含 game.dead），否则 filter 放行了、
+								//   content 却找不到持有者 ⇒ x 恒 0 且只有自己摸牌。
 								var ce = null;
 								for (var i = 0; i < game.players.length; i++) {
 									if (game.players[i].hasMark('mgj_ce')) { ce = game.players[i]; break; }
+								}
+								if (!ce) {
+									var dead = game.dead || [];
+									for (var d = 0; d < dead.length; d++) {
+										if (dead[d] && dead[d].hasMark('mgj_ce')) { ce = dead[d]; break; }
+									}
 								}
 								var x = 0;
 								if (ce) {
@@ -575,7 +620,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										ce.countMark('mgj_eff3_perm') + ce.countMark('mgj_eff4_perm');
 								}
 								player.draw(x + 1, 'nodelay');
-								if (ce) ce.draw(x + 1, 'nodelay');
+								// 持有者已阵亡时：摸到的牌对它毫无意义（发不到它手上也没法用），
+								// 改成「那份也一并由你摸」—— 与卡面的"一起摸"保持总量一致。
+								// （死亡玩家本身也能 draw：draw 内容不检查 isAlive，牌会进它的手牌区。）
+								if (ce) {
+									if (ce.isAlive && ce.isAlive()) {
+										ce.draw(x + 1, 'nodelay');
+									}
+									else {
+										player.draw(x + 1, 'nodelay');
+										game.log(player, '因「策」的持有者已阵亡，额外摸' + get.cnNumber(x + 1) + '张牌');
+									}
+								}
 								event.finish();
 							},
 						},
