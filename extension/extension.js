@@ -121,6 +121,19 @@
 //                         若把选人放在 'step 1' 则永远跑不到。
 //                    卡面 mgj_dingce_info 与 characterIntro 同步为"你可以…；放弃则本局
 //                    此技能不再生效"。
+//  B19 mgj_lixue    去掉 filter 里的「必须存在「策」」要求。规则（用户明确）：
+//                    **没有「策」时，体力值发生变动也应该摸一张牌**。
+//                    原 filter 是 `findCeTarget() != null`，虽 content 里 `if (ce)` 的写法
+//                    使 X=0 也能摸 1 张，但整局没有「策」时会被 filter 整体拦掉 ——
+//                    那正是"必须持有策才摸牌"的来源。
+//                    改动：删掉 filter（引擎里 filter 缺失即无条件通过，见 game.js:33060
+//                    的 truthiness 判定），content 里 `if (ce)` 已天然处理"无策"分支：
+//                      · 有「策」→ 自己与持有者各摸 X+1 张（X = 持有者的效果数）
+//                      · 无「策」→ x 保持 0，自己摸 1 张
+//                    连带：mgj_zhuce（铸策）content 开头就有 `if (!ce) { event.finish(); return; }`
+//                    （本文件 407 行附近），无「策」时会自己静默结束，不需要跟着改；
+//                    它挂在 phaseBegin 上、每回合都过闸门，但不会弹空对话框。
+//                    卡面 mgj_lixue_info 与 characterIntro 同步。
 // ============================================================
 game.import("extension", function (lib, game, ui, get, ai, _status) {
 	return {
@@ -186,7 +199,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						], ['ext:天地归一/zhuan_caomao.jpg']],
 					},
 					characterIntro: {
-						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你可以选择一名其他角色令其获得「策」（放弃发动则本技能本局不再生效），你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你与「策」各摸X+1张牌（X为「策」的效果数，至多4）。',
+						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你可以选择一名其他角色令其获得「策」（放弃发动则本技能本局不再生效），你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你可以摸X+1张牌（X为「策」的效果数，至多4）；若场上没有「策」，你摸一张牌。',
 						zhuan_caomao: '转·曹髦。<br>决境：每轮开始时，令全场各摸一张牌，并将各自摸到的那张转为闪电对其自己使用（判定区已有闪电者跳过）；有人在闪电判定时你摸牌；你自己的闪电判定成功时免伤、清空全场判定区的闪电并永久失去决境。<br>奇技：锁定技，回合结束时夺取本回合未被你伤害过的角色各一张牌；受伤时可弃判定区牌免伤；有人受≥2点伤害时，你可摸X（体力值）或Y（全场判定区牌数）张。<br>讨贼：锁定技，每轮开始可把任意牌压入牌堆底，累计超过体力上限后即可无视次数与距离使用牌堆底的牌。',
 					},
 					translate: {
@@ -197,7 +210,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'mgj_zhuce': '铸策',
 						'mgj_zhuce_info': '回合开始时，你给「策」添加以下其中一项效果：1.回合开始时，恢复一点体力 2.回合开始时，执行一个额外的出牌阶段。 3.当你使用造成伤害时，若此牌指定的目标数为1，则此牌造成的伤害+1 4.跳过一次弃牌阶段（前三个选项限一次并永久存在）',
 						'mgj_lixue': '沥血',
-						'mgj_lixue_info': '锁定技。当你体力值发生变动时，你可以与拥有「策」的角色一起摸X+1张牌（X为「策」的效果数量）。',
+						'mgj_lixue_info': '锁定技。当你体力值发生变动时，你可以摸X+1张牌（X为「策」的效果数量）；若场上没有「策」，你摸一张牌。',
 						'mgj_nohurt': '定策·却刃',
 						'mgj_ce_remove': '定策·解策',
 						'mgj_eff1': '铸策·愈',
@@ -654,9 +667,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//   而"体力值变动"完全可能发生在自己濒死/已阵亡的结算途中。
 							forceDie: true,
 							trigger: { player: 'changeHp' },
-							filter: function (event, player) {
-								return findCeTarget() != null;
-							},
+							// ── B19：不再要求场上存在「策」──────────────────────────────
+							// 规则（用户明确）：**没有「策」时，体力值发生变动也摸一张牌**。
+							// 原 filter 是 `findCeTarget() != null`；虽然 content 里 `if (ce)` 的写法
+							// 让 X=0 时本来就会摸 1 张，但**没有「策」的整局**会被 filter 整体拦掉 ——
+							// 那正是"必须持有策才摸牌"的来源。
+							// 去掉 filter 后：体力一变动就发动，摸牌数由 content 里的 ce 决定
+							//   · 有「策」→ X+1 张（X = 持有者身上的效果数，与卡面一致）
+							//   · 无「策」→ 1 张（X 视作 0）
+							// 注：filter 字段缺失时该技能**无条件通过**触发闸门 ——
+							//   game.js:33060 `if(info.filter&&!info.filter(event,player,name)){ return false; }`
+							//   是 truthiness 判定：info.filter 为 undefined 时整个条件为假，不拦截。
+							//   故直接删掉 filter 字段即可，不需要写一个恒真函数。
 							content: function () {
 								// ★ 同 mgj_zhuce：content 被 new Function 重编译，findCeTarget / ceX 均不可用
 								//   必须与 findCeTarget 同一套查找（含 game.dead），否则 filter 放行了、
@@ -671,6 +693,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										if (dead[d] && dead[d].hasMark('mgj_ce')) { ce = dead[d]; break; }
 									}
 								}
+								// 没有「策」时 x 保持 0 ⇒ 下面就是"摸 1 张"（B19 的规则）
 								var x = 0;
 								if (ce) {
 									x = ce.countMark('mgj_eff1') + ce.countMark('mgj_eff2') +
