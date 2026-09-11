@@ -287,37 +287,46 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//   · Legacy() 分支（game.js:12094-12133）：带 try/catch，非法替换会被静默跳过
 							// generator 写法只在 Legacy 分支可用，old 分支会把解构参数 { player } 当成函数体切错位。
 							//
-							// ★★ 不用 'step N' 分段，改为单 step 顺序执行（与 mgj_zhuce 的多步写法不同，理由如下）：
-							//   'step 0' 只放 chooseBool 时，第 1 步读到的是"没有 step 标记"的隐式行为 ——
-							//   parsex 在找不到任何 'step N' 时会补
-							//   `if(event.step==1){event.finish();return;}`（parsex-model.mjs:56），
-							//   即**只跑第 0 步就结束**，"确定"之后的选人永远不会执行。
-							//   单 step 顺序执行能同时规避这个陷阱与 result 跨步串值问题。
+							// ── 「可以不给」由**引擎自带**的询问实现，content 不要自己再问一次 ──
+							// 去掉 forced 后，引擎在触发事件自己的 "step 1" 里就会弹询问：
+							//   game.js:15415  if(!event.revealed&&!info.forced){
+							//   game.js:15456    var next=player.chooseBool(str);   ← 引擎的"是否发动"
+							//   描述文字取 lib.translate[skill+'_info']（15473）⇒ 无需自己再写提示
+							// 玩家点"取消"时，引擎在 "step 3" 直接结束：
+							//   game.js:15503  if(result&&result.bool==false){ ...event.finish(); return; }
+							//   ⇒ **content 根本不会被执行**，因此 content 不需要、也不应该再判一次"是否发动"。
+							//
+							// ★★ 曾经踩的坑（已修）：content 里自己又写了一个 chooseBool，并把它写成**单 step**
+							//   顺序执行。但 content 在一次触发里**只执行一次**（引擎主循环 41806 之后
+							//   event.step++ 就进下一步；触发事件在 15485 "step 2" 收尾），于是：
+							//     · 自写的 chooseBool 返回后继续往下跑，
+							//     · chooseTarget 只是**创建**了事件、还没等玩家选，
+							//     · 函数尾部 reaches 隐式守卫（parsex 补的 if(event.step==1){event.finish();return;}）
+							//   ⇒ 选人环节被跳过，「策」永远发不出去（实测症状：开局给不了策）。
+							//   「创建事件」与「等结果」必须分成两个 step —— 见下方 step 0 / step 1。
+							// ── 放弃时也要落闸：用引擎的 oncancel 钩子 ──
+							// 玩家在引擎的"是否发动"询问里点"取消"时，content **完全不执行**
+							// （game.js:15503 直接 event.finish(); return;），所以 content 里那句
+							// `player.storage.mgj_dingce_done = true` 落不了闸。
+							// 而 trigger 同时挂了 gameStart 与 gameDrawAfter 两个时机 ⇒
+							// 玩家一放弃，第二个时机（gameDrawAfter）在 filter 里仍看到 done 为假，
+							// 于是**再问一遍**。引擎为此提供了 oncancel：
+							//   game.js:15504  if(info.oncancel) info.oncancel(trigger,player);
+							oncancel: function (event, player) {
+								if (player.storage) player.storage.mgj_dingce_done = true;
+								game.log(player, '放弃了发动', '#g【定策】');
+							},
 							content: function () {
-								if (player.storage.mgj_dingce_done) { event.finish(); return; }
-								// ★ 主提示与副提示必须用 '###' 分隔写在一个字符串里：
-								//   chooseBool 的字符串参数统一走 get.evtprompt(next,str)
-								//   （game.js:60394-60408），而它只有两种分支：
-								//     · 已设过 prompt ⇒ 写进 prompt2；
-								//     · 未设过 prompt 且 str 不以 '###' 开头 ⇒ 直接 set('prompt', str)。
-								//   若像这样传两个独立字符串，第二条会走 else 把第一条**覆盖掉** ——
-								//   主提示"是否发动【定策】？"根本不会显示，只剩长说明。
-								//   写法必须是 '主提示###副提示'（60399-60403 解析）。
-								player.chooseBool('是否发动【定策】？###将「策」交给一名其他角色：你与其相互间无法造成伤害；放弃发动则本局此技能不再生效。')
-									.set('ai', function () { return true; });
-								if (!result || !result.bool) {
-									// 玩家放弃：落闸，本局不再询问，也不给任何人「策」
-									player.storage.mgj_dingce_done = true;
-									game.log(player, '放弃了发动', '#g【定策】');
-									event.finish();
-									return;
-								}
+								'step 0'
+								// 能走到这里 = 玩家已确认发动，直接选人。
+								// 不用 'step N' 之外的隐式写法：步骤标记必须顶格在函数体最前。
+								player.storage.mgj_dingce_done = true;
+								// ★ 这里**不能**再兜底给下家 —— 旧实现在未选目标时强塞下家，
+								//   那是"可选"改动前留下的补丁，会把玩家刚刚做出的放弃选择又推翻。
 								player.chooseTarget('选择一名其他角色获得「策」', function (card, player, target) {
 									return target != player;
 								}).set('ai', function () { return 1; });
-								// ★ 这里**不能**再兜底给下家 —— 旧实现在未选目标时强塞下家，
-								//   那是"可选"改动前留下的补丁，会把玩家刚刚做出的放弃选择又推翻。
-								player.storage.mgj_dingce_done = true;
+								'step 1'
 								if (result && result.targets && result.targets.length) {
 									var target = result.targets[0];
 									target.addMark('mgj_ce', 1);
