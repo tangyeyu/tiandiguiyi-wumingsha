@@ -452,6 +452,46 @@ for (const [sk, blk] of skillEntries) {
   });
 }
 
+/* ───────────────── C14. 死亡时机的技能缺 forceDie ───────────────── */
+// 实测症状：「定策·解策」在阵亡时该问"是否移除「策」"，实战里询问从不出现、零报错。
+// 根因：引擎对死亡玩家会整体挡掉触发 ——
+//   game.js:40316-40329  createTrigger(name,skill,player,event){
+//       if((player.isOut()||player.removed)&&!info.forceOut) return;
+//       if(player.isDead()&&!info.forceDie) return;        ← 40320
+//   }
+//   而 die 的 content 时序（game.js:21064 起）是：
+//     21109 player.classList.add('dead')   ← 先标记死亡
+//     21150 player.changeHp(-hp).forceDie=true
+//     21155 event.trigger('die')           ← 才派发触发
+//   ⇒ {player:'die'} 这个时机本质上就是"玩家已经死了"的时刻，没有 forceDie 的技能
+//     永远不会被创建 trigger。「dieBefore」同理（也在 add('dead') 之后派发）。
+//
+// 为什么要单独一条规则：本项目已经踩过两次同一个坑（原 mgj_lixue、mgj_ce_remove），
+//   而 C8 只校验"事件名是否存在"、C1 只校验"能否编译"，都不会发现这一族问题。
+//
+// 判据（保守，避免误报）：skill 块里出现 `trigger: { player: 'die' }` 或
+//   `trigger: { player: ['die', ...] }`（即 player 侧含 'die'/'dieBefore'），
+//   且块内没有 `forceDie: true` ⇒ WARN。
+//   注意**不**检查 'dieAfter' —— 它是伤害结算完才派发的时机，且 lib.skill.global 里的
+//   全局 dieAfter 技能（如引擎自己的 _lianhuan 系列）本就靠 forceDie 自行声明，
+//   把它算进来会造成误报。
+for (const [sk, blk] of skillEntries) {
+  const code = stripCommentsOnly(blk);
+  const tb = /(?<![\w$.])trigger\s*:\s*\{[\s\S]{0,200}?\}/.exec(code);
+  if (!tb) continue;
+  const triggerText = tb[0];
+  // 只认 player 侧的死亡时机：player:'die' / player:['die',...] / player:'dieBefore'
+  const playerSideDie = /player\s*:\s*(?:'die'|"die"|'dieBefore'|"dieBefore"|\[[^\]]*['"]die(Before)?['"][^\]]*\])/.test(triggerText);
+  if (!playerSideDie) continue;
+  if (/forceDie\s*:\s*true/.test(code)) continue;
+  W('C14', `技能 \`${sk}\` 挂在死亡时机（trigger.player 含 'die'）但没有 forceDie:true —— `
+    + `引擎 createTrigger 对已死亡玩家直接 return（game.js:40320），而 die 时机的玩家`
+    + `必然已是 dead 状态（game.js:21109 先 add('dead')、21155 才 trigger('die')）`
+    + `⇒ 该技能整体不会触发、其询问/结算永不出现`, {
+    hint: '在该技能块里加 forceDie: true（同 mgj_lixue / mgj_ce_remove 的写法）',
+  });
+}
+
 /* ───────────────── 输出 ───────────────── */
 const byCode = (c) => findings.filter((f) => f.code === c);
 const errs = findings.filter((f) => f.level === 'ERROR');
@@ -513,6 +553,10 @@ if (JSON_OUT) {
   const c12 = byCode('C12');
   mark('C12 铁索传导', c12.length === 0,
     c12.length === 0 ? '闪电免伤/触发类 filter 均已排除铁索传导（notLink）' : `${c12.length} 处未排除铁索传导`);
+
+  const c14 = byCode('C14');
+  mark('C14 死亡时机 forceDie', c14.length === 0,
+    c14.length === 0 ? '挂在死亡时机（player 侧 die）的技能均已声明 forceDie' : `${c14.length} 处缺 forceDie（死亡时不会触发）`);
 
   L.push('');
   if (findings.length === 0) {

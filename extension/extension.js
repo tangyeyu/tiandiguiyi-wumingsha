@@ -353,6 +353,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						mgj_ce_remove: {
 							sub: true,
 							popup: false,
+							// ── forceDie:true 是必须的（与 mgj_lixue 同源，同一个坑的第二次出现）──
+							// die 的 content 时序（game.js:21064 起）：
+							//   21109  player.classList.add('dead')      ← 先标记死亡
+							//   21150  player.changeHp(-hp).forceDie=true
+							//   21155  event.trigger('die')             ← 才触发本技能
+							// 也就是说 {player:'die'} 这个时机**本质上就是"玩家已经死了"的时刻**。
+							// 而 createTrigger 对死亡玩家直接 return：
+							//   game.js:40320  if(player.isDead()&&!info.forceDie) return;
+							// ⇒ 没有 forceDie 时本技能整体不触发，「是否移除「策」」的询问永不出现。
+							// （边界：濒死但尚未真正 die 时玩家不算 dead，闸门放行、技能正常 ——
+							//   所以旧版只在"真正阵亡"这条路上失效，而那正是它唯一有意义的场景。）
+							forceDie: true,
 							trigger: { player: 'die' },
 							filter: function (event, player) {
 								return isSoul(player) && findCeTarget() != null;
