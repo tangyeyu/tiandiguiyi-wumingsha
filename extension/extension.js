@@ -53,8 +53,10 @@
 //  B5  mgj_boost     event.damage += 1 改的是引擎不读的字段
 //                    → 改为 trigger.num += 1（game.js:41674 伤害值为 event.num）。
 //  B6  mgj_lixue     漏 loseHpEnd → 「失去体力」不触发。已补。
-//  B7  mgj_ce_bound  无技能定义的裸标记（取不到 intro，无法显示）
-//                    → 改用 player.storage.mgj_ce_bound。
+//  B7  定策的"已决定"闸门  无技能定义的裸标记（取不到 intro，无法显示）
+//                    → 改用 player.storage 上的一个布尔位（现名 mgj_dingce_done；
+//                      B18 之前叫 mgj_ce_bound，"bound"在改为可选后已不再准确，
+//                      因为它记录的是"玩家做过决定"而非"是否成功交出「策」"）。
 //  B8  效果④命名 mgj_eff4_perm 含「永久」却会被消耗 —— 属命名瑕疵、无行为影响，
 //                    按「只修 bug」原则**未改名**，保留原标记名以免影响既有存档/录像。
 //  B9  mgj_ce_remove 在 die 事件内做玩家交互 —— 风险项而非已证缺陷，
@@ -102,6 +104,23 @@
 //                    故改为 去掉 forced + 显式 locked:true。
 //                    同时按卡面原文重写 mgj_zhuce_info / mgj_lixue_info
 //                    （原 mgj_zhuce_info 是自行编的措辞，与卡面不符）。
+//  B18 mgj_dingce   给「策」改为**可选**（用户需求）。原 forced:true 使开局强制选人，
+//                    且 content 在未选目标时会兜底把「策」塞给下家 —— 两处都让玩家
+//                    没有"不给"的权利。改法与 B17 一致：去掉 forced、保留 locked，
+//                    由引擎在触发时走 chooseBool 询问（game.js:15415）。
+//                    连带三处必须同步，否则会裂：
+//                      ① 闸门语义变了 —— 旧 storage.mgj_ce_bound 只在"成功给出"时才置 true，
+//                         而 trigger 挂了 gameStart + gameDrawAfter 两个时机，
+//                         玩家一旦选择放弃，第二个时机必然再问一遍。
+//                         故改为 player.storage.mgj_dingce_done（记录"已决定"，含放弃）。
+//                      ② 去掉"未选则兜底给下家"—— 那是强制时代的补丁，
+//                         会把玩家刚做出的放弃选择推翻。
+//                      ③ content 改成单 step 顺序执行：parsex 在找不到任何 'step N' 时
+//                         会补 `if(event.step==1){event.finish();return;}`
+//                         （parsex-model.mjs:56），只有第 0 步会被执行，
+//                         若把选人放在 'step 1' 则永远跑不到。
+//                    卡面 mgj_dingce_info 与 characterIntro 同步为"你可以…；放弃则本局
+//                    此技能不再生效"。
 // ============================================================
 game.import("extension", function (lib, game, ui, get, ai, _status) {
 	return {
@@ -167,14 +186,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						], ['ext:天地归一/zhuan_caomao.jpg']],
 					},
 					characterIntro: {
-						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你选择一名其他角色令其获得「策」，你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你与「策」各摸X+1张牌（X为「策」的效果数，至多4）。',
+						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你可以选择一名其他角色令其获得「策」（放弃发动则本技能本局不再生效），你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你与「策」各摸X+1张牌（X为「策」的效果数，至多4）。',
 						zhuan_caomao: '转·曹髦。<br>决境：每轮开始时，令全场各摸一张牌，并将各自摸到的那张转为闪电对其自己使用（判定区已有闪电者跳过）；有人在闪电判定时你摸牌；你自己的闪电判定成功时免伤、清空全场判定区的闪电并永久失去决境。<br>奇技：锁定技，回合结束时夺取本回合未被你伤害过的角色各一张牌；受伤时可弃判定区牌免伤；有人受≥2点伤害时，你可摸X（体力值）或Y（全场判定区牌数）张。<br>讨贼：锁定技，每轮开始可把任意牌压入牌堆底，累计超过体力上限后即可无视次数与距离使用牌堆底的牌。',
 					},
 					translate: {
 						'tiandiguiyi': '天地归一',
 						'mouguojia_soul': '谋郭嘉·魂',
 						'mgj_dingce': '定策',
-						'mgj_dingce_info': '锁定技。游戏开始时，你选择一名其他角色令其获得「策」标记。当你死亡时，你可以选择是否移除「策」。你与拥有「策」的角色相互间无法造成伤害。',
+						'mgj_dingce_info': '锁定技。游戏开始时，你可以选择一名其他角色，令其获得「策」标记；若你放弃发动，本局此技能不再生效。当你死亡时，你可以选择是否移除「策」。你与拥有「策」的角色相互间无法造成伤害。',
 						'mgj_zhuce': '铸策',
 						'mgj_zhuce_info': '回合开始时，你给「策」添加以下其中一项效果：1.回合开始时，恢复一点体力 2.回合开始时，执行一个额外的出牌阶段。 3.当你使用造成伤害时，若此牌指定的目标数为1，则此牌造成的伤害+1 4.跳过一次弃牌阶段（前三个选项限一次并永久存在）',
 						'mgj_lixue': '沥血',
@@ -215,7 +234,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 					skill: {
 						// ============ 定策 ============
 						mgj_dingce: {
-							forced: true,
+							locked: true,
+							// ── 给「策」改为**可选**行为（去掉 forced）────────────────────
+							// 与 B17（沥血）同一套写法：`locked` 与 `forced` 是两个正交字段 ——
+							//   get.is.locked()（game.js:64837-64845）只决定技能**分类**（在技能栏
+							//   显示「锁定技」字样、不被"封非锁定技"的效果封掉）；
+							//   是否**强制发动**只看 forced：game.js:15415
+							//   `if(!event.revealed&&!info.forced)` 不满足才走 chooseBool 询问分支。
+							// 去掉 forced ⇒ 开局会给一次「是否发动【定策】」的选择：
+							//   选"取消"= 本局不把「策」交给任何人（技能保持未生效）；
+							//   选"确定"= 才进入选人。卡面文案同步改成"你可以…"。
+							//
 							// ── 触发时机（实测修正）──────────────────────────────
 							// 原写法 { global:'gameStart', player:'enterGame' } 两半都可能失效：
 							//  · enterGame：game.js:44881 triggerEnter 只在 addFellow / restorePlayer
@@ -224,42 +253,61 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//    取决于那一刻本技能是否已注册进 lib.hook.globaltrigger
 							//    （addSkillTrigger 在 addSkill 时注册，时机可能更晚）
 							// 实测现象：技能已挂到玩家身上、content 可编译、闸门为真，
-							// 但 mgj_ce_bound 始终为 false —— 即 content 一次都没执行过。
+							// 但标记始终未写 —— 即 content 一次都没执行过。
 							//
 							// 加固：加 gameDrawAfter 兜底 —— 它在开局 step 6（game.gameDraw）之后，
-							// 必然晚于玩家初始化与技能挂载。mgj_ce_bound 保证只会真正选一次，
-							// 因此多挂一个时机不会重复触发。
+							// 必然晚于玩家初始化与技能挂载。
+							// ★ 两个时机都可能派发 ⇒ 必须有"已决定"闸门，否则玩家会被问两次。
+							//   注意闸门要记录的是**决定**而不是"是否给出成功"：
+							//   玩家选择放弃时同样要落闸，否则 gameDrawAfter 会再问一遍。
 							trigger: { global: ['gameStart', 'gameDrawAfter'], player: 'enterGame' },
 							filter: function (event, player) {
 								// 去掉原来的 event.name 白名单 —— trigger 已限定时机，
 								// 而原白名单只放行 gameStart / enterGame，会把 gameDrawAfter 兜底挡掉。
 								// 同时给 storage 加保险（避免 storage 未初始化时抛错）。
 								return !!(player.hasSkill('mgj_dingce') &&
-									player.storage && !player.storage.mgj_ce_bound);
+									player.storage && !player.storage.mgj_dingce_done);
 							},
 							// 步骤标记一律写在本函数体顶层（不嵌套在 if/else 内）。
 							// 这样在 parsex 的**两条分支**下都能正确编译：
 							//   · finalParsex=='old' 分支（game.js:12072-12090）：纯正则替换、无 try/catch
 							//   · Legacy() 分支（game.js:12094-12133）：带 try/catch，非法替换会被静默跳过
 							// generator 写法只在 Legacy 分支可用，old 分支会把解构参数 { player } 当成函数体切错位。
+							//
+							// ★★ 不用 'step N' 分段，改为单 step 顺序执行（与 mgj_zhuce 的多步写法不同，理由如下）：
+							//   'step 0' 只放 chooseBool 时，第 1 步读到的是"没有 step 标记"的隐式行为 ——
+							//   parsex 在找不到任何 'step N' 时会补
+							//   `if(event.step==1){event.finish();return;}`（parsex-model.mjs:56），
+							//   即**只跑第 0 步就结束**，"确定"之后的选人永远不会执行。
+							//   单 step 顺序执行能同时规避这个陷阱与 result 跨步串值问题。
 							content: function () {
-								'step 0'
+								if (player.storage.mgj_dingce_done) { event.finish(); return; }
+								// ★ 主提示与副提示必须用 '###' 分隔写在一个字符串里：
+								//   chooseBool 的字符串参数统一走 get.evtprompt(next,str)
+								//   （game.js:60394-60408），而它只有两种分支：
+								//     · 已设过 prompt ⇒ 写进 prompt2；
+								//     · 未设过 prompt 且 str 不以 '###' 开头 ⇒ 直接 set('prompt', str)。
+								//   若像这样传两个独立字符串，第二条会走 else 把第一条**覆盖掉** ——
+								//   主提示"是否发动【定策】？"根本不会显示，只剩长说明。
+								//   写法必须是 '主提示###副提示'（60399-60403 解析）。
+								player.chooseBool('是否发动【定策】？###将「策」交给一名其他角色：你与其相互间无法造成伤害；放弃发动则本局此技能不再生效。')
+									.set('ai', function () { return true; });
+								if (!result || !result.bool) {
+									// 玩家放弃：落闸，本局不再询问，也不给任何人「策」
+									player.storage.mgj_dingce_done = true;
+									game.log(player, '放弃了发动', '#g【定策】');
+									event.finish();
+									return;
+								}
 								player.chooseTarget('选择一名其他角色获得「策」', function (card, player, target) {
 									return target != player;
 								}).set('ai', function () { return 1; });
-								'step 1'
-								var target = null;
+								// ★ 这里**不能**再兜底给下家 —— 旧实现在未选目标时强塞下家，
+								//   那是"可选"改动前留下的补丁，会把玩家刚刚做出的放弃选择又推翻。
+								player.storage.mgj_dingce_done = true;
 								if (result && result.targets && result.targets.length) {
-									target = result.targets[0];
-								}
-								else {
-									// 未选（或超时）：兜底给下家
-									var nb = player.getNext();
-									if (nb && nb != player) target = nb;
-								}
-								if (target) {
+									var target = result.targets[0];
 									target.addMark('mgj_ce', 1);
-									player.storage.mgj_ce_bound = true;
 									game.log(player, '令', target, '获得了标记', '#g【策】');
 								}
 								event.finish();
