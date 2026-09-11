@@ -589,8 +589,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//
 							//   只挂 changeHp 也顺带避免了重复计数：若同时挂 damageEnd 与 changeHp，
 							//   一次伤害会摸两次牌（damageEnd 一次、changeHp 一次）。
-							//   代价：多点伤害/多点回复会按"每次体力变动"各触发一次（酒杀=2 次），
-							//   这与卡面「体力值发生变动时」的字面读法一致。
+							//
+							// ── 「变动一次只摸一张」（决定性确认，game.js）────────────────
+							// 多点伤害/回复在引擎里是**整点一次结算**，不是逐点循环：
+							//   · damage 内容里只有一处 player.changeHp(-num,false)（20833），
+							//     num 是这次伤害的总点数 ⇒ 3→1 这种 2 点伤害只产生 1 次 changeHp
+							//   · recover 内容里只有一处 player.changeHp(num,false)（20924）
+							//   · loseHp 内容里只有一处 player.changeHp(-num)（20945）
+							// 所以"一次变动 = 一次 changeHp = 摸一次牌"，无需额外去重。
+							// 反证：全库其它 `player.hp=` 赋值只有 20991（changeHp 内容内部）、
+							//   23660/35645/39037（初始化 / 重生 / 读档恢复）—— 真实体力变动
+							//   一律经 changeHp，不存在绕开它直接改 hp 的战斗路径。
 							//
 							// ★ forceDie:true 是必须的：引擎在 createTrigger 里对死亡玩家直接 return
 							//   （game.js:40320 `if(player.isDead()&&!info.forceDie) return;`），
