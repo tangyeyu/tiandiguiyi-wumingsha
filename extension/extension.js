@@ -696,7 +696,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (event.nature != 'thunder') return false;
 								var c = event.card;
 								if (!c) return false;
-								return (c.viewAs || c.name) == 'shandian';
+								if ((c.viewAs || c.name) != 'shandian') return false;
+								// ★★ 铁索连环传播过来的伤害必须排除。
+								//   卡面写的是「当你**进行闪电判定**时判定成功」——只有自己头上那张闪电
+								//   判定成功造成的伤害才算渡劫；别人被闪电劈中后经铁索传导到自己身上的
+								//   那一下不算（否则会被链式误触，直接永久丢掉决境）。
+								//   引擎机制（game.js:34766-34795 内部技能 _lianhuan）：
+								//     链条把原始伤害的 cards / card / nature **原样**转给下家
+								//     （event._args=[trigger.num,trigger.nature,trigger.cards,trigger.card]），
+								//     所以传导伤害身上同样挂着那张闪电牌与 thunder 属性 —— 光看牌名分不出来。
+								//   唯一的可靠判据是父事件名：原始伤害的父事件不是 _lianhuan*，
+								//   传导伤害的父事件正是 _lianhuan / _lianhuan2。
+								//   引擎自己就是这么判的（game.js:34809 用 trigger.getParent().notLink()），
+								//   这里直接复用引擎提供的 event.notLink()（game.js:32253-32255）。
+								return event.notLink();
 							},
 							content: function () {
 								'step 0'
@@ -767,41 +780,40 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var c = node.childNodes[i];
 									if (!c || !c.name) continue;
 									if (c.classList && (c.classList.contains('removing') || c.classList.contains('feichu'))) continue;
+									// 与 content 的道具可用性保持一致：真的弃不掉的牌不算「可以选择」
+									if (!lib.filter.canBeDiscarded(c, player, player)) continue;
 									return true;
 								}
 								return false;
 							},
 							content: function () {
 								'step 0'
-								// ★ 不用 chooseToDiscard('j',…) —— 它的内部（game.js:16701-16709）会跑
-								//   lib.filter.cardDiscardable，判定不通过的牌会被
-								//   card.uncheck('chooseToDiscard') **灰掉、点不动**；
-								//   而判定区的**转化牌**（addJudge({name:…},[card]) 造出来的那张，
-								//   实物牌 .name 仍是原牌名、真名在 .viewAs 里）在这条链上容易判 false
-								//   ⇒ 实测症状「弃置不了判定区里的转化闪电」。
-								//   这里改为自己枚举判定区 DOM 节点（引擎的 getCards 也是按
-								//   node.judges 枚举的，game.js:24086-24092）→ chooseCard + 自己的
-								//   filterCard → 再 discard，整条链不经过 cardDiscardable / uncheck。
-								var node = player.node && player.node.judges;
-								var list = [];
-								if (node) {
-									for (var i = 0; i < node.childNodes.length; i++) {
-										var c = node.childNodes[i];
-										if (!c || !c.name) continue;
-										if (c.classList && (c.classList.contains('removing') || c.classList.contains('feichu'))) continue;
-										list.push(c);
-									}
-								}
-								if (!list.length) { event.finish(); return; }
-								event.cmJudge = list;
-								player.chooseCard('j', '奇技：弃置一张判定区内的牌，并免疫此伤害')
-									.set('filterCard', function (card) {
-										return _status.event.cmJudge && _status.event.cmJudge.contains(card);
+								// ★★ 判定区必须走 choosePlayerCard，不能用 chooseCard。
+								//   实测根因：chooseCard 只认手牌/装备两个区 ——
+								//     ① 提示词拼装（game.js:17907-17909）只处理 position=='h'（手牌）
+								//        与 =='e'（装备），**'j' 没有任何分支**；
+								//     ② 内容函数 chooseCard（game.js:17877）从头到尾不读 event.position 去建
+								//        卡牌按钮，也就是说 'j' 这个位置参数被静默忽略 →
+								//        对话框里根本不会出现判定区的牌，玩家点不到任何东西。
+								//   判定区的选择器只有 choosePlayerCard（game.js:18459-18468 / 18614-18623 /
+								//   18793-18802 三处都是 choosePlayerCard），它自己有
+								//   `else if(event.position[i]=='j')` 分支，会 build「判定区」标题 + 那些牌。
+								//   本扩展自己的奇技①「夺取一张牌」用的 gainPlayerCard('hej') 也是同一族。
+								//   filterButton 用 get.position(button.link)=='j'——引擎里判断一张牌的区
+								//   就是 get.position 的固定用法。
+								player.choosePlayerCard(player, 'j', '奇技：弃置一张判定区内的牌，并免疫此伤害')
+									.set('filterButton', function (button) {
+										return get.position(button.link) == 'j';
 									})
-									.set('ai', function (card) { return 10 - get.value(card); });
+									.set('ai', function (button) { return 10 - get.value(button.link); });
 								'step 1'
+								// 判定区的牌必须用 lose 送进弃牌堆，不能走 discard()：
+								//   lose 的合法区检查是 getCards('hejsx')（game.js:26226，**含 'j'**），
+								//   而 discard→lose 同样能走通；但 lose 的内容会调 ui.updatej(player)
+								//   （game.js:20638）把判定区的 DOM 节点真正摘掉，这才是清理判定区的正路。
+								//   实物牌 .name 与转化名 .viewAs 都不用管：lose 只按 DOM 节点移动。
 								if (result.bool && result.cards && result.cards.length) {
-									player.discard(result.cards);
+									player.lose(result.cards, ui.discardPile, 'visible');
 									// 防伤的唯一不变量写法：取消**触发源事件**
 									// （idiom.mjs 查「防止伤害」：全库 19 处 16 种变体，
 									//   唯一都出现的就是 trigger.cancel()）

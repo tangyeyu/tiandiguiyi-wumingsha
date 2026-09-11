@@ -32,7 +32,7 @@ import path from 'node:path';
 import {
   parsexOld, parsexElse, extractCompiledFields, extractObjectBlock, topLevelKeys,
   matchBrace, lineOf, stripCommentsAndStrings, topLevelDeclarations,
-  referencesName, declaresLocally, SKILL_FIELDS, CARD_FIELDS,
+  referencesName, declaresLocally, SKILL_FIELDS, CARD_FIELDS, COMMENT_RE,
 } from './parsex-model.mjs';
 
 /* ───────────────── 参数 ───────────────── */
@@ -392,6 +392,66 @@ for (const [sk, blk] of skillEntries) {
   }
 }
 
+/* ───────────────── C11. 判定区不能用 chooseCard ───────────────── */
+// 实测症状：奇技受伤免伤时，对话框里看不到判定区的牌，**点不到任何东西**，零报错。
+// 根因：chooseCard 只认手牌/装备两个区，'j' 被静默忽略 ——
+//   ① 提示词拼装（game.js:17907-17909）只有 position=='h'（手牌）与 =='e'（装备）
+//      两个分支，'j' 没有分支；
+//   ② 内容函数 chooseCard（game.js:17877-17961）从头到尾不读 event.position
+//      去建卡牌按钮 ⇒ 'j' 这个位置参数被丢掉，判定区的牌根本不会进对话框。
+//   判定区的选择器只有 choosePlayerCard（game.js:18459-18468 / 18614-18623 /
+//   18793-18802 三处都是它，自己有 `else if(event.position[i]=='j')` 分支）。
+// 判据：`chooseCard('j'…` 字样。排除 choosePlayerCard（它自带 'j' 分支，是对的）。
+for (const [sk, blk] of skillEntries) {
+  for (const m of blk.matchAll(/([A-Za-z_$][\w$]*)\s*\.\s*chooseCard\s*\(\s*['"]j['"]/g)) {
+    if (m[1] === 'choosePlayerCard') continue;
+    E('C11', `技能 \`${sk}\` 用 \`${m[1]}.chooseCard('j', …)\` 选判定区的牌 —— `
+      + `chooseCard 的提示词拼装只处理 'h'/'e'，内容函数也不读 position 去建按钮 `
+      + `⇒ 'j' 被静默忽略、判定区的牌不会出现在对话框里、玩家点不到任何东西（零报错）`, {
+      hint: "判定区改用 player.choosePlayerCard(player, 'j', '<提示>')，"
+        + "再用 .set('filterButton', button => get.position(button.link) == 'j')（引擎自己的用法）",
+    });
+  }
+}
+
+/* ───────────────── C12. 闪电伤害判定漏了排除铁索传导 ───────────────── */
+// 实测症状：别人被闪电劈中 → 铁索连环把伤害传到自己身上 → 误触「闪电判定成功」，
+//   直接永久失去技能（决境），且零报错。
+// 根因：内部技能 _lianhuan（game.js:34766-34795）传播时把原始伤害**原样**转给下家：
+//   event._args = [trigger.num, trigger.nature, trigger.cards, trigger.card]
+//   ⇒ 传导后的伤害事件同样带 nature='thunder' 与那张闪电牌，光看牌名/属性分不出来。
+//   唯一可靠判据是父事件名：原始伤害父事件不是 _lianhuan*，传导伤害父事件正是
+//   _lianhuan / _lianhuan2。引擎自己就这么判（game.js:34809 用 trigger.getParent().notLink()），
+//   并对外提供 event.notLink()（game.js:32253-32255）。
+//
+// 判据（技能块级）：块里出现「闪电池名」+「nature 比较」⇒ 该技能在响应闪电雷伤；
+//   若代码里没有任何 notLink / _lianhuan 排除 ⇒ WARN 提示人工确认。
+//
+// ★ 这里必须用 stripCommentsOnly 而不是 stripCommentsAndStrings：
+//   后者会把字符串字面量一起抹掉（'shandian' → ''），判据永远匹配不到 —— 实测踩过。
+//   注释仍必须剥掉，否则注释里提到 notLink 会造成漏报。
+const stripCommentsOnly = (text) => {
+  const literals = [];
+  const masked = text.replace(COMMENT_RE, (match, _comment, literal) => {
+    if (literal === undefined) return ' ';
+    literals.push(literal);
+    return `\u0000${literals.length - 1}\u0000`;
+  });
+  const codeOnly = masked.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, ' ');
+  return codeOnly.replace(/\u0000(\d+)\u0000/g, (_, i) => literals[Number(i)]);
+};
+for (const [sk, blk] of skillEntries) {
+  const code = stripCommentsOnly(blk);
+  if (!/shandian/.test(code)) continue;
+  if (!/nature\s*[!=]==?\s*['"]/.test(code)) continue;
+  if (/notLink|_lianhuan/.test(code)) continue;
+  W('C12', `技能 \`${sk}\` 响应「闪电 + 雷属性伤害」但没排除铁索连环传导 —— `
+    + `链条会把原始伤害的 card/nature 原样传给下家（game.js:34766-34795），`
+    + `别人的闪电经铁索传导到自己身上会被误判成本人闪电判定成功`, {
+    hint: '在触发该伤害的 filter 里加 return event.notLink()（引擎 game.js:32253；它自己也在 34809 这么用）',
+  });
+}
+
 /* ───────────────── 输出 ───────────────── */
 const byCode = (c) => findings.filter((f) => f.code === c);
 const errs = findings.filter((f) => f.level === 'ERROR');
@@ -445,6 +505,14 @@ if (JSON_OUT) {
 
   const c10 = byCode('C10');
   mark('C10 canUse 参数', c10.length === 0, c10.length === 0 ? '无「目标误当忽略」的调用' : `${c10.length} 处可疑`);
+
+  const c11 = byCode('C11');
+  mark('C11 判定区选择器', c11.length === 0,
+    c11.length === 0 ? '判定区的牌均走 choosePlayerCard（chooseCard 不支持判定区）' : `${c11.length} 处用 chooseCard 选判定区`);
+
+  const c12 = byCode('C12');
+  mark('C12 铁索传导', c12.length === 0,
+    c12.length === 0 ? '闪电免伤/触发类 filter 均已排除铁索传导（notLink）' : `${c12.length} 处未排除铁索传导`);
 
   L.push('');
   if (findings.length === 0) {
