@@ -36,6 +36,7 @@ node atlas/tools/lint-extension.mjs extension/extension.js --app <app> --index a
 | **`lint-extension.mjs`** | ★ **统一体检入口**，九项检查一次跑完，带退出码与 JSON 输出 |
 | `verify-extension.mjs` | C1 专项视图（只查双分支编译），输出更细的逐字段表格 |
 | `mock-load.mjs` | 离线 mock 加载扩展，复刻引擎注册链，断言 `lib.character` / `lib.skill` / `lib.translate` 的落地结果 |
+| **`probe-loop-termination.mjs`** | ★ **循环终止性回归探针**：复刻 `goto(n)` / `redo()` 的事件循环语义，跑真实 content 判断循环是否有界（正例 + 把 bug 放回去的反例）——见「毁堰⑥伤害无限循环」那类事故 |
 
 ### 索引（体检的下游数据基础）
 

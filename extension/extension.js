@@ -2123,7 +2123,24 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (result.bool && result.targets && result.targets.length) {
 									result.targets[0].damage(1);
 									event.lkX--;
-									event.redo();
+									// ★ 这里必须 goto(3)（回到「再问一次 + 检查剩余点数」那一步），**不能 redo()**。
+									//   引擎语义（当次核实 game.js）：
+									//     goto(n)  game.js:31959-31961  this.step = n - 1
+									//     redo()   game.js:31962-31964  this.step--
+									//     step 的 +1 发生在 content **返回之后** —— game.js:41806 event.step++
+									//   ⇒ goto(3) 让下一轮以 step 3 重入（先查 lkX、再重新询问）；
+									//     而 redo() 让**本步（step 4）原地重跑**：既不重新询问、也不再检查 lkX。
+									//   ⇒ redo() 的死循环成因（原先就是这行）：
+									//     · content 的 result 形参取自 event._result（game.js:41676），
+									//       而 damage 事件**不写 event.result**（damage content 全文无 result 赋值），
+									//       引擎只在 event.result 为真时才回填父事件（game.js:41735-41738）
+									//       ⇒ result 永远是 step 3 那次 chooseTarget 的旧结果，result.bool 恒真；
+									//     · 唯一的终止判据「lkX 归零/取消」写在 step 3，redo() 回不到 step 3
+									//       ⇒ lkX 一路减到负数也没人看，伤害对同一目标无限重复。
+									//     每次伤害都会触发抗晋·同轨（damageEnd）⇒ 实机表现就是
+									//     「可以无限让其他角色的区域失效，而且取消不掉」。
+									//   ⇒ 改 goto(3) 后：每 1 点伤害都要重新指定目标（可取消），lkX 归零即结束。
+									event.goto(3);
 								}
 								else { event.finish(); return; }
 							},
