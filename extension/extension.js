@@ -325,7 +325,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'dy_wuku_qibei': '武库·启备',
 						// 子技能（sub）也补 _info：lint C5 只对 sub 技能降级为 INFO，
 						// 缺 _info 会被判 WARN（C5 的判据是 lib.translate[skill+'_info'] 是否存在）。
-						'dy_wuku_qibei_info': '出牌阶段或响应时：消耗一个「备」标记，将你区域内的一张牌当非装备牌使用（出牌阶段自选牌名）或打出（响应时按当前索要的牌名产出）。使用与打出共用每回合一次的额度。',
+						'dy_wuku_qibei_info': '出牌阶段或响应时：消耗一个「备」标记，将你区域内的一张牌当非装备牌使用或打出（出牌阶段自选牌名；响应与无懈可击时按当前索要的牌名产出）。使用与打出共用每回合一次的额度。',
 						'dy_pozhu': '破竹',
 						'dy_pozhu_info': '出牌阶段限一次，你可以选择一种你手牌里有的牌名：本回合你使用此牌无次数和距离限制。若你本回合使用此牌造成过伤害，本局游戏你使用此牌名无次数和距离限制。',
 						'dy_pozhu_turn': '破竹·势',
@@ -1835,7 +1835,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   用户看到的两个「武库·启备」入口由此合一。
 						dy_wuku_qibei: {
 							audio: 'wuku',
-							enable: ['phaseUse', 'chooseToRespond'],
+							// ★ enable 必须是函数（game.js:42917/42925 当次核实）：数组 enable 走
+							//   contains(event.name)——出牌阶段窗口名是 'chooseToUse'，数组里没有
+							//   它 ⇒ 按钮永不出现（用户报的「出牌阶段用不了」）；字符串 'phaseUse'
+							//   有 event.type=='phase' 特判（42926），函数形态自行覆盖三个窗口：
+							enable: function (event) {
+								if (event.name == 'chooseToUse' && event.type == 'phase') return true;  // 出牌阶段按钮
+								if (event.name == 'chooseToUse' && event.type == 'wuxie') return true;  // 无懈响应窗口（16261/33424）
+								if (event.name == 'chooseToRespond') return true;                       // 杀/闪等打出
+								return false;
+							},
 							filter: function (event, player) {
 								if (player.storage.dy_wk_used) return false;
 								return player.countMark('dy_bei') > 0 && player.countCards('he') > 0;
@@ -1891,6 +1900,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//    `typeof info.viewAs!='function'` 才比对），函数形态跳过该比对，
 							//    故 filterCard 就是响应侧的"有活可干"判定。
 							viewAs: function (cards, player) {
+								// 无懈窗口索要的就是无懈可击（窗口按 type=='wuxie' 过滤）
+								if (_status.event && _status.event.type == 'wuxie') {
+									return { name: 'wuxie', isCard: true };
+								}
 								var need = '';
 								try {
 									var args = _status.event && _status.event._args;
@@ -1904,6 +1917,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.removeMark('dy_bei', 1);
 								player.storage.dy_wk_used = 1;
 								game.log(player, '消耗了一个「备」，将一张牌当非装备牌打出');
+							},
+							// ★ 无懈路径走的是 useCard（"使用"无懈）而非 respond ⇒ onrespond 不
+							//   触发；扣减挂 onuse（game.js:25524 chooseToUse 结果回填时调用）。
+							//   出牌阶段按钮路径 result.card 为空，不进此分支（扣减在 content step 3）。
+							onuse: function (result, player) {
+								if (result.card && result.card.name == 'wuxie') {
+									player.removeMark('dy_bei', 1);
+									player.storage.dy_wk_used = 1;
+									game.log(player, '消耗了一个「备」，将一张牌当无懈可击使用');
+								}
 							},
 							ai: { order: 4, result: { player: 1 }, respondSha: true, respondShan: true },
 						},
