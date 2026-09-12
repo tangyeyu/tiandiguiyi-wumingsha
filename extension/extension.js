@@ -1801,6 +1801,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// ============ 名·杜预 ============
 						// 武库①：全场有人装备牌 → +1「备」（上限5）并摸一张
 						// ★ 时机用 global:'equipAfter'（shiji.js:4957 同款先例）
+						// ★「上限为5」只约束「备」标记（2026-09-13 用户校准）：
+						//   备满后上装备仍摸牌，只是不再获得标记（原先 filter 把
+						//   摸牌和标记绑死，备满后什么都不给——用户实测报错点）。
 						dy_wuku: {
 							locked: true,
 							forced: true,
@@ -1808,10 +1811,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							direct: true,
 							trigger: { global: 'equipAfter' },
 							filter: function (event, player) {
-								return player.isIn() && player.countMark('dy_bei') < 5;
+								return player.isIn();
 							},
 							content: function () {
-								player.addMark('dy_bei', 1);
+								if (player.countMark('dy_bei') < 5) {
+									player.addMark('dy_bei', 1);
+								}
 								player.draw(1);
 							},
 						},
