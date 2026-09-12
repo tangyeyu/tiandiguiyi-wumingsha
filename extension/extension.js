@@ -249,7 +249,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						tdgx_luxun: '名·陆逊。<br>连营：锁定技，失去非使用打出的牌获「谦」；没有牌时摸至体力上限；出牌阶段开始时按「谦」数摸牌并弃谦；结束阶段视使用打出与弃牌情况摸牌。<br>炽炎：出牌阶段限X次（X为轮次），弃等同体力值的牌造成火焰伤害并可视为使用铁索连环；结束阶段按以此法造成的伤害对连环角色扩大打击。<br>谦逊：锁定技，受伤时按「谦」与体力上限的关系判定摸牌/减伤/免疫。<br>彰才（神威技）：发动后本局使用牌无次数和距离限制。',
 						tdgx_liubei: '名·刘备。<br>仁德：开局3个「仁」，回合开始收回全部「仁」，出牌阶段按「仁」数摸牌；有「仁」者被指定为目标时可付代价令此牌无效（每回合限一次）；结束阶段可把「仁」分配给不同角色。<br>章武（神威技）：回合开始时额外执行一个出牌阶段且本回合使用牌无次数限制。<br>兴汉（主公技）：开局多得1个「仁」；蜀势力角色对你造成的伤害免疫（每名角色每回合限1次）。',
 						tdgx_duyu: '名·杜预。<br>武库：场上有人装备牌时获「备」并摸牌（上限5）；出牌阶段可耗「备」把一张牌当非装备牌使用（每回合限一次）。<br>破竹：每回合限一次选一种牌名，本回合无次数距离限制地使用；若以此造成过伤害则本局永久解锁。<br>振鞘：锁定技，装备武器时使用牌无法被响应；造成伤害时可令其免疫并夺取其装备区所有牌；用【杀】造成伤害时伤害+X（攻击范围-体力值，最小0）。<br>灭吴（神威技）：摸等同于「备」数+体力上限的牌。',
-						tdgx_lukang: '名·陆抗。<br>毁堰：出牌阶段废除自己的一个区域换对应效果（武器/防具/进攻马/防御马/判定区/手牌区，六选一，各有一次性效果）。<br>抗晋：被体力不低于你的角色伤害时可弃牌判定免伤；造成伤害后可让一名角色的区域状态本轮与你相同，并恢复自己一个装备栏。<br>背水（神威技）：恢复所有已废除的区域。',
+						tdgx_lukang: '名·陆抗。<br>毁堰：出牌阶段废除自己的一个区域换对应效果（武器/防具/进攻马/防御马/判定区/手牌区，六选一，各有一次性效果）。<br>抗晋：被体力不低于你的角色伤害时可弃牌判定免伤；造成伤害后可让一名角色的区域状态本轮与你相同，并恢复自己一个装备栏（每回合限两次）。<br>背水（神威技）：恢复所有已废除的区域。',
 					},
 					translate: {
 						'tiandiguiyi': '天地归一',
@@ -344,7 +344,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'lkang_hy_h3': '毁堰·疾',
 						'lkang_hy_mod': '毁堰·阵',
 						'lkang_kangjin': '抗晋',
-						'lkang_kangjin_info': '锁定技，当你受到体力值不小于你的角色造成的伤害时，你可以弃置一张牌并进行判定：若结果为红色，你免除此次伤害。当你造成伤害后，你可以令一名角色的一个区域状态本轮与你相同，然后你选择恢复你装备区内的一个栏位。',
+						'lkang_kangjin_info': '锁定技，当你受到体力值不小于你的角色造成的伤害时，你可以弃置一张牌并进行判定：若结果为红色，你免除此次伤害。当你造成伤害后，你可以令一名角色的一个区域状态本轮与你相同，然后你选择恢复你装备区内的一个栏位（每回合限两次）。',
 						'lkang_kangjin_copy': '抗晋·同轨',
 						'lkang_kangjin_clear': '抗晋·复轨',
 						'lkang_beishui': '背水',
@@ -1287,6 +1287,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 每回合开始的记账复位（幂等；多名持有者各自执行一次无害）：
 						//  · mlb_rd_used / mlb_xh_log —— 刘备两个「每回合限一次」
+						//  · lkang_kj_restore —— 陆抗抗晋「每回合回复区域限两次」
 						//  · 回合拥有者的 lx_cy_used —— 陆逊炽炎「出牌阶段限X次」
 						tdgx_turn_reset: {
 							forced: true,
@@ -1303,6 +1304,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (!p.storage) continue;
 									if (p.storage.mlb_rd_used) p.storage.mlb_rd_used = 0;
 									if (p.storage.mlb_xh_log) p.storage.mlb_xh_log = {};
+									if (p.storage.lkang_kj_restore) p.storage.lkang_kj_restore = 0;
 								}
 								if (trigger.player && trigger.player.storage) {
 									trigger.player.storage.lx_cy_used = 0;
@@ -2369,6 +2371,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									game.log(t, '的手牌区本轮失效（手牌不可使用）');
 								}
 								'step 3'
+								// ★ 每回合回复区域限两次（2026-09-13 用户校准）：计数
+								//   storage.lkang_kj_restore 由 tdgx_turn_reset 在每个回合开始清零。
+								//   用尽后本次同轨只保留前面的复制部分，跳过恢复。
+								event.lkUsed = player.storage.lkang_kj_restore || 0;
+								if (event.lkUsed >= 2) { event.finish(); return; }
 								var z = player.storage.lkang_zone || {};
 								var keys = [];
 								var labels = [];
@@ -2379,7 +2386,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!keys.length) { event.finish(); return; }
 								event.lkRKeys = keys;
 								player.chooseControl(labels.concat('cancel2'))
-									.set('prompt', '抗晋：恢复你装备区内的一个栏位')
+									.set('prompt', '抗晋：恢复你装备区内的一个栏位（每回合限两次，还可恢复' + (2 - event.lkUsed) + '次）')
 									.set('ai', function () { return 0; });
 								'step 4'
 								// ★ 取消恢复只跳过恢复本身（此时复制已按卡面生效），不得回退到第一个栏位
@@ -2387,6 +2394,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								var idx = (result && typeof result.index == 'number') ? result.index : -1;
 								if (idx < 0 || idx >= event.lkRKeys.length) { event.finish(); return; }
 								var key = event.lkRKeys[idx];
+								player.storage.lkang_kj_restore = event.lkUsed + 1;
 								player.storage.lkang_zone[key] = false;
 								player.enableEquip(key.slice(1) - 0);
 								player.update();
