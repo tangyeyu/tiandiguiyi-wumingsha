@@ -1191,7 +1191,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							mod: {
 								// 返回 num+99 而非 Infinity —— 无名杀里大量先例用大常数，
 								// 避免 Infinity 参与某些数值比较时出边界问题
-								cardUsable: function (card, player, num) { return num + 99; },
+								// ★★ num 可能是 undefined：**牌定义里没有 usable 字段时，引擎传进来的就是 undefined**
+								//   （锦囊/装备全都没有这个字段；全库只有【杀】standard.js:91 和【酒】extra.js:62 写了 usable:1）。
+								//   旧写法 `num + 99` 会算出 NaN，而引擎的守卫 `if(typeof num!='number')`
+								//   放行 NaN（NaN 的 typeof 就是 'number'，game.js:33228），
+								//   紧接着 `player.countUsed(card) < NaN` 恒为 false（game.js:33231）
+								//   ⇒ **这张牌直接变成「不可使用」**。事故三连（陆逊只能用酒杀 / 陆抗判定区失效后
+								//   用不了锦囊 / 自制武将有时只能用基本牌）同一个根因，详见 docs/四将开发笔记 §10。
+								cardUsable: function (card, player, num) {
+									if (num === false) return false;      // 别的技能已判定「不可使用」⇒ 不覆盖它
+									if (typeof num != 'number') num = 0;  // 牌本身没有次数上限 ⇒ 当作 0 再加
+									return num + 99;
+								},
 								targetInRange: function (card, player, target) { return true; },
 							},
 						},
@@ -1527,7 +1538,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							sub: true,
 							mod: {
-								cardUsable: function (card, player, num) { return num + 99; },
+								// ★ 必须防 num === undefined（锦囊/装备没有 usable 字段）：
+								//   直接 num+99 会得 NaN ⇒ 引擎 `countUsed(card) < NaN` 恒 false ⇒ 该牌不可使用。
+								//   本技能常驻在名·陆逊的武将数组里 ⇒ 症状就是「陆逊只能使用酒和杀」。见笔记 §10。
+								cardUsable: function (card, player, num) {
+									if (num === false) return false;
+									if (typeof num != 'number') num = 0;
+									return num + 99;
+								},
 								targetInRange: function (card, player, target) { return true; },
 							},
 						},
@@ -1724,7 +1742,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							sub: true,
 							mod: {
-								cardUsable: function (card, player, num) { return num + 99; },
+								// ★ 同 lx_zhangcai_mod：num 可能是 undefined（锦囊/装备没有 usable），
+								//   直接 +99 得 NaN ⇒ 章武发动后反而用不了锦囊/装备。见笔记 §10。
+								cardUsable: function (card, player, num) {
+									if (num === false) return false;
+									if (typeof num != 'number') num = 0;
+									return num + 99;
+								},
 							},
 						},
 						// 兴汉（主公技）：蜀势力伤害免疫（每名角色每回合限 1 次）
@@ -1910,7 +1934,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							sub: true,
 							mod: {
 								cardUsable: function (card, player, num) {
-									if (player.storage.dy_pz_name && (card.viewAs || card.name) == player.storage.dy_pz_name) return num + 99;
+									if (player.storage.dy_pz_name && (card.viewAs || card.name) == player.storage.dy_pz_name) {
+										// ★ 选中的牌名若没有 usable 字段（锦囊/装备全都没有），num 就是 undefined
+										//   ⇒ 必须先归零再加，否则 NaN 会让「本应无次数限制」的牌反而不可用。见笔记 §10。
+										if (num === false) return false;
+										if (typeof num != 'number') num = 0;
+										return num + 99;
+									}
 								},
 								targetInRange: function (card, player, target) {
 									if (player.storage.dy_pz_name && (card.viewAs || card.name) == player.storage.dy_pz_name) return true;
@@ -1926,7 +1956,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							sub: true,
 							mod: {
 								cardUsable: function (card, player, num) {
-									if (player.storage.dy_pz_perm && player.storage.dy_pz_perm.contains(card.viewAs || card.name)) return num + 99;
+									if (player.storage.dy_pz_perm && player.storage.dy_pz_perm.contains(card.viewAs || card.name)) {
+										// ★ 同 dy_pozhu_turn：num 可能是 undefined ⇒ 先归零再加，避免 NaN（见笔记 §10）
+										if (num === false) return false;
+										if (typeof num != 'number') num = 0;
+										return num + 99;
+									}
 								},
 								targetInRange: function (card, player, target) {
 									if (player.storage.dy_pz_perm && player.storage.dy_pz_perm.contains(card.viewAs || card.name)) return true;
@@ -2208,7 +2243,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if ((player.storage.lkang_zone && player.storage.lkang_zone.judge) || (player.storage.lkang_copy && player.storage.lkang_copy.judge)) return true;
 								},
 								cardUsable: function (card, player, num) {
-									if ((player.storage.lkang_zone && player.storage.lkang_zone.judge) || (player.storage.lkang_copy && player.storage.lkang_copy.judge)) return num + 99;
+									if ((player.storage.lkang_zone && player.storage.lkang_zone.judge) || (player.storage.lkang_copy && player.storage.lkang_copy.judge)) {
+										// ★ 判定区失效的「使用牌无次数限制」正是在这里失效成反效果的地方：
+										//   锦囊/装备没有 usable 字段 ⇒ num 是 undefined ⇒ 旧写法 num+99 = NaN
+										//   ⇒ 引擎 `countUsed(card) < NaN` 恒 false ⇒ 锦囊/装备全部不可使用
+										//   （用户报的「陆抗判定区失效后无法使用锦囊牌」）。见笔记 §10。
+										if (num === false) return false;
+										if (typeof num != 'number') num = 0;
+										return num + 99;
+									}
 								},
 								cardEnabled: function (card, player) {
 									if ((player.storage.lkang_zone && player.storage.lkang_zone.hand) || (player.storage.lkang_copy && player.storage.lkang_copy.hand)) {

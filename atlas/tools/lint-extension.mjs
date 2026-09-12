@@ -25,6 +25,12 @@
  *   C6   标记可见性（markSkill 无 intro 时不渲染）
  *   C7   跨包重名（需 --index）
  *   C8   触发时机（trigger 里的事件名是否真实存在，需 --index）
+ *   C9   转化牌名字比较漏 viewAs
+ *   C10  canUse 的第二个参数是「目标」不是「是否忽略」
+ *   C11  判定区不能用 chooseCard
+ *   C12  闪电伤害判定漏了排除铁索传导
+ *   C14  死亡时机的技能缺 forceDie
+ *   C15  cardUsable mod 对 undefined 的 num 做算术（NaN ⇒ 牌变「不可使用」）
  */
 
 import fs from 'node:fs';
@@ -492,6 +498,41 @@ for (const [sk, blk] of skillEntries) {
   });
 }
 
+/* ───────────────── C15. cardUsable mod 对 undefined 的 num 做算术 ───────────────── */
+// 实测症状（2026-09-12 三连报，零报错）：
+//   · 名·陆逊（彰才·纵横常驻武将数组）只能使用【酒】【杀】
+//   · 名·陆抗判定区失效后锦囊/装备全灰（「使用牌无次数限制」反而变成不能用）
+//   · 其它自制武将在彰才/章武/讨贼/破竹 任一 mod 生效时只能用基本牌
+// 根因：引擎 `lib.filter.cardUsable`（game.js:33214-33238）把 `info.usable` 作为初值交给 mod 链，
+//   而**牌定义里没有 usable 字段时它就是 undefined** —— 锦囊/装备全都没有该字段；
+//   全库只有【杀】card/standard.js:91 与【酒】card/extra.js:62 写了 usable:1
+//   （这正好解释了"为什么偏偏只剩酒和杀能用"）。
+//   mod 里写 `num + 99` ⇒ undefined + 99 = NaN；引擎守卫
+//     if(typeof num!='number'){ return (typeof num=='boolean')?num:true; }   // 33228
+//   **放行 NaN**（NaN 的 typeof 就是 'number'），紧接着
+//     if(player.countUsed(card)<num) return true;                            // 33231
+//   `countUsed(card) < NaN` 恒为 false ⇒ 该牌被判定为「不可使用」。
+// 判据（保守、低误报）：技能块里出现 `cardUsable: function (..., num) {`，函数体内对 num 做
+//   `+` / `-` 算术，但函数体内没有任何 `typeof num`（或 Number.isFinite(num)）判据 ⇒ WARN。
+for (const [sk, blk] of skillEntries) {
+  const code = stripCommentsOnly(blk);
+  const m = /cardUsable\s*:\s*function\s*\(([^)]*)\)\s*\{/.exec(code);
+  if (!m) continue;
+  const numName = m[1].split(',').map((s) => s.trim())[2];   // (card, player, num)
+  if (!numName) continue;
+  const body = code.slice(m.index, matchBrace(code, m.index + m[0].length - 1) + 1);
+  const arith = new RegExp(`\\b${numName}\\s*[+\\-]\\s*[\\w.$]`).test(body);
+  if (!arith) continue;
+  const guarded = new RegExp(`typeof\\s+${numName}\\s*[!=]=?\\s*['"]number|isFinite\\s*\\(\\s*${numName}\\b`).test(body);
+  if (guarded) continue;
+  W('C15', `技能 \`${sk}\` 的 cardUsable mod 直接对 \`${numName}\` 做算术，且没有 \`typeof ${numName}\` 判据 —— `
+    + `牌定义里没有 usable 字段时引擎传进来的就是 undefined（锦囊/装备全都没有），`
+    + `\`undefined + 99\` 得到 NaN；引擎的 \`typeof num!='number'\` 守卫放行 NaN（game.js:33228），`
+    + `随后 \`player.countUsed(card) < NaN\`（game.js:33231）恒为 false ⇒ **这张牌变成「不可使用」**`, {
+    hint: `改成先归零再加：if (num === false) return false; if (typeof ${numName} != 'number') ${numName} = 0; return ${numName} + 99;`,
+  });
+}
+
 /* ───────────────── 输出 ───────────────── */
 const byCode = (c) => findings.filter((f) => f.code === c);
 const errs = findings.filter((f) => f.level === 'ERROR');
@@ -557,6 +598,10 @@ if (JSON_OUT) {
   const c14 = byCode('C14');
   mark('C14 死亡时机 forceDie', c14.length === 0,
     c14.length === 0 ? '挂在死亡时机（player 侧 die）的技能均已声明 forceDie' : `${c14.length} 处缺 forceDie（死亡时不会触发）`);
+
+  const c15 = byCode('C15');
+  mark('C15 次数上限 mod', c15.length === 0,
+    c15.length === 0 ? 'cardUsable 对 undefined 的 num 均有 typeof 判据' : `${c15.length} 处 num 算术缺判据（会让牌「不可使用」）`);
 
   L.push('');
   if (findings.length === 0) {
