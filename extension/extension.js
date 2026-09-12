@@ -2104,11 +2104,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!z.hand) { keys.push('hand'); labels.push('手牌区（分配X点伤害，X为体力值-1）'); }
 								event.lkKeys = keys;
 								event.lkLabels = labels;
-								player.chooseControl(labels)
+								player.chooseControl(labels.concat('cancel2'))
 									.set('prompt', '毁堰：选择一个区域令其失效')
 									.set('ai', function () { return 0; });
 								'step 1'
-								var idx = (result && typeof result.index == 'number') ? result.index : 0;
+								// ★ 'cancel2' 是官方可取消 chooseControl 的标准写法（clan.js:2018-2033）：
+								//   点「取消」时 result.control=='cancel2'，而旧写法读 result.index 并在
+								//   非 number 时回退 idx=0 —— 取消后照样废除第一个区域，即「不能取消」。
+								if (result && result.control == 'cancel2') { event.finish(); return; }
+								var idx = (result && typeof result.index == 'number') ? result.index : -1;
+								if (idx < 0 || idx >= event.lkKeys.length) { event.finish(); return; }
 								var key = event.lkKeys[idx];
 								var z = player.storage.lkang_zone;
 								z[key] = true;
@@ -2322,11 +2327,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								'step 1'
 								if (!result.bool || !result.targets || !result.targets.length) { event.finish(); return; }
 								event.lkT = result.targets[0];
-								player.chooseControl(event.lkLabels)
+								player.chooseControl(event.lkLabels.concat('cancel2'))
 									.set('prompt', '抗晋：选择复制状态的区域（你已失效的区域）')
 									.set('ai', function () { return 0; });
 								'step 2'
-								var idx = (result && typeof result.index == 'number') ? result.index : 0;
+								// ★ 取消（'cancel2'）应中止本次同轨：复制还没发生，直接结束即可。
+								//   旧写法取消后回退 idx=0，照样复制第一个区域（「不能取消」）。
+								if (result && result.control == 'cancel2') { event.finish(); return; }
+								var idx = (result && typeof result.index == 'number') ? result.index : -1;
+								if (idx < 0 || idx >= event.lkKeys.length) { event.finish(); return; }
 								var key = event.lkKeys[idx];
 								var t = event.lkT;
 								if (!t.storage.lkang_copy) t.storage.lkang_copy = {};
@@ -2366,11 +2375,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (z.e4) { keys.push('e4'); labels.push('防御马'); }
 								if (!keys.length) { event.finish(); return; }
 								event.lkRKeys = keys;
-								player.chooseControl(labels)
+								player.chooseControl(labels.concat('cancel2'))
 									.set('prompt', '抗晋：恢复你装备区内的一个栏位')
 									.set('ai', function () { return 0; });
 								'step 4'
-								var idx = (result && typeof result.index == 'number') ? result.index : 0;
+								// ★ 取消恢复只跳过恢复本身（此时复制已按卡面生效），不得回退到第一个栏位
+								if (result && result.control == 'cancel2') { event.finish(); return; }
+								var idx = (result && typeof result.index == 'number') ? result.index : -1;
+								if (idx < 0 || idx >= event.lkRKeys.length) { event.finish(); return; }
 								var key = event.lkRKeys[idx];
 								player.storage.lkang_zone[key] = false;
 								player.enableEquip(key.slice(1) - 0);
