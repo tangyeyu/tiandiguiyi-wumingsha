@@ -325,7 +325,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'dy_wuku_qibei': '武库·启备',
 						// 子技能（sub）也补 _info：lint C5 只对 sub 技能降级为 INFO，
 						// 缺 _info 会被判 WARN（C5 的判据是 lib.translate[skill+'_info'] 是否存在）。
-						'dy_wuku_qibei_info': '出牌阶段或响应时：消耗一个「备」标记，将你区域内的一张牌当非装备牌使用或打出（出牌阶段自选牌名；响应与无懈可击时按当前索要的牌名产出）。使用与打出共用每回合一次的额度。',
+						'dy_wuku_qibei_info': '出牌阶段或响应时（含无懈可击）：你可以消耗一个「备」标记，将一张牌当一张基本牌或普通锦囊牌使用或打出（从当前可合法使用的牌名中选择）。每回合限一次。',
+						'dy_wuku_qibei_used': '启备·已用',
+						'dy_wuku_qibei_used_info': '武库·启备本回合已使用的标记，回合结束自动消失。',
 						'dy_pozhu': '破竹',
 						'dy_pozhu_info': '出牌阶段限一次，你可以选择一种你手牌里有的牌名：本回合你使用此牌无次数和距离限制。若你本回合使用此牌造成过伤害，本局游戏你使用此牌名无次数和距离限制。',
 						'dy_pozhu_turn': '破竹·势',
@@ -1308,8 +1310,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								if (trigger.player && trigger.player.storage) {
 									trigger.player.storage.lx_cy_used = 0;
-									// 杜预「武库」的限次（使用与打出**共用一个额度**，故手工记账）
-									trigger.player.storage.dy_wk_used = 0;
 								}
 							},
 						},
@@ -1824,120 +1824,92 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.draw(1);
 							},
 						},
-						// 武库·启备：消耗「备」把一张牌当非装备牌**使用**（每回合限一次）
-						// ★ 卡面「一张区域内的牌」落地为 手牌+装备区：chooseCard 不支持判定区
-						//   （atlas C11：'j' 没有分支，判定区只能走 choosePlayerCard）。
-						// ★ 转化用 get.autoViewAs({name}, [实体牌])（ddd.js:103 同族写法）；
-						//   取消使用则不消耗「备」（removeMark 放在确认成功之后）。
-						//
-						// ★★ 限次改为手工记账 storage.dy_wk_used（原为 usable:1）：
-						//   「使用」与「打出」必须**共用一个额度**（卡面写的是"出牌阶段限一次"），
-						//   而打出走的是 viewAs 响应路径，**不经过** enabled/usable 闸门检查
-						//   （usable 只在 game.js:33066 的 trigger 判定链里生效），
-						//   故引擎的 usable 字段管不住它 ⇒ 两处统一查同一个计数器。
-						//   复位点挂在既有的 tdgx_turn_reset（每回合开始，含回合拥有者）。
-						// ── 合并说明（2026-09-13）：原 dy_wuku_use / dy_wuku_respond 两个技能
-						//   合并为一个 dy_wuku_qibei —— enable 双形态：出牌阶段按**技能按钮**
-						//   走 content（useSkill 的 content 在有 viewAs 时照常执行，
-						//   game.js:25642 当次核实）；响应窗口按 **viewAs 虚拟牌**走
-						//   filterCard/viewAs/onrespond（aozhan_sha game.js:34153 同款）。
-						//   用户看到的两个「武库·启备」入口由此合一。
+						// 武库·启备（实现整体对齐手杀 sp_duyu 的「灭吴」，shiji.js spmiewu 当次核实）：
+						// 消耗一个「备」，将一张牌当一张基本牌或普通锦囊牌使用或打出。
+						// · enable:['chooseToUse','chooseToRespond']（官方数组形态）：
+						//   chooseToUse 命中出牌阶段窗口与无懈窗口，chooseToRespond 命中杀/闪打出。
+						// · chooseButton 把「牌名选择」内嵌进技能流程：dialog 只列当前窗口
+						//   **合法**的牌名（event.filterCard 逐名校验，vcard 对传递，
+						//   规避 dialog.add 裸字符串数组的崩溃）；backup.viewAs 用选中的名字。
+						// · 扣费与「每回合一次」标记在 backup.precontent 结算（官方同款）：
+						//   removeMark('dy_bei',1) + addTempSkill('dy_wuku_qibei_used')，
+						//   后者回合结束自动过期（addTempSkill 缺省 phaseAfter/phaseBefore）。
+						// · 来源牌 position 'he'（卡面「区域内的一张牌」=手牌+装备区；
+						//   chooseCard 不支持判定区，atlas C11）。
 						dy_wuku_qibei: {
 							audio: 'wuku',
-							// ★ enable 必须是函数（game.js:42917/42925 当次核实）：数组 enable 走
-							//   contains(event.name)——出牌阶段窗口名是 'chooseToUse'，数组里没有
-							//   它 ⇒ 按钮永不出现（用户报的「出牌阶段用不了」）；字符串 'phaseUse'
-							//   有 event.type=='phase' 特判（42926），函数形态自行覆盖三个窗口：
-							enable: function (event) {
-								if (event.name == 'chooseToUse' && event.type == 'phase') return true;  // 出牌阶段按钮
-								if (event.name == 'chooseToUse' && event.type == 'wuxie') return true;  // 无懈响应窗口（16261/33424）
-								if (event.name == 'chooseToRespond') return true;                       // 杀/闪等打出
+							enable: ['chooseToUse', 'chooseToRespond'],
+							filter: function (event, player) {
+								if (!player.countMark('dy_bei') || !player.countCards('he') || player.hasSkill('dy_wuku_qibei_used')) return false;
+								for (var i of lib.inpile) {
+									var type = get.type2(i);
+									if ((type == 'basic' || type == 'trick') && event.filterCard({ name: i }, player, event)) return true;
+								}
 								return false;
 							},
-							filter: function (event, player) {
-								if (player.storage.dy_wk_used) return false;
-								return player.countMark('dy_bei') > 0 && player.countCards('he') > 0;
+							chooseButton: {
+								dialog: function (event, player) {
+									var list = [];
+									for (var i of lib.inpile) {
+										var name = i;
+										if (name == 'sha') {
+											for (var j of lib.inpile_nature) {
+												if (event.filterCard({ name: name, nature: j }, player, event)) list.push(['基本', '', 'sha', j]);
+											}
+										}
+										else if (get.type2(name) == 'trick' && event.filterCard({ name: name }, player, event)) list.push(['锦囊', '', name]);
+										else if (get.type(name) == 'basic' && event.filterCard({ name: name }, player, event)) list.push(['基本', '', name]);
+									}
+									return ui.create.dialog('武库·启备', [list, 'vcard']);
+								},
+								filter: function (button, player) {
+									return _status.event.getParent().filterCard({ name: button.link[2] }, player, _status.event.getParent());
+								},
+								check: function (button) {
+									if (_status.event.getParent().type != 'phase') return 1;
+									var player = _status.event.player;
+									if (['wugu', 'zhulu_card', 'yiyi', 'lulitongxin', 'lianjunshengyan', 'diaohulishan'].contains(button.link[2])) return 0;
+									return player.getUseValue({ name: button.link[2], nature: button.link[3] });
+								},
+								backup: function (links, player) {
+									return {
+										filterCard: true,
+										audio: 'wuku',
+										popname: true,
+										check: function (card) { return 8 - get.value(card); },
+										position: 'he',
+										viewAs: { name: links[0][2], nature: links[0][3] },
+										precontent: function () {
+											player.removeMark('dy_bei', 1);
+											player.addTempSkill('dy_wuku_qibei_used');
+										},
+									};
+								},
+								prompt: function (links, player) {
+									return '武库·启备：将一张牌当做' + (get.translation(links[0][3]) || '') + get.translation(links[0][2]) + '使用或打出';
+								},
 							},
-							filterCard: function (card, player) {
-								return player.countMark('dy_bei') > 0 && !player.storage.dy_wk_used;
+							hiddenCard: function (player, name) {
+								if (!lib.inpile.contains(name)) return false;
+								var type = get.type2(name);
+								return (type == 'basic' || type == 'trick') && player.countMark('dy_bei') > 0 && player.countCards('he') > 0 && !player.hasSkill('dy_wuku_qibei_used');
 							},
-							position: 'he',
-							content: function () {
-								'step 0'
-								player.chooseCard('he', '武库：选择一张牌，将其当非装备牌使用', true)
-									.set('ai', function (card) { return 5 - get.value(card); });
-								'step 1'
-								if (!result.bool || !result.cards || !result.cards.length) { event.finish(); return; }
-								event.dyCard = result.cards[0];
-								var names = [];
-								for (var i in lib.card) {
-									var info = lib.card[i];
-									if (!info) continue;
-									var en = info.enable;
-									if (!(en == 'phaseUse' || (en && en.contains && en.contains('phaseUse')))) continue;
-									if (get.type(i, 'trick') == 'equip') continue;
-									if (!names.contains(i)) names.push(i);
-								}
-								event.dyNames = names;
-								if (!names.length) { event.finish(); return; }
-								// ★ 必须传 [list,'vcard'] 对（clan.js:235、refresh.js:4133 官方先例）：
-								//   裸字符串数组会被 dialog.add 的 else 分支（game.js:32625）拆成
-								//   buttons(item[0], item[1]) —— 牌名 'sha' 被当成按钮列表、第二个牌名
-								//   被当成按钮 type，switch 无匹配 ⇒ node 未创建 ⇒ addEventListener 崩溃。
-								player.chooseButton(['武库：选择要视为使用的牌名', [names, 'vcard']], true);
-								'step 2'
-								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
-								// vcard 按钮的 link 是 [type,'',name] 三元组，牌名取 [2]
-								event.dyName = (typeof result.links[0] == 'string') ? result.links[0] : result.links[0][2];
-								player.chooseUseTarget(get.autoViewAs({ name: event.dyName }, [event.dyCard]), '武库：选择【' + get.translation(event.dyName) + '】的目标');
-								'step 3'
-								if (result.bool) {
-									player.removeMark('dy_bei', 1);
-									player.storage.dy_wk_used = 1;
-									game.log(player, '消耗了一个「备」，将一张牌当', '#y【' + get.translation(event.dyName) + '】', '使用');
-								}
+							ai: {
+								order: 1,
+								fireAttack: true,
+								respondSha: true,
+								respondShan: true,
+								skillTagFilter: function (player) {
+									if (!player.countMark('dy_bei') || !player.countCards('he') || player.hasSkill('dy_wuku_qibei_used')) return false;
+								},
+								result: { player: 1 },
 							},
-							// ── 打出（响应期）路径：viewAs 产出「当前索要的牌名」——原版武库
-							//    "当非装备牌打出"的语义：实际用哪个由索要决定（读 _args[0].name，
-							//    全库响应调用均为 chooseToRespond({name:'sha'|'shan'})，如
-							//    hearth.js:8642 / yws.js:2388），读不到兜底 'sha'。chooseToRespond
-							//    会校验产出是否满足 filterCard（不满足会重新询问）⇒ 无法用【闪】
-							//    去顶【杀】。★ 为什么不在 viewAs 里开对话框手选牌名：viewAs 在
-							//    玩家点"确定"的 UI 回调里同步求值（game.js:58653 ok → 58671 调用），
-							//    再开对话框不安全（无先例，可能卡住响应流程）。
-							//    ★ 引擎在响应可用性判定时只拿固定 viewAs 比对（game.js:42931
-							//    `typeof info.viewAs!='function'` 才比对），函数形态跳过该比对，
-							//    故 filterCard 就是响应侧的"有活可干"判定。
-							viewAs: function (cards, player) {
-								// 无懈窗口索要的就是无懈可击（窗口按 type=='wuxie' 过滤）
-								if (_status.event && _status.event.type == 'wuxie') {
-									return { name: 'wuxie', isCard: true };
-								}
-								var need = '';
-								try {
-									var args = _status.event && _status.event._args;
-									if (args && args[0] && args[0].name) need = args[0].name;
-								} catch (e) { need = ''; }
-								return { name: need || 'sha', isCard: true };
-							},
-							prompt: '武库：消耗一个「备」，将一张牌当非装备牌打出',
-							check: function () { return 1 },
-							onrespond: function (event, player) {
-								player.removeMark('dy_bei', 1);
-								player.storage.dy_wk_used = 1;
-								game.log(player, '消耗了一个「备」，将一张牌当非装备牌打出');
-							},
-							// ★ 无懈路径走的是 useCard（"使用"无懈）而非 respond ⇒ onrespond 不
-							//   触发；扣减挂 onuse（game.js:25524 chooseToUse 结果回填时调用）。
-							//   出牌阶段按钮路径 result.card 为空，不进此分支（扣减在 content step 3）。
-							onuse: function (result, player) {
-								if (result.card && result.card.name == 'wuxie') {
-									player.removeMark('dy_bei', 1);
-									player.storage.dy_wk_used = 1;
-									game.log(player, '消耗了一个「备」，将一张牌当无懈可击使用');
-								}
-							},
-							ai: { order: 4, result: { player: 1 }, respondSha: true, respondShan: true },
+						},
+						// 启备的一次额度标记：precontent 加、回合结束自动过期（addTempSkill 缺省）
+						dy_wuku_qibei_used: {
+							charlotte: true,
+							sub: true,
+							popup: false,
 						},
 						// 破竹：选手牌里的一个牌名 → 本回合无次数距离限制；造成过伤害 → 本局永久
 						dy_pozhu: {
