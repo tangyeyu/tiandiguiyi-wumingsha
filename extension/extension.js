@@ -197,10 +197,45 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'cm_qiji', 'cm_qiji_guard', 'cm_qiji_seize',
 							'cm_taozei'
 						], ['ext:天地归一/zhuan_caomao.jpg']],
+						// ==== 2026-09-12 新增四将（手写卡校准稿）====
+						// 均为「神威技」类别首批武将，类别规则见 README「技能类别：神威技」：
+						//   初始可用 1 次；你的首次击杀令使用次数 +1（该加成每局游戏限一次）。
+						// 类别机制载体 tdgx_shenwei_kill / tdgx_turn_reset 为共用隐藏技，
+						// 必须列进每个武将的技能数组（心得 §4.3：不列进数组就不会被触发）。
+						// 暂无立绘，[4] 缺省（引擎会补空数组，展平兜底里同样处理）。
+						tdgx_luxun: ['male', 'wu', 4, [
+							'lx_lianying', 'lx_lianying_draw', 'lx_lianying_end',
+							'lx_chiyang', 'lx_chiyang_end',
+							'lx_qianxun', 'lx_zhangcai', 'lx_zhangcai_mod',
+							'tdgx_shenwei_kill', 'tdgx_turn_reset'
+						]],
+						tdgx_liubei: ['male', 'shu', 4, [
+							'mlb_rende', 'mlb_rende_reclaim', 'mlb_rende_draw',
+							'mlb_rende_nullify', 'mlb_rende_give',
+							'mlb_zhangwu', 'mlb_zhangwu_mod', 'mlb_xinghan',
+							'tdgx_shenwei_kill', 'tdgx_turn_reset'
+						]],
+						tdgx_duyu: ['male', 'qun', 4, [
+							'dy_wuku', 'dy_wuku_use',
+							'dy_pozhu', 'dy_pozhu_turn', 'dy_pozhu_perm', 'dy_pozhu_check',
+							'dy_zhenqiao', 'dy_zhenqiao_devour', 'dy_zhenqiao_boost',
+							'dy_miewu',
+							'tdgx_shenwei_kill', 'tdgx_turn_reset'
+						]],
+						tdgx_lukang: ['male', 'wu', 4, [
+							'lkang_huiyan', 'lkang_hy_w', 'lkang_hy_a', 'lkang_hy_h3', 'lkang_hy_mod',
+							'lkang_kangjin', 'lkang_kangjin_copy', 'lkang_kangjin_clear',
+							'lkang_beishui',
+							'tdgx_shenwei_kill', 'tdgx_turn_reset'
+						]],
 					},
 					characterIntro: {
 						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你可以选择一名其他角色令其获得「策」（放弃发动则本技能本局不再生效），你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你可以摸X+1张牌（X为「策」的效果数，至多4）；若场上没有「策」，你摸一张牌。',
 						zhuan_caomao: '转·曹髦。<br>决境：每轮开始时，令全场各摸一张牌，并将各自摸到的那张转为闪电对其自己使用（判定区已有闪电者跳过）；有人在闪电判定时你摸牌；你自己的闪电判定成功时免伤、清空全场判定区的闪电并永久失去决境。<br>奇技：锁定技，回合结束时夺取本回合未被你伤害过的角色各一张牌；受伤时可弃判定区牌免伤；有人受≥2点伤害时，你可摸X（体力值）或Y（全场判定区牌数）张。<br>讨贼：锁定技，每轮开始可把任意牌压入牌堆底，累计超过体力上限后即可无视次数与距离使用牌堆底的牌。',
+						tdgx_luxun: '陆逊。<br>连营：锁定技，失去非使用打出的牌获「谦」；没有牌时摸至体力上限；出牌阶段开始时按「谦」数摸牌并弃谦；结束阶段视使用打出与弃牌情况摸牌。<br>炽炎：出牌阶段限X次（X为轮次），弃等同体力值的牌造成火焰伤害并可视为使用铁索连环；结束阶段按以此法造成的伤害对连环角色扩大打击。<br>谦逊：锁定技，受伤时按「谦」与体力上限的关系判定摸牌/减伤/免疫。<br>彰才（神威技）：发动后本局使用牌无次数和距离限制。',
+						tdgx_liubei: '名·刘备。<br>仁德：开局3个「仁」，回合开始收回全部「仁」，出牌阶段按「仁」数摸牌；有「仁」者被指定为目标时可付代价令此牌无效（每回合限一次）；结束阶段可把「仁」分配给不同角色。<br>章武（神威技）：回合开始时额外执行一个出牌阶段且本回合使用牌无次数限制。<br>兴汉（主公技）：开局多得1个「仁」；蜀势力角色对你造成的伤害免疫（每名角色每回合限1次）。',
+						tdgx_duyu: '杜预。<br>武库：场上有人装备牌时获「备」并摸牌（上限5）；出牌阶段可耗「备」把一张牌当非装备牌使用（每回合限一次）。<br>破竹：每回合限一次选一种牌名，本回合无次数距离限制地使用；若以此造成过伤害则本局永久解锁。<br>振鞘：锁定技，装备武器时使用牌无法被响应；造成伤害时可令其免疫并夺取其装备区所有牌；用【杀】造成伤害时伤害+X（攻击范围-体力值，最小0）。<br>灭吴（神威技）：摸等同于「备」数+体力上限的牌。',
+						tdgx_lukang: '陆抗。<br>毁堰：出牌阶段废除自己的一个区域换对应效果（武器/防具/进攻马/防御马/判定区/手牌区，六选一，各有一次性效果）。<br>抗晋：被体力不低于你的角色伤害时可弃牌判定免伤；造成伤害后可让一名角色的区域状态本轮与你相同，并恢复自己一个装备栏。<br>背水（神威技）：恢复所有已废除的区域。',
 					},
 					translate: {
 						'tiandiguiyi': '天地归一',
@@ -243,6 +278,72 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'cm_juejing_ward': '决境·渡劫',
 						'cm_qiji_guard': '奇技·卸厄',
 						'cm_qiji_seize': '奇技·趁危',
+						// ── 2026-09-12 新增四将（武将名 / 技能名+描述 / 标记文案）──
+						'tdgx_luxun': '陆逊',
+						'tdgx_liubei': '名·刘备',
+						'tdgx_duyu': '杜预',
+						'tdgx_lukang': '陆抗',
+						'lx_lianying': '连营',
+						'lx_lianying_info': '锁定技，每当你因非使用和打出而失去牌时，你获得一个「谦」标记。当你没有牌时，你将手牌数摸至体力上限。出牌阶段开始时，你摸等同于「谦」数量的牌，并弃置所有的「谦」。结束阶段，若你使用或打出的牌数不大于你的体力值，你摸等同于你弃牌阶段弃置牌数的牌。',
+						'lx_lianying_draw': '连营·清囊',
+						'lx_lianying_end': '连营·复盘',
+						'lx_chiyang': '炽炎',
+						'lx_chiyang_info': '出牌阶段限X次（X为游戏轮次），你可以弃置等同于你当前体力值的牌，并对一名角色造成1点火焰伤害，然后你可以弃置一张牌，视为使用【铁索连环】。结束阶段，若你以此法造成的伤害不小于你的体力值，你可以对所有处于连环状态的角色造成1点火焰伤害，并弃置其装备区内的所有牌。',
+						'lx_chiyang_end': '炽炎·燎原',
+						'lx_qianxun': '谦逊',
+						'lx_qianxun_info': '锁定技，当你受到伤害时：若你的「谦」小于体力上限，你进行一次判定，若结果为红色，你摸两张牌；若你的「谦」大于体力上限，你可以弃置等同于你体力值的「谦」，令此伤害-1；若你的「谦」等于体力上限，你免疫此伤害。',
+						'lx_zhangcai': '彰才',
+						'lx_zhangcai_info': '神威技，出牌阶段，你可以发动：本局游戏剩余时间内，你使用牌无次数和距离限制。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
+						'lx_zhangcai_mod': '彰才·纵横',
+						'mlb_rende': '仁德',
+						'mlb_rende_info': '游戏开始时，你获得3个「仁」标记。回合开始时，你收回场上所有的「仁」。出牌阶段开始时，你摸等同于你身上「仁」数量的牌。当一名拥有「仁」的角色被牌指定为目标时，你可以失去1点体力或弃置两张牌，令此牌无效（每回合限一次）。结束阶段，你可以将你身上的「仁」分配给任意不同的角色。',
+						'mlb_rende_reclaim': '仁德·归心',
+						'mlb_rende_draw': '仁德·施惠',
+						'mlb_rende_nullify': '仁德·庇护',
+						'mlb_rende_give': '仁德·布仁',
+						'mlb_zhangwu': '章武',
+						'mlb_zhangwu_info': '神威技，回合开始时，你可以发动：本回合你额外执行一个出牌阶段，且本回合使用牌无次数限制。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
+						'mlb_zhangwu_mod': '章武·联营',
+						'mlb_xinghan': '兴汉',
+						'mlb_xinghan_info': '主公技，锁定技，游戏开始时，你额外获得一个「仁」。当蜀势力角色对你造成伤害时，你免疫此伤害（每名角色每回合限1次）。',
+						'dy_wuku': '武库',
+						'dy_wuku_info': '锁定技，当场上一名角色装备牌时，你获得一个「备」标记并摸一张牌（「备」上限为5）。出牌阶段限一次，你可以消耗一个「备」标记，将你区域内的一张牌当非装备牌使用。',
+						'dy_wuku_use': '武库·启备',
+						// 子技能（sub）也补 _info：lint C5 只对 sub 技能降级为 INFO，
+						// 缺 _info 会被判 WARN（C5 的判据是 lib.translate[skill+'_info'] 是否存在）。
+						'dy_wuku_use_info': '出牌阶段限一次：消耗一个「备」标记，将你区域内的一张牌当非装备牌使用。',
+						'dy_pozhu': '破竹',
+						'dy_pozhu_info': '出牌阶段限一次，你可以选择一种你手牌里有的牌名：本回合你使用此牌无次数和距离限制。若你本回合使用此牌造成过伤害，本局游戏你使用此牌名无次数和距离限制。',
+						'dy_pozhu_turn': '破竹·势',
+						'dy_pozhu_perm': '破竹·极',
+						'dy_pozhu_check': '破竹·定势',
+						'dy_zhenqiao': '振鞘',
+						'dy_zhenqiao_info': '锁定技，当你装备着武器牌时，你使用的牌无法被响应。当你造成伤害时，你可以令此伤害免疫，并获得受伤角色装备区内的所有牌。当你使用【杀】对目标造成伤害时，此伤害+X（X为你的攻击范围-你的体力值，且X最小为0）。',
+						'dy_zhenqiao_devour': '振鞘·吞甲',
+						'dy_zhenqiao_boost': '振鞘·开锋',
+						'dy_miewu': '灭吴',
+						'dy_miewu_info': '神威技，出牌阶段，你可以发动：摸X张牌（X为你的「备」标记数+你的体力上限）。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
+						'lkang_huiyan': '毁堰',
+						'lkang_huiyan_info': '出牌阶段，你可以选择一个你的区域令其失效（每个区域整局只能选择一次），并获得对应效果：武器区——你造成的伤害+1；防具区——每回合你第一次受到伤害时，免疫此伤害；进攻马栏——你使用牌无法被响应；防御马栏——你摸两张牌；判定区——你无视距离且使用牌无次数限制（判定区内的牌被弃置）；手牌区——分配X点伤害给任意角色（X为你的体力值-1，且手牌视为不可使用）。',
+						'lkang_hy_w': '毁堰·锋',
+						'lkang_hy_a': '毁堰·御',
+						'lkang_hy_h3': '毁堰·疾',
+						'lkang_hy_mod': '毁堰·阵',
+						'lkang_kangjin': '抗晋',
+						'lkang_kangjin_info': '锁定技，当你受到体力值不小于你的角色造成的伤害时，你可以弃置一张牌并进行判定：若结果为红色，你免除此次伤害。当你造成伤害后，你可以令一名角色的一个区域状态本轮与你相同，然后你选择恢复你装备区内的一个栏位。',
+						'lkang_kangjin_copy': '抗晋·同轨',
+						'lkang_kangjin_clear': '抗晋·复轨',
+						'lkang_beishui': '背水',
+						'lkang_beishui_info': '神威技，出牌阶段，你可以发动：恢复你所有已失效的区域。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
+						'tdgx_shenwei_kill': '神威·首功',
+						'tdgx_turn_reset': '神威·更始',
+						// 新增标记的文案（markSkill 渲染依赖 intro；角标文字取 标记名+'_bg'）
+						'lx_qian': '谦',
+						'lx_qian_bg': '谦',
+						'mlb_ren': '仁',
+						'mlb_ren_bg': '仁',
+						'dy_bei': '备',
+						'dy_bei_bg': '备',
 					},
 					skill: {
 						// ============ 定策 ============
@@ -1113,6 +1214,1107 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							sub: true,
 							intro: { name: '铸策·逸', content: '你的弃牌阶段开始时，移去此标记并跳过该阶段。若到你回合结束时仍未用掉，直接弃置（故至多同时存在 1 个）。' },
+						},
+
+						// ============================================================
+						// ==== 2026-09-12 新增：神威技类别机制 + 四武将 ====
+						//
+						// 类别规则（用户定义，见 README）：神威技初始使用次数为 1；
+						// 当你击杀一名角色时使用次数 +1，该加成每局游戏限触发一次
+						// （即整局至多 2 次）。首杀充能为锁定效果。
+						//
+						// 记账位：player.storage.tdgx_sw[技能名] = 剩余次数（init 置 1）
+						//        player.storage.tdgx_sw_bonus[技能名] = 是否已领过首杀加成
+						// 各神威技的 filter 检查剩余次数、content 开头扣减 —— 引擎的
+						// limited:true 只支持「一次性」，不适用于「1+首杀」模型，故手工记账。
+						// ============================================================
+						tdgx_shenwei_kill: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							direct: true,
+							// source 侧挂 dieAfter：event.source 即击杀者（先例 refresh.js:14226 等）
+							trigger: { source: 'dieAfter' },
+							filter: function (event, player) {
+								if (event.source != player) return false;
+								var list = ['lx_zhangcai', 'mlb_zhangwu', 'dy_miewu', 'lkang_beishui'];
+								for (var i = 0; i < list.length; i++) {
+									if (player.hasSkill(list[i]) && !(player.storage.tdgx_sw_bonus && player.storage.tdgx_sw_bonus[list[i]])) return true;
+								}
+								return false;
+							},
+							content: function () {
+								var list = ['lx_zhangcai', 'mlb_zhangwu', 'dy_miewu', 'lkang_beishui'];
+								for (var i = 0; i < list.length; i++) {
+									var s = list[i];
+									if (player.hasSkill(s) && !(player.storage.tdgx_sw_bonus && player.storage.tdgx_sw_bonus[s])) {
+										if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
+										if (!player.storage.tdgx_sw_bonus) player.storage.tdgx_sw_bonus = {};
+										player.storage.tdgx_sw_bonus[s] = true;
+										if (player.storage.tdgx_sw[s] == undefined) player.storage.tdgx_sw[s] = 1;
+										player.storage.tdgx_sw[s]++;
+										game.log(player, '击杀角色，', '#g【' + get.translation(s) + '】', '的使用次数+1');
+									}
+								}
+							},
+						},
+						// 每回合开始的记账复位（幂等；多名持有者各自执行一次无害）：
+						//  · mlb_rd_used / mlb_xh_log —— 刘备两个「每回合限一次」
+						//  · 回合拥有者的 lx_cy_used —— 陆逊炽炎「出牌阶段限X次」
+						tdgx_turn_reset: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							direct: true,
+							trigger: { global: 'phaseBegin' },
+							content: function () {
+								var ps = game.players.concat(game.dead || []);
+								for (var i = 0; i < ps.length; i++) {
+									var p = ps[i];
+									if (!p.storage) continue;
+									if (p.storage.mlb_rd_used) p.storage.mlb_rd_used = 0;
+									if (p.storage.mlb_xh_log) p.storage.mlb_xh_log = {};
+								}
+								if (trigger.player && trigger.player.storage) {
+									trigger.player.storage.lx_cy_used = 0;
+								}
+							},
+						},
+
+						// ============ 陆逊 ============
+						// 连营：失去牌分支 + 空手补牌分支（同一次 loseAfter 内结算）
+						// ★ 判「非使用和打出」：useCard 与 respond 的 lose 都带 type=='use'
+						//   （game.js:19152 / 20063），故 type!='use' 恰好排除使用与打出，
+						//   弃置 / 被获得 / 被弃 / 顶装等全部计入 —— 与卡面语义一致。
+						// ★ trigger 是 lose 事件（技能自身事件是 event），判 trigger.type。
+						lx_lianying: {
+							locked: true,
+							forced: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							direct: true,
+							trigger: { player: 'loseAfter' },
+							filter: function (event, player) {
+								return !!(event.cards && event.cards.length);
+							},
+							content: function () {
+								if (trigger.type != 'use') {
+									player.addMark('lx_qian', 1);
+								}
+								if (player.countCards('hej') == 0 && player.isIn()) {
+									var n = player.maxHp - player.countCards('h');
+									if (n > 0) {
+										player.draw(n);
+										game.log(player, '已没有牌，将手牌摸至体力上限');
+									}
+								}
+							},
+						},
+						// 连营·清囊：出牌阶段开始时按「谦」摸牌并全弃
+						lx_lianying_draw: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							trigger: { player: 'phaseUseBegin' },
+							filter: function (event, player) {
+								return player.countMark('lx_qian') > 0;
+							},
+							content: function () {
+								var n = player.countMark('lx_qian');
+								player.removeMark('lx_qian', n);
+								player.draw(n);
+								game.log(player, '摸了', get.cnNumber(n), '张牌并弃置了所有的「谦」');
+							},
+						},
+						// 连营·复盘：结束阶段，使用+打出数 ≤ 体力值 → 摸弃牌阶段弃置数
+						// 「弃牌阶段弃置的牌」判据：type=='discard' 且父链上有 phaseDiscard
+						// （先例 diy.js:2445 evt.type!='discard'||evt.getParent('phaseDiscard')）
+						lx_lianying_end: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							trigger: { player: 'phaseJieshuBegin' },
+							filter: function (event, player) {
+								var used = player.getHistory('useCard').length + player.getHistory('respond').length;
+								if (used > player.hp) return false;
+								var n = 0;
+								var history = player.getHistory('lose');
+								for (var i = 0; i < history.length; i++) {
+									var evt = history[i];
+									if (evt.type == 'discard' && evt.getParent('phaseDiscard') && evt.cards) n += evt.cards.length;
+								}
+								return n > 0;
+							},
+							content: function () {
+								var n = 0;
+								var history = player.getHistory('lose');
+								for (var i = 0; i < history.length; i++) {
+									var evt = history[i];
+									if (evt.type == 'discard' && evt.getParent('phaseDiscard') && evt.cards) n += evt.cards.length;
+								}
+								player.draw(n);
+								game.log(player, '摸了等同于弃牌阶段弃置牌数的', get.cnNumber(n), '张牌');
+							},
+						},
+						// 炽炎①：出牌阶段主动技，限轮次次
+						// ★ usable 只支持静态数字（game.js:15528），「X为游戏轮次」用
+						//   storage.lx_cy_used 对照 game.roundNumber 手工实现；
+						//   计数在回合开始由 tdgx_turn_reset 清零。
+						lx_chiyang: {
+							audio: 2,
+							enable: 'phaseUse',
+							filter: function (event, player) {
+								if (player.countCards('he') < player.hp) return false;
+								var used = player.storage.lx_cy_used || 0;
+								return used < game.roundNumber;
+							},
+							content: function () {
+								'step 0'
+								if (player.storage.lx_cy_used == undefined) player.storage.lx_cy_used = 0;
+								player.storage.lx_cy_used++;
+								player.chooseToDiscard('he', player.hp, '炽炎：弃置' + get.cnNumber(player.hp) + '张牌（等同于当前体力值）')
+									.set('ai', function (card) { return 6 - get.value(card); });
+								'step 1'
+								if (!result.bool || !result.cards || result.cards.length < player.hp) {
+									player.storage.lx_cy_used--;
+									event.finish(); return;
+								}
+								player.chooseTarget('炽炎：对一名角色造成1点火焰伤害', function (card, player, target) {
+									return target.isIn();
+								}).set('ai', function (target) {
+									return get.damageEffect(target, _status.event.player, _status.event.player);
+								});
+								'step 2'
+								if (result.bool && result.targets && result.targets.length) {
+									event.lxTarget = result.targets[0];
+									var dmg = event.lxTarget.damage(1, 'fire');
+									dmg.lx_cy = true;
+									player.line(event.lxTarget, 'fire');
+									game.log(player, '对', event.lxTarget, '造成了1点火焰伤害');
+								}
+								else {
+									event.finish(); return;
+								}
+								'step 3'
+								if (player.countCards('he') > 0) {
+									player.chooseToDiscard('he', 1, '炽炎：是否弃置一张牌，视为使用【铁索连环】？')
+										.set('ai', function (card) { return 8 - get.value(card); });
+								}
+								'step 4'
+								if (result && result.bool && result.cards && result.cards.length) {
+									player.chooseUseTarget({ name: 'tiesuo', isCard: true }, '炽炎：视为使用【铁索连环】');
+								}
+							},
+							ai: { order: 3, result: { player: 1 } },
+						},
+						// 炽炎·燎原：结束阶段，本回合以此法造成的火伤 ≥ 体力值 → 群伤连环角色
+						lx_chiyang_end: {
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							trigger: { player: 'phaseJieshuBegin' },
+							filter: function (event, player) {
+								var total = 0;
+								var history = player.getHistory('sourceDamage');
+								for (var i = 0; i < history.length; i++) {
+									if (history[i].lx_cy) total += history[i].num;
+								}
+								return total > 0 && total >= player.hp;
+							},
+							content: function () {
+								'step 0'
+								var ps = [];
+								for (var i = 0; i < game.players.length; i++) {
+									if (game.players[i].isIn() && game.players[i].isLinked()) ps.push(game.players[i]);
+								}
+								event.lkPs = ps;
+								if (!ps.length) { event.finish(); return; }
+								for (var i = 0; i < ps.length; i++) {
+									ps[i].damage(1, 'fire');
+								}
+								game.log(player, '对所有处于连环状态的角色造成了1点火焰伤害');
+								'step 1'
+								var ps = event.lkPs || [];
+								for (var i = 0; i < ps.length; i++) {
+									var es = ps[i].getCards('e');
+									if (es.length) ps[i].discard(es);
+								}
+							},
+						},
+						// 谦逊：三分支（< 判定摸牌 / > 可弃谦减伤 / = 免疫），锁定自动结算
+						lx_qianxun: {
+							locked: true,
+							forced: true,
+							popup: false,
+							trigger: { player: 'damageBegin' },
+							content: function () {
+								'step 0'
+								var n = player.countMark('lx_qian');
+								// 分支标记挂 event（跨步不共享局部变量）
+								if (n == player.maxHp) {
+									trigger.cancel();
+									game.log(player, '的「谦」等同于体力上限，免疫了此伤害');
+									event.finish(); return;
+								}
+								if (n < player.maxHp) {
+									event.lkJudge = true;
+									player.judge();
+								}
+								else {
+									event.lkJudge = false;
+									if (player.countMark('lx_qian') < player.hp) { event.finish(); return; }
+									player.chooseBool('谦逊：是否弃置' + get.cnNumber(player.hp) + '个「谦」，令此伤害-1？')
+										.set('ai', function () { return true; });
+								}
+								'step 1'
+								if (event.lkJudge) {
+									if (result && result.color == 'red') {
+										player.draw(2);
+										game.log(player, '判定为红色，摸两张牌');
+									}
+								}
+								else if (result.bool) {
+									player.removeMark('lx_qian', player.hp);
+									trigger.num = Math.max(0, trigger.num - 1);
+									game.log(player, '弃置了「谦」，令此伤害-1');
+								}
+							},
+						},
+						// 彰才（神威技）：发动后本局使用牌无次数与距离限制
+						lx_zhangcai: {
+							audio: 2,
+							enable: 'phaseUse',
+							skillAnimation: true,
+							animationColor: 'orange',
+							init: function (player) {
+								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
+								if (player.storage.tdgx_sw['lx_zhangcai'] == undefined) player.storage.tdgx_sw['lx_zhangcai'] = 1;
+							},
+							filter: function (event, player) {
+								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['lx_zhangcai'] > 0)
+									&& !player.hasSkill('lx_zhangcai_mod');
+							},
+							content: function () {
+								player.storage.tdgx_sw['lx_zhangcai']--;
+								player.addSkill('lx_zhangcai_mod');
+								game.log(player, '发动了神威技', '#g【彰才】', '，本局游戏使用牌无次数和距离限制');
+							},
+							ai: { order: 8, result: { player: 1 } },
+						},
+						lx_zhangcai_mod: {
+							charlotte: true,
+							sub: true,
+							mod: {
+								cardUsable: function (card, player, num) { return num + 99; },
+								targetInRange: function (card, player, target) { return true; },
+							},
+						},
+						// 「谦」标记显示壳
+						lx_qian: {
+							charlotte: true,
+							sub: true,
+							intro: { name: '谦', content: '连营的计数标记。出牌阶段开始时按数量摸牌后全部弃置；受到伤害时与体力上限比较产生不同效果。' },
+						},
+
+						// ============ 名·刘备 ============
+						// 仁德：开局发 3「仁」；主公额外 +1（兴汉的开局条款并入此处结算——
+						// 兴汉自身 zhuSkill，非主公时引擎在触发链整体跳过其效果，不会重复发）
+						// 时机三选一 + storage 闸门，同 mgj_dingce（gameStart 不保证派发、
+						// enterGame 只在 addFellow/restorePlayer 创建，gameDrawAfter 兜底）
+						mlb_rende: {
+							locked: true,
+							forced: true,
+							popup: false,
+							direct: true,
+							trigger: { global: ['gameStart', 'gameDrawAfter'], player: 'enterGame' },
+							filter: function (event, player) {
+								return !player.storage.mlb_start_done;
+							},
+							content: function () {
+								player.storage.mlb_start_done = true;
+								player.addMark('mlb_ren', 3);
+								game.log(player, '获得了三个「仁」标记');
+								if (player.isZhu2()) {
+									player.addMark('mlb_ren', 1);
+									game.log(player, '发动主公技', '#g【兴汉】', '，额外获得一个「仁」');
+								}
+							},
+						},
+						// 仁德·归心：回合开始收回全场「仁」（只遍历在世玩家；死亡者标记滞留无效果）
+						mlb_rende_reclaim: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							direct: true,
+							trigger: { player: 'phaseBegin' },
+							filter: function (event, player) {
+								for (var i = 0; i < game.players.length; i++) {
+									if (game.players[i] != player && game.players[i].hasMark('mlb_ren')) return true;
+								}
+								return false;
+							},
+							content: function () {
+								var got = 0;
+								for (var i = 0; i < game.players.length; i++) {
+									var p = game.players[i];
+									if (p != player && p.hasMark('mlb_ren')) {
+										var n = p.countMark('mlb_ren');
+										got += n;
+										p.removeMark('mlb_ren', n);
+									}
+								}
+								if (got > 0) {
+									player.addMark('mlb_ren', got);
+									game.log(player, '收回了全场的「仁」（共', get.cnNumber(got), '个）');
+								}
+							},
+						},
+						// 仁德·施惠：出牌阶段开始，按身上「仁」数摸牌
+						mlb_rende_draw: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							trigger: { player: 'phaseUseBegin' },
+							filter: function (event, player) {
+								return player.countMark('mlb_ren') > 0;
+							},
+							content: function () {
+								var n = player.countMark('mlb_ren');
+								player.draw(n);
+								game.log(player, '按「仁」的数量摸了', get.cnNumber(n), '张牌');
+							},
+						},
+						// 仁德·庇护：有「仁」者被牌指定 → 付代价令此牌无效（每回合限一次）
+						// ★ useCardToTargeted 是逐目标子事件，excluded 与父 useCard 事件共享
+						//   （game.js:19463/19487）→ 把父事件的全部目标塞进 excluded
+						//   即整张牌无效（sb.js:2463 同族写法）。非 forced：引擎先问是否发动。
+						// ★ 每回合限一次的记账位 mlb_rd_used 由 tdgx_turn_reset 复位。
+						mlb_rende_nullify: {
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							trigger: { global: 'useCardToTargeted' },
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								if (player.storage.mlb_rd_used) return false;
+								if (!event.card || event.player == player) return false;
+								var target = event.target;
+								return !!(target && target.hasMark('mlb_ren'));
+							},
+							content: function () {
+								'step 0'
+								event.lkTarget = trigger.target;
+								event.lkCard = trigger.card;
+								var controls = [];
+								if (player.countCards('he') >= 2) controls.push('弃置两张牌');
+								if (player.hp > 0) controls.push('失去一点体力');
+								if (!controls.length) { event.finish(); return; }
+								player.chooseControl(controls)
+									.set('prompt', '仁德：令指定' + get.translation(event.lkTarget) + '的【' + get.translation(event.lkCard) + '】无效（代价二选一）')
+									.set('ai', function () {
+										var cs = _status.event.controls;
+										if (cs.contains('弃置两张牌') && _status.event.player.countCards('he') > 3) return cs.indexOf('弃置两张牌');
+										return cs.length - 1;
+									});
+								'step 1'
+								var c = result && result.control;
+								if (!c) { event.finish(); return; }
+								player.storage.mlb_rd_used = 1;
+								var use = trigger.getParent();
+								if (use && use.excluded && use.targets) {
+									use.excluded.addArray(use.targets);
+								}
+								game.log(player, '发动了', '#g【仁德】', '，令', event.lkCard, '无效');
+								if (c == '弃置两张牌') event.lkDiscard = true;
+								else player.loseHp(1);
+								'step 2'
+								if (event.lkDiscard) {
+									player.chooseToDiscard('he', 2, true);
+								}
+							},
+						},
+						// 仁德·布仁：结束阶段把「仁」逐个分配给不同角色（每名至多持 1 个）
+						mlb_rende_give: {
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							trigger: { player: 'phaseJieshuBegin' },
+							filter: function (event, player) {
+								if (player.countMark('mlb_ren') <= 0) return false;
+								return game.hasPlayer(function (current) {
+									return current != player && !current.hasMark('mlb_ren');
+								});
+							},
+							content: function () {
+								'step 0'
+								event.lkLeft = player.countMark('mlb_ren');
+								'step 1'
+								if (!event.lkLeft || event.lkLeft <= 0) { event.finish(); return; }
+								if (!game.hasPlayer(function (current) {
+									return current != player && !current.hasMark('mlb_ren');
+								})) { event.finish(); return; }
+								player.chooseTarget('仁德：将一个「仁」分配给一名没有「仁」的角色（剩余' + event.lkLeft + '个）', function (card, player, target) {
+									return target != player && !target.hasMark('mlb_ren');
+								}).set('ai', function (target) {
+									return get.attitude(_status.event.player, target);
+								});
+								'step 2'
+								if (result.bool && result.targets && result.targets.length) {
+									player.removeMark('mlb_ren', 1);
+									result.targets[0].addMark('mlb_ren', 1);
+									event.lkLeft--;
+									game.log(player, '将一个「仁」分配给了', result.targets[0]);
+									event.goto(1);
+								}
+								else { event.finish(); return; }
+							},
+						},
+						// 章武（神威技）：回合开始额外出牌阶段 + 本回合使用牌无次数限制
+						// 插队姿势与 mgj_extra_phase 同款（trigger.next.push，判据见心得 §4.6）
+						mlb_zhangwu: {
+							audio: 2,
+							skillAnimation: true,
+							animationColor: 'orange',
+							trigger: { player: 'phaseBegin' },
+							init: function (player) {
+								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
+								if (player.storage.tdgx_sw['mlb_zhangwu'] == undefined) player.storage.tdgx_sw['mlb_zhangwu'] = 1;
+							},
+							filter: function (event, player) {
+								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['mlb_zhangwu'] > 0);
+							},
+							content: function () {
+								player.storage.tdgx_sw['mlb_zhangwu']--;
+								player.addTempSkill('mlb_zhangwu_mod');
+								var next = player.phaseUse();
+								event.next.remove(next);
+								trigger.next.push(next);
+								game.log(player, '发动了神威技', '#g【章武】', '，本回合额外执行一个出牌阶段，且使用牌无次数限制');
+							},
+						},
+						mlb_zhangwu_mod: {
+							charlotte: true,
+							sub: true,
+							mod: {
+								cardUsable: function (card, player, num) { return num + 99; },
+							},
+						},
+						// 兴汉（主公技）：蜀势力伤害免疫（每名角色每回合限 1 次）
+						// mlb_xh_log[攻击者 playerid] 由 tdgx_turn_reset 每回合清空
+						mlb_xinghan: {
+							audio: 2,
+							zhuSkill: true,
+							locked: true,
+							forced: true,
+							popup: false,
+							trigger: { player: 'damageBegin' },
+							filter: function (event, player) {
+								var source = event.source;
+								if (!source || source == player) return false;
+								if (source.group != 'shu') return false;
+								if (player.storage.mlb_xh_log && player.storage.mlb_xh_log[source.playerid]) return false;
+								return true;
+							},
+							content: function () {
+								if (!player.storage.mlb_xh_log) player.storage.mlb_xh_log = {};
+								player.storage.mlb_xh_log[trigger.source.playerid] = true;
+								trigger.cancel();
+								game.log(player, '发动了', '#g【兴汉】', '，免疫了', trigger.source, '造成的伤害');
+							},
+						},
+						// 「仁」标记显示壳
+						mlb_ren: {
+							charlotte: true,
+							sub: true,
+							intro: { name: '仁', content: '名·刘备的「仁」标记。名·刘备的回合开始时收回全部「仁」；持有者被牌指定为目标时，其可付代价令此牌无效。' },
+						},
+
+						// ============ 杜预 ============
+						// 武库①：全场有人装备牌 → +1「备」（上限5）并摸一张
+						// ★ 时机用 global:'equipAfter'（shiji.js:4957 同款先例）
+						dy_wuku: {
+							locked: true,
+							forced: true,
+							popup: false,
+							direct: true,
+							trigger: { global: 'equipAfter' },
+							filter: function (event, player) {
+								return player.isIn() && player.countMark('dy_bei') < 5;
+							},
+							content: function () {
+								player.addMark('dy_bei', 1);
+								player.draw(1);
+							},
+						},
+						// 武库·启备：消耗「备」把一张牌当非装备牌使用（每回合限一次）
+						// ★ 卡面「一张区域内的牌」落地为 手牌+装备区：chooseCard 不支持判定区
+						//   （atlas C11：'j' 没有分支，判定区只能走 choosePlayerCard）。
+						// ★ 「或打出」（响应期视为打出）未实现——见 docs/四将开发笔记 §6。
+						// ★ 转化用 get.autoViewAs({name}, [实体牌])（ddd.js:103 同族写法）；
+						//   取消使用则不消耗「备」（removeMark 放在确认成功之后）。
+						dy_wuku_use: {
+							audio: 'wuku',
+							enable: 'phaseUse',
+							usable: 1,
+							filter: function (event, player) {
+								return player.countMark('dy_bei') > 0 && player.countCards('he') > 0;
+							},
+							content: function () {
+								'step 0'
+								player.chooseCard('he', '武库：选择一张牌，将其当非装备牌使用', true)
+									.set('ai', function (card) { return 5 - get.value(card); });
+								'step 1'
+								if (!result.bool || !result.cards || !result.cards.length) { event.finish(); return; }
+								event.dyCard = result.cards[0];
+								var names = [];
+								for (var i in lib.card) {
+									var info = lib.card[i];
+									if (!info) continue;
+									var en = info.enable;
+									if (!(en == 'phaseUse' || (en && en.contains && en.contains('phaseUse')))) continue;
+									if (get.type(i, 'trick') == 'equip') continue;
+									if (!names.contains(i)) names.push(i);
+								}
+								event.dyNames = names;
+								if (!names.length) { event.finish(); return; }
+								player.chooseButton(['武库：选择要视为使用的牌名', names], true);
+								'step 2'
+								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
+								event.dyName = result.links[0];
+								player.chooseUseTarget(get.autoViewAs({ name: event.dyName }, [event.dyCard]), '武库：选择【' + get.translation(event.dyName) + '】的目标');
+								'step 3'
+								if (result.bool) {
+									player.removeMark('dy_bei', 1);
+									game.log(player, '消耗了一个「备」，将一张牌当', '#y【' + get.translation(event.dyName) + '】', '使用');
+								}
+							},
+							ai: { order: 4, result: { player: 1 } },
+						},
+						// 破竹：选手牌里的一个牌名 → 本回合无次数距离限制；造成过伤害 → 本局永久
+						dy_pozhu: {
+							audio: 2,
+							enable: 'phaseUse',
+							usable: 1,
+							filter: function (event, player) {
+								return player.countCards('h') > 0;
+							},
+							content: function () {
+								'step 0'
+								var names = [];
+								var hs = player.getCards('h');
+								for (var i = 0; i < hs.length; i++) {
+									var nm = hs[i].viewAs || hs[i].name;
+									if (!names.contains(nm)) names.push(nm);
+								}
+								event.dyNames = names;
+								player.chooseButton(['破竹：选择一种牌名（本回合使用无次数与距离限制）', names], true);
+								'step 1'
+								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
+								player.storage.dy_pz_name = result.links[0];
+								player.addTempSkill('dy_pozhu_turn');
+								game.log(player, '发动了', '#g【破竹】', '，本回合使用【', '#y' + get.translation(result.links[0]), '】无次数与距离限制');
+							},
+							ai: { order: 2, result: { player: 1 } },
+						},
+						// 破竹·势：本回合生效（addTempSkill 缺省 phaseAfter 过期 = 本回合，
+						// game.js:28663）；onremove 清掉临时牌名（onremove 与 content 同为
+						// 被编译字段，不得引用闭包）
+						dy_pozhu_turn: {
+							charlotte: true,
+							sub: true,
+							mod: {
+								cardUsable: function (card, player, num) {
+									if (player.storage.dy_pz_name && (card.viewAs || card.name) == player.storage.dy_pz_name) return num + 99;
+								},
+								targetInRange: function (card, player, target) {
+									if (player.storage.dy_pz_name && (card.viewAs || card.name) == player.storage.dy_pz_name) return true;
+								},
+							},
+							onremove: function (player) {
+								delete player.storage.dy_pz_name;
+							},
+						},
+						// 破竹·极：永久解锁名单（storage.dy_pz_perm）的常驻 mod
+						dy_pozhu_perm: {
+							charlotte: true,
+							sub: true,
+							mod: {
+								cardUsable: function (card, player, num) {
+									if (player.storage.dy_pz_perm && player.storage.dy_pz_perm.contains(card.viewAs || card.name)) return num + 99;
+								},
+								targetInRange: function (card, player, target) {
+									if (player.storage.dy_pz_perm && player.storage.dy_pz_perm.contains(card.viewAs || card.name)) return true;
+								},
+							},
+						},
+						// 破竹·定势：回合结束检查「本回合以此牌名造成过伤害」→ 写入永久名单
+						// （phaseJieshuBegin 早于临时技的 phaseAfter 过期，storage 还在）
+						dy_pozhu_check: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							direct: true,
+							trigger: { player: 'phaseJieshuBegin' },
+							filter: function (event, player) {
+								if (!player.storage.dy_pz_name) return false;
+								var nm = player.storage.dy_pz_name;
+								var history = player.getHistory('sourceDamage');
+								for (var i = 0; i < history.length; i++) {
+									var c = history[i].card;
+									if (c && (c.viewAs || c.name) == nm) return true;
+								}
+								return false;
+							},
+							content: function () {
+								var nm = player.storage.dy_pz_name;
+								if (!player.storage.dy_pz_perm) player.storage.dy_pz_perm = [];
+								if (!player.storage.dy_pz_perm.contains(nm)) player.storage.dy_pz_perm.push(nm);
+								game.log(player, '本回合以【', '#y' + get.translation(nm), '】造成过伤害——本局游戏使用此牌名无次数与距离限制');
+							},
+						},
+						// 振鞘①：装备武器时，使用牌无法被响应（directHit 共享数组，
+						// 逐目标子事件上 add 即可覆盖该目标；yjzhenlve 同族）
+						dy_zhenqiao: {
+							locked: true,
+							forced: true,
+							direct: true,
+							popup: false,
+							trigger: { player: 'useCardToPlayered' },
+							filter: function (event, player) {
+								return player.getEquip(1) != null;
+							},
+							content: function () {
+								trigger.directHit.add(trigger.target);
+							},
+						},
+						// 振鞘·吞甲：造成伤害时改为免疫，并获得受伤角色装备区所有牌
+						// （非 forced：引擎先问「是否发动」，content 直接落实，避免双重询问）
+						dy_zhenqiao_devour: {
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							trigger: { source: 'damageBegin' },
+							filter: function (event, player) {
+								var target = event.player;
+								return !!(target && target != player && target.getCards('e').length > 0);
+							},
+							content: function () {
+								var target = trigger.player;
+								trigger.cancel();
+								var es = target.getCards('e');
+								if (es.length) player.gain(es, 'gain2');
+								game.log(player, '发动了', '#g【振鞘】', '，免疫了此伤害并获得', target, '装备区内的所有牌');
+							},
+						},
+						// 振鞘·开锋：【杀】伤害+X（X=攻击范围-体力值，最小0）
+						// 落在杀造成伤害时结算（含转化杀，viewAs||name 判名 —— atlas C9）
+						dy_zhenqiao_boost: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							direct: true,
+							trigger: { source: 'damageBegin' },
+							filter: function (event, player) {
+								if (!event.card || (event.card.viewAs || event.card.name) != 'sha') return false;
+								return player.getEquip(1) != null;
+							},
+							content: function () {
+								var x = player.getAttackRange() - player.hp;
+								if (x > 0) trigger.num += x;
+							},
+						},
+						// 灭吴（神威技）：摸「备」数 + 体力上限（「备」不消耗）
+						dy_miewu: {
+							audio: 2,
+							enable: 'phaseUse',
+							skillAnimation: true,
+							animationColor: 'orange',
+							init: function (player) {
+								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
+								if (player.storage.tdgx_sw['dy_miewu'] == undefined) player.storage.tdgx_sw['dy_miewu'] = 1;
+							},
+							filter: function (event, player) {
+								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['dy_miewu'] > 0);
+							},
+							content: function () {
+								player.storage.tdgx_sw['dy_miewu']--;
+								var x = player.countMark('dy_bei') + player.maxHp;
+								player.draw(x);
+								game.log(player, '发动了神威技', '#g【灭吴】', '，摸了', get.cnNumber(x), '张牌');
+							},
+							ai: { order: 9, result: { player: 1 } },
+						},
+						// 「备」标记显示壳
+						dy_bei: {
+							charlotte: true,
+							sub: true,
+							intro: { name: '备', content: '武库的计数标记（上限5）。出牌阶段可消耗一个，将一张牌当非装备牌使用。灭吴的摸牌数与其相关。' },
+						},
+
+						// ============ 陆抗 ============
+						// 毁堰：废除自己一个区域换效果（每区域整局一次；被抗晋/背水恢复的栏可再选）
+						// · 装备栏（武器/防具/进攻马/防御马）走引擎 disableEquip（自动弃置栏内牌）
+						// · 判定区/手牌区走 storage.lkang_zone 状态位 + lkang_hy_mod 查询期干预
+						// · storage.lkang_zone：{e1,e2,e3,e4,judge,hand}，true = 已废除
+						lkang_huiyan: {
+							audio: 2,
+							enable: 'phaseUse',
+							filter: function (event, player) {
+								var z = player.storage.lkang_zone;
+								if (!z) return true;
+								return !(z.e1 && z.e2 && z.e3 && z.e4 && z.judge && z.hand);
+							},
+							content: function () {
+								'step 0'
+								if (!player.storage.lkang_zone) player.storage.lkang_zone = {};
+								var z = player.storage.lkang_zone;
+								var keys = [];
+								var labels = [];
+								if (!z.e1) { keys.push('e1'); labels.push('武器区（你造成的伤害+1）'); }
+								if (!z.e2) { keys.push('e2'); labels.push('防具区（每回合首次受到伤害时免疫）'); }
+								if (!z.e3) { keys.push('e3'); labels.push('进攻马（使用牌无法被响应）'); }
+								if (!z.e4) { keys.push('e4'); labels.push('防御马（摸两张牌）'); }
+								if (!z.judge) { keys.push('judge'); labels.push('判定区（无视距离且使用牌无次数限制）'); }
+								if (!z.hand) { keys.push('hand'); labels.push('手牌区（分配X点伤害，X为体力值-1）'); }
+								event.lkKeys = keys;
+								event.lkLabels = labels;
+								player.chooseControl(labels)
+									.set('prompt', '毁堰：选择一个区域令其失效')
+									.set('ai', function () { return 0; });
+								'step 1'
+								var idx = (result && typeof result.index == 'number') ? result.index : 0;
+								var key = event.lkKeys[idx];
+								var z = player.storage.lkang_zone;
+								z[key] = true;
+								event.lkJustHand = (key == 'hand');
+								if (key == 'e1' || key == 'e2' || key == 'e3' || key == 'e4') {
+									var sn = key.slice(1) - 0;
+									player.disableEquip(sn);
+									game.log(player, '发动了', '#g【毁堰】', '，废除了', get.translation('equip' + sn), '栏');
+									if (key == 'e4') {
+										player.draw(2);
+										game.log(player, '摸了两张牌');
+									}
+								}
+								else if (key == 'judge') {
+									var js = player.getCards('j');
+									if (js.length) player.lose(js, ui.discardPile, 'visible');
+									// ★ 真·失效：走引擎原生开关 storage._disableJudge
+									//   game.js:22013-22015  isDisabledJudge(){ return Boolean(this.storage._disableJudge); }
+									//   game.js:26826         canAddJudge 第一行就是 `if(this.isDisabledJudge()) return false;`
+									//   ⇒ 只弃置现有判定牌是**不够**的（后续延时锦囊照样能被放进判定区）；
+									//     置位后引擎在**所有**放置路径上直接拒绝，与官方 _disableJudge 技能同一机制
+									//     （game.js:14732 的 disableJudge content 就是 storage._disableJudge=true）。
+									player.storage._disableJudge = true;
+									// 归属标记：_disableJudge 是**引擎全局开关**，别的技能也可能合法废除判定区。
+									// 恢复（抗晋/背水/轮清理）时只有它是我们设的才清，避免误恢复他人的废除。
+									player.storage.lkang_judge_own = true;
+									player.update();
+									game.log(player, '发动了', '#g【毁堰】', '，废除了判定区');
+								}
+								else {
+									game.log(player, '发动了', '#g【毁堰】', '，废除了手牌区');
+								}
+								'step 2'
+								if (event.lkJustHand && player.hp > 1) {
+									event.lkX = player.hp - 1;
+									event.goto(3);
+								}
+								else { event.finish(); return; }
+								'step 3'
+								if (!event.lkX || event.lkX <= 0) { event.finish(); return; }
+								player.chooseTarget('毁堰：对一名角色造成1点伤害（还可分配' + event.lkX + '点）', function (card, player, target) {
+									return target.isIn();
+								}).set('ai', function (target) {
+									return get.damageEffect(target, _status.event.player, _status.event.player);
+								});
+								'step 4'
+								if (result.bool && result.targets && result.targets.length) {
+									result.targets[0].damage(1);
+									event.lkX--;
+									event.redo();
+								}
+								else { event.finish(); return; }
+							},
+							ai: { order: 5, result: { player: 1 } },
+						},
+						// 毁堰·锋：①武器区 —— 你造成的伤害+1
+						lkang_hy_w: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							direct: true,
+							trigger: { source: 'damageBegin' },
+							filter: function (event, player) {
+								return !!(player.storage.lkang_zone && player.storage.lkang_zone.e1);
+							},
+							content: function () {
+								trigger.num++;
+							},
+						},
+						// 毁堰·御：②防具区 —— 每回合第一次受到伤害时免疫
+						// （本回合已完成的 damage 历史数为 0 ⇒ 这就是第一次）
+						lkang_hy_a: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							trigger: { player: 'damageBegin' },
+							filter: function (event, player) {
+								if (!(player.storage.lkang_zone && player.storage.lkang_zone.e2)) return false;
+								return player.getHistory('damage').length == 0;
+							},
+							content: function () {
+								trigger.cancel();
+								game.log(player, '本回合首次受到伤害，免疫了此伤害');
+							},
+						},
+						// 毁堰·疾：③进攻马 —— 使用牌无法被响应
+						lkang_hy_h3: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							direct: true,
+							trigger: { player: 'useCardToPlayered' },
+							filter: function (event, player) {
+								return !!(player.storage.lkang_zone && player.storage.lkang_zone.e3);
+							},
+							content: function () {
+								trigger.directHit.add(trigger.target);
+							},
+						},
+						// 毁堰·阵：⑤判定区/⑥手牌区失效的查询期干预 + 抗晋·同轨复制状态
+						// · 判定区失效 → 无视距离 + 使用牌无次数限制
+						// · 手牌区失效 → 手牌不可使用（cardEnabled 拦 'h'，可被弃/被获得）
+						// · storage.lkang_copy 是抗晋复制来的「本轮」状态，轮开始清空
+						lkang_hy_mod: {
+							charlotte: true,
+							sub: true,
+							mod: {
+								targetInRange: function (card, player, target) {
+									if ((player.storage.lkang_zone && player.storage.lkang_zone.judge) || (player.storage.lkang_copy && player.storage.lkang_copy.judge)) return true;
+								},
+								cardUsable: function (card, player, num) {
+									if ((player.storage.lkang_zone && player.storage.lkang_zone.judge) || (player.storage.lkang_copy && player.storage.lkang_copy.judge)) return num + 99;
+								},
+								cardEnabled: function (card, player) {
+									if ((player.storage.lkang_zone && player.storage.lkang_zone.hand) || (player.storage.lkang_copy && player.storage.lkang_copy.hand)) {
+										if (get.position(card) == 'h') return false;
+									}
+								},
+							},
+						},
+						// 抗晋①：受到体力值不低于你的角色的伤害 → 弃一张牌判定，红色免伤
+						lkang_kangjin: {
+							audio: 2,
+							locked: true,
+							trigger: { player: 'damageBegin' },
+							filter: function (event, player) {
+								var source = event.source;
+								if (!source || source == player) return false;
+								if (source.hp < player.hp) return false;
+								return player.countCards('he') > 0;
+							},
+							content: function () {
+								'step 0'
+								player.chooseToDiscard('he', 1, '抗晋：弃置一张牌并判定，若为红色则免除此次伤害')
+									.set('ai', function (card) { return 5 - get.value(card); });
+								'step 1'
+								if (!result.bool) { event.finish(); return; }
+								player.judge();
+								'step 2'
+								if (result && result.color == 'red') {
+									trigger.cancel();
+									game.log(player, '判定为红色，免疫了此伤害');
+								}
+							},
+						},
+						// 抗晋·同轨：造成伤害后，把你一个已失效区域的状态复制给一名角色（本轮），
+						// 然后恢复你自己装备区四栏之一。非 forced：引擎先问是否发动。
+						// ★ 只复制「已失效」区域（复制未失效区域无意义，即卡面"状态与你相同"的有效面）
+						// ★ 装备栏复制只在目标该栏**原本可用**时执行（countEnabledSlot 判定，
+						//   game.js:13317）：避免对已自废栏位的角色再 disable 后、轮末误恢复
+						lkang_kangjin_copy: {
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							trigger: { source: 'damageEnd' },
+							filter: function (event, player) {
+								var z = player.storage.lkang_zone;
+								if (!z) return false;
+								return !!(z.e1 || z.e2 || z.e3 || z.e4 || z.judge || z.hand);
+							},
+							content: function () {
+								'step 0'
+								var z = player.storage.lkang_zone || {};
+								var keys = [];
+								var labels = [];
+								if (z.e1) { keys.push('e1'); labels.push('武器区'); }
+								if (z.e2) { keys.push('e2'); labels.push('防具区'); }
+								if (z.e3) { keys.push('e3'); labels.push('进攻马'); }
+								if (z.e4) { keys.push('e4'); labels.push('防御马'); }
+								if (z.judge) { keys.push('judge'); labels.push('判定区'); }
+								if (z.hand) { keys.push('hand'); labels.push('手牌区'); }
+								event.lkKeys = keys;
+								event.lkLabels = labels;
+								player.chooseTarget('抗晋：选择一名角色，令其一个区域的状态本轮与你相同', function (card, player, target) {
+									return target != player && target.isIn();
+								}).set('ai', function (target) {
+									return -get.attitude(_status.event.player, target);
+								});
+								'step 1'
+								if (!result.bool || !result.targets || !result.targets.length) { event.finish(); return; }
+								event.lkT = result.targets[0];
+								player.chooseControl(event.lkLabels)
+									.set('prompt', '抗晋：选择复制状态的区域（你已失效的区域）')
+									.set('ai', function () { return 0; });
+								'step 2'
+								var idx = (result && typeof result.index == 'number') ? result.index : 0;
+								var key = event.lkKeys[idx];
+								var t = event.lkT;
+								if (!t.storage.lkang_copy) t.storage.lkang_copy = {};
+								if (key == 'e1' || key == 'e2' || key == 'e3' || key == 'e4') {
+									var sn = key.slice(1) - 0;
+									if (t.countEnabledSlot('equip' + sn) > 0) {
+										t.disableEquip(sn);
+										t.storage.lkang_copy[key] = true;
+										game.log(t, '的' + event.lkLabels[idx] + '本轮失效');
+									}
+									else {
+										game.log(t, '的' + event.lkLabels[idx] + '本已失效，复制无额外效果');
+									}
+								}
+								else if (key == 'judge') {
+									t.storage.lkang_copy.judge = true;
+									// ★ 复制判定区失效必须同时置引擎开关，否则只是"弃掉现有判定牌"，
+									//   后续延时锦囊照样能放进目标判定区（canAddJudge 只认 isDisabledJudge）。
+									t.storage._disableJudge = true;
+									t.storage.lkang_judge_own = true;
+									var js = t.getCards('j');
+									if (js.length) t.lose(js, ui.discardPile, 'visible');
+									t.update();
+									game.log(t, '的判定区本轮失效');
+								}
+								else {
+									t.storage.lkang_copy.hand = true;
+									game.log(t, '的手牌区本轮失效（手牌不可使用）');
+								}
+								'step 3'
+								var z = player.storage.lkang_zone || {};
+								var keys = [];
+								var labels = [];
+								if (z.e1) { keys.push('e1'); labels.push('武器区'); }
+								if (z.e2) { keys.push('e2'); labels.push('防具区'); }
+								if (z.e3) { keys.push('e3'); labels.push('进攻马'); }
+								if (z.e4) { keys.push('e4'); labels.push('防御马'); }
+								if (!keys.length) { event.finish(); return; }
+								event.lkRKeys = keys;
+								player.chooseControl(labels)
+									.set('prompt', '抗晋：恢复你装备区内的一个栏位')
+									.set('ai', function () { return 0; });
+								'step 4'
+								var idx = (result && typeof result.index == 'number') ? result.index : 0;
+								var key = event.lkRKeys[idx];
+								player.storage.lkang_zone[key] = false;
+								player.enableEquip(key.slice(1) - 0);
+								player.update();
+								game.log(player, '恢复了', get.translation('equip' + key.slice(1)), '栏');
+							},
+						},
+						// 抗晋·复轨：每轮开始清理「本轮」复制状态（幂等，多名持有者只清一次）
+						lkang_kangjin_clear: {
+							forced: true,
+							locked: true,
+							charlotte: true,
+							sub: true,
+							popup: false,
+							direct: true,
+							trigger: { global: 'roundStart' },
+							filter: function (event, player) {
+								for (var i = 0; i < game.players.length; i++) {
+									var c = game.players[i].storage && game.players[i].storage.lkang_copy;
+									if (c && (c.e1 || c.e2 || c.e3 || c.e4 || c.judge || c.hand)) return true;
+								}
+								return false;
+							},
+							content: function () {
+								for (var i = 0; i < game.players.length; i++) {
+									var p = game.players[i];
+									var c = p.storage && p.storage.lkang_copy;
+									if (!c) continue;
+									if (c.e1) p.enableEquip(1);
+									if (c.e2) p.enableEquip(2);
+									if (c.e3) p.enableEquip(3);
+									if (c.e4) p.enableEquip(4);
+									// 判定区的复制状态也要在本轮结束时还回去（同 2 处判据：只清自己设的）
+									if (c.judge && p.storage.lkang_judge_own) {
+										p.storage._disableJudge = false;
+										p.storage.lkang_judge_own = false;
+									}
+									p.storage.lkang_copy = {};
+									p.update();
+								}
+								game.log('新的一轮：抗晋·同轨的复制状态已恢复');
+							},
+						},
+						// 背水（神威技）：恢复所有已失效区域（四装备栏 + 判定/手牌状态位）
+						lkang_beishui: {
+							audio: 2,
+							enable: 'phaseUse',
+							skillAnimation: true,
+							animationColor: 'orange',
+							init: function (player) {
+								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
+								if (player.storage.tdgx_sw['lkang_beishui'] == undefined) player.storage.tdgx_sw['lkang_beishui'] = 1;
+							},
+							filter: function (event, player) {
+								if (!(player.storage.tdgx_sw && player.storage.tdgx_sw['lkang_beishui'] > 0)) return false;
+								var z = player.storage.lkang_zone;
+								if (!z) return false;
+								return !!(z.e1 || z.e2 || z.e3 || z.e4 || z.judge || z.hand);
+							},
+							content: function () {
+								player.storage.tdgx_sw['lkang_beishui']--;
+								player.enableEquip([1, 2, 3, 4]);
+								// ★ 判定区的失效走引擎 storage._disableJudge（见毁堰处注释）。
+								//   只清**本技能设的**（lkang_judge_own）：_disableJudge 是引擎全局开关，
+								//   别的技能可能合法废除判定区，无条件清零会误恢复它。
+								if (player.storage.lkang_judge_own) {
+									player.storage._disableJudge = false;
+									player.storage.lkang_judge_own = false;
+								}
+								player.storage.lkang_zone = {};
+								player.update();
+								game.log(player, '发动了神威技', '#g【背水】', '，恢复了所有已失效的区域');
+							},
+							ai: { order: 6, result: { player: 1 } },
 						},
 					},
 				};
