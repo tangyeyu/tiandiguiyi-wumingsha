@@ -325,7 +325,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'dy_wuku_qibei': '武库·启备',
 						// 子技能（sub）也补 _info：lint C5 只对 sub 技能降级为 INFO，
 						// 缺 _info 会被判 WARN（C5 的判据是 lib.translate[skill+'_info'] 是否存在）。
-						'dy_wuku_qibei_info': '出牌阶段或响应时（含无懈可击）：你可以消耗一个「备」标记，将一张牌当一张基本牌或普通锦囊牌使用或打出（从当前可合法使用的牌名中选择）。每回合限一次。',
+						'dy_wuku_qibei_info': '出牌阶段或响应时（含无懈可击）：你可以消耗一个「备」标记，将一张牌当非装备牌（基本牌/普通锦囊/延时锦囊）使用或打出（从当前可合法使用的牌名中选择）。每回合限一次。',
 						'dy_wuku_qibei_used': '启备·已用',
 						'dy_wuku_qibei_used_info': '武库·启备本回合已使用的标记，回合结束自动消失。',
 						'dy_pozhu': '破竹',
@@ -1843,7 +1843,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!player.countMark('dy_bei') || !player.countCards('he') || player.hasSkill('dy_wuku_qibei_used')) return false;
 								for (var i of lib.inpile) {
 									var type = get.type2(i);
-									if ((type == 'basic' || type == 'trick') && event.filterCard({ name: i }, player, event)) return true;
+									// 非装备牌全集 = 基本 + 普通锦囊 + 延时锦囊（2026-09-13 用户校准：延时也放）
+									if ((type == 'basic' || type == 'trick' || type == 'delay') && event.filterCard({ name: i }, player, event)) return true;
 								}
 								return false;
 							},
@@ -1858,6 +1859,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 											}
 										}
 										else if (get.type2(name) == 'trick' && event.filterCard({ name: name }, player, event)) list.push(['锦囊', '', name]);
+										else if (get.type2(name) == 'delay' && event.filterCard({ name: name }, player, event)) list.push(['延时锦囊', '', name]);
 										else if (get.type(name) == 'basic' && event.filterCard({ name: name }, player, event)) list.push(['基本', '', name]);
 									}
 									return ui.create.dialog('武库·启备', [list, 'vcard']);
@@ -1892,7 +1894,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							hiddenCard: function (player, name) {
 								if (!lib.inpile.contains(name)) return false;
 								var type = get.type2(name);
-								return (type == 'basic' || type == 'trick') && player.countMark('dy_bei') > 0 && player.countCards('he') > 0 && !player.hasSkill('dy_wuku_qibei_used');
+								return (type == 'basic' || type == 'trick' || type == 'delay') && player.countMark('dy_bei') > 0 && player.countCards('he') > 0 && !player.hasSkill('dy_wuku_qibei_used');
 							},
 							ai: {
 								order: 1,
