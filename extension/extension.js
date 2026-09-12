@@ -1854,6 +1854,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									for (var i of lib.inpile) {
 										var name = i;
 										if (name == 'sha') {
+											// ★ 普通杀按钮必须先推（官方 spmiewu 同款）——漏了它，
+											//   响应南蛮/决斗时列表里只有火杀雷杀，没有普通杀。
+											if (event.filterCard({ name: name }, player, event)) list.push(['基本', '', 'sha']);
 											for (var j of lib.inpile_nature) {
 												if (event.filterCard({ name: name, nature: j }, player, event)) list.push(['基本', '', 'sha', j]);
 											}
