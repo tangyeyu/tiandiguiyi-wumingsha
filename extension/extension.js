@@ -224,7 +224,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_liubei.jpg']],
 						tdgx_duyu: ['male', 'qun', 4, [
-							'dy_wuku', 'dy_wuku_use',
+							'dy_wuku', 'dy_wuku_use', 'dy_wuku_respond', 'dy_wuku_respond_sha', 'dy_wuku_respond_wuxie',
 							'dy_pozhu', 'dy_pozhu_turn', 'dy_pozhu_perm', 'dy_pozhu_check',
 							'dy_zhenqiao', 'dy_zhenqiao_devour', 'dy_zhenqiao_boost',
 							'dy_miewu',
@@ -315,11 +315,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'mlb_xinghan': '兴汉',
 						'mlb_xinghan_info': '主公技，锁定技，游戏开始时，你额外获得一个「仁」。当蜀势力角色对你造成伤害时，你免疫此伤害（每名角色每回合限1次）。',
 						'dy_wuku': '武库',
-						'dy_wuku_info': '锁定技，当场上一名角色装备牌时，你获得一个「备」标记并摸一张牌（「备」上限为5）。出牌阶段限一次，你可以消耗一个「备」标记，将你区域内的一张牌当非装备牌使用。',
+						'dy_wuku_info': '锁定技，当场上一名角色装备牌时，你获得一个「备」标记并摸一张牌（「备」上限为5）。出牌阶段限一次，你可以消耗一个「备」标记，将你区域内的一张牌当非装备牌使用或打出。',
 						'dy_wuku_use': '武库·启备',
 						// 子技能（sub）也补 _info：lint C5 只对 sub 技能降级为 INFO，
 						// 缺 _info 会被判 WARN（C5 的判据是 lib.translate[skill+'_info'] 是否存在）。
 						'dy_wuku_use_info': '出牌阶段限一次：消耗一个「备」标记，将你区域内的一张牌当非装备牌使用。',
+						'dy_wuku_respond': '武库·启备（闪）',
+						'dy_wuku_respond_info': '响应时：消耗一个「备」标记，将你区域内的一张牌当【闪】打出（与「使用」共用每回合一次的额度）。',
+						'dy_wuku_respond_sha': '武库·启备（杀）',
+						'dy_wuku_respond_sha_info': '响应时：消耗一个「备」标记，将你区域内的一张牌当【杀】打出（与「使用」共用每回合一次的额度）。',
+						'dy_wuku_respond_wuxie': '武库·启备（无懈）',
+						'dy_wuku_respond_wuxie_info': '响应时：消耗一个「备」标记，将你区域内的一张牌当【无懈可击】打出（与「使用」共用每回合一次的额度）。',
 						'dy_pozhu': '破竹',
 						'dy_pozhu_info': '出牌阶段限一次，你可以选择一种你手牌里有的牌名：本回合你使用此牌无次数和距离限制。若你本回合使用此牌造成过伤害，本局游戏你使用此牌名无次数和距离限制。',
 						'dy_pozhu_turn': '破竹·势',
@@ -1289,6 +1295,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								if (trigger.player && trigger.player.storage) {
 									trigger.player.storage.lx_cy_used = 0;
+									// 杜预「武库」的限次（使用与打出**共用一个额度**，故手工记账）
+									trigger.player.storage.dy_wk_used = 0;
 								}
 							},
 						},
@@ -1770,17 +1778,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.draw(1);
 							},
 						},
-						// 武库·启备：消耗「备」把一张牌当非装备牌使用（每回合限一次）
+						// 武库·启备：消耗「备」把一张牌当非装备牌**使用**（每回合限一次）
 						// ★ 卡面「一张区域内的牌」落地为 手牌+装备区：chooseCard 不支持判定区
 						//   （atlas C11：'j' 没有分支，判定区只能走 choosePlayerCard）。
-						// ★ 「或打出」（响应期视为打出）未实现——见 docs/四将开发笔记 §6。
 						// ★ 转化用 get.autoViewAs({name}, [实体牌])（ddd.js:103 同族写法）；
 						//   取消使用则不消耗「备」（removeMark 放在确认成功之后）。
+						//
+						// ★★ 限次改为手工记账 storage.dy_wk_used（原为 usable:1）：
+						//   「使用」与「打出」必须**共用一个额度**（卡面写的是"出牌阶段限一次"），
+						//   而打出走的是 viewAs 响应路径（dy_wuku_respond），**不经过** enabled/usable
+						//   闸门检查（usable 只在 game.js:33066 的 trigger 判定链里生效），
+						//   故引擎的 usable 字段管不住它 ⇒ 两处统一查同一个计数器。
+						//   复位点挂在既有的 tdgx_turn_reset（每回合开始，含回合拥有者）。
 						dy_wuku_use: {
 							audio: 'wuku',
 							enable: 'phaseUse',
-							usable: 1,
 							filter: function (event, player) {
+								if (player.storage.dy_wk_used) return false;
 								return player.countMark('dy_bei') > 0 && player.countCards('he') > 0;
 							},
 							content: function () {
@@ -1809,10 +1823,80 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								'step 3'
 								if (result.bool) {
 									player.removeMark('dy_bei', 1);
+									player.storage.dy_wk_used = 1;
 									game.log(player, '消耗了一个「备」，将一张牌当', '#y【' + get.translation(event.dyName) + '】', '使用');
 								}
 							},
 							ai: { order: 4, result: { player: 1 } },
+						},
+						// 武库·启备（打出）：响应期把一张牌当**响应牌**打出。
+						// ── 设计口径（两项待定的落地）──────────────────────────────
+						// ① 打出时用什么牌名：**限定三种响应牌**——杀 / 闪 / 无懈可击。
+						//    理由：允许"任意非装备牌"等于随时能响应任何索要，明显过强；
+						//    而这三者恰是引擎响应窗口实际会索要的牌名，覆盖面够用且可控。
+						//    ★ 实现形态：**每种牌名一个固定 viewAs 的子技能**，而不是用一个
+						//      viewAs 函数去"动态取名"。原因：chooseToRespond 没有"先选牌名"
+						//      的钩子，动态取名会因为没有东西去设 storage.dy_wk_resp 而退化为
+						//      永远产出同一个牌名（本文件第一版就写成那样，已改）。
+						//      固定 viewAs 时，引擎在做响应可用性判定时会用
+						//      `event.filterCard(info.viewAs, player, event)`（game.js:42931）
+						//      拿该牌名去比对当前索要，**由引擎决定哪个子技能可用** —— 这才是稳的。
+						// ② 使用与打出如何共用限次：共用同一个 storage.dy_wk_used（每回合 1 次），
+						//    见 dy_wuku_use 注释。viewAs 技能不能有 content ⇒ 扣减写在 onrespond 里
+						//    （game.js:20010-20012 在 respond 事件中调用 lib.skill[event.skill].onrespond）。
+						// ── 机制依据 ──────────────────────────────────────────────
+						//   形态照抄引擎自带的 aozhan_sha（game.js:34153-34179）：
+						//   enable / filterCard / viewAs / position / prompt / onrespond。
+						dy_wuku_respond: {
+							audio: 'wuku',
+							enable: ['chooseToRespond'],
+							filterCard: function (card, player) {
+								return player.countMark('dy_bei') > 0 && !player.storage.dy_wk_used;
+							},
+							viewAs: { name: 'shan', isCard: true },
+							position: 'he',
+							prompt: '武库：消耗一个「备」，将一张牌当【闪】打出',
+							check: function () { return 1 },
+							onrespond: function (event, player) {
+								player.removeMark('dy_bei', 1);
+								player.storage.dy_wk_used = 1;
+								game.log(player, '消耗了一个「备」，将一张牌当【闪】打出');
+							},
+							ai: { respondShan: true, order: 1 },
+						},
+						dy_wuku_respond_sha: {
+							audio: 'wuku',
+							enable: ['chooseToRespond'],
+							filterCard: function (card, player) {
+								return player.countMark('dy_bei') > 0 && !player.storage.dy_wk_used;
+							},
+							viewAs: { name: 'sha', isCard: true },
+							position: 'he',
+							prompt: '武库：消耗一个「备」，将一张牌当【杀】打出',
+							check: function () { return 1 },
+							onrespond: function (event, player) {
+								player.removeMark('dy_bei', 1);
+								player.storage.dy_wk_used = 1;
+								game.log(player, '消耗了一个「备」，将一张牌当【杀】打出');
+							},
+							ai: { respondSha: true, order: 1 },
+						},
+						dy_wuku_respond_wuxie: {
+							audio: 'wuku',
+							enable: ['chooseToRespond'],
+							filterCard: function (card, player) {
+								return player.countMark('dy_bei') > 0 && !player.storage.dy_wk_used;
+							},
+							viewAs: { name: 'wuxie', isCard: true },
+							position: 'he',
+							prompt: '武库：消耗一个「备」，将一张牌当【无懈可击】打出',
+							check: function () { return 1 },
+							onrespond: function (event, player) {
+								player.removeMark('dy_bei', 1);
+								player.storage.dy_wk_used = 1;
+								game.log(player, '消耗了一个「备」，将一张牌当【无懈可击】打出');
+							},
+							ai: { respondWuxie: true, order: 1 },
 						},
 						// 破竹：选手牌里的一个牌名 → 本回合无次数距离限制；造成过伤害 → 本局永久
 						dy_pozhu: {
