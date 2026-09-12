@@ -203,31 +203,39 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 类别机制载体 tdgx_shenwei_kill / tdgx_turn_reset 为共用隐藏技，
 						// 必须列进每个武将的技能数组（心得 §4.3：不列进数组就不会被触发）。
 						// 暂无立绘，[4] 缺省（引擎会补空数组，展平兜底里同样处理）。
+						// 四将立绘：走与 zhuan_caomao 相同的 [4] + 'ext:' 官方途径
+						//   game.js:8934 extimage=value → 8953 src=extimage.replace(/ext:/,'extension/')
+						//   即 extension/天地归一/<文件>，图片随扩展走，拷给别人不丢。
+						// 规格：300x550（比例 0.545），与本目录既有 1660 张图一致。
+						// 原图是横构图（1.386 / 1.386 / 1.387 / 0.756），按"缩放至填满 + 居中裁切"处理：
+						//   裁切版人物占满卡面（武将图惯例），代价是画面左右各被裁掉一部分
+						//   （如陆逊原图左侧的蓝鹿不在卡面内）。如需改为完整构图，
+						//   可换成"按宽度适配 + 模糊背景填充"（人物会小一圈）。
 						tdgx_luxun: ['male', 'wu', 4, [
 							'lx_lianying', 'lx_lianying_draw', 'lx_lianying_end',
 							'lx_chiyang', 'lx_chiyang_end',
 							'lx_qianxun', 'lx_zhangcai', 'lx_zhangcai_mod',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
-						]],
+						], ['ext:天地归一/tdgx_luxun.jpg']],
 						tdgx_liubei: ['male', 'shu', 4, [
 							'mlb_rende', 'mlb_rende_reclaim', 'mlb_rende_draw',
 							'mlb_rende_nullify', 'mlb_rende_give',
 							'mlb_zhangwu', 'mlb_zhangwu_mod', 'mlb_xinghan',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
-						]],
+						], ['ext:天地归一/tdgx_liubei.jpg']],
 						tdgx_duyu: ['male', 'qun', 4, [
 							'dy_wuku', 'dy_wuku_use',
 							'dy_pozhu', 'dy_pozhu_turn', 'dy_pozhu_perm', 'dy_pozhu_check',
 							'dy_zhenqiao', 'dy_zhenqiao_devour', 'dy_zhenqiao_boost',
 							'dy_miewu',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
-						]],
+						], ['ext:天地归一/tdgx_duyu.jpg']],
 						tdgx_lukang: ['male', 'wu', 4, [
 							'lkang_huiyan', 'lkang_hy_w', 'lkang_hy_a', 'lkang_hy_h3', 'lkang_hy_mod',
 							'lkang_kangjin', 'lkang_kangjin_copy', 'lkang_kangjin_clear',
 							'lkang_beishui',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
-						]],
+						], ['ext:天地归一/tdgx_lukang.jpg']],
 					},
 					characterIntro: {
 						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你可以选择一名其他角色令其获得「策」（放弃发动则本技能本局不再生效），你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你可以摸X+1张牌（X为「策」的效果数，至多4）；若场上没有「策」，你摸一张牌。',
