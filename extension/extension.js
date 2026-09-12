@@ -1835,10 +1835,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								event.dyNames = names;
 								if (!names.length) { event.finish(); return; }
-								player.chooseButton(['武库：选择要视为使用的牌名', names], true);
+								// ★ 必须传 [list,'vcard'] 对（clan.js:235、refresh.js:4133 官方先例）：
+								//   裸字符串数组会被 dialog.add 的 else 分支（game.js:32625）拆成
+								//   buttons(item[0], item[1]) —— 牌名 'sha' 被当成按钮列表、第二个牌名
+								//   被当成按钮 type，switch 无匹配 ⇒ node 未创建 ⇒ addEventListener 崩溃。
+								player.chooseButton(['武库：选择要视为使用的牌名', [names, 'vcard']], true);
 								'step 2'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
-								event.dyName = result.links[0];
+								// vcard 按钮的 link 是 [type,'',name] 三元组，牌名取 [2]
+								event.dyName = (typeof result.links[0] == 'string') ? result.links[0] : result.links[0][2];
 								player.chooseUseTarget(get.autoViewAs({ name: event.dyName }, [event.dyCard]), '武库：选择【' + get.translation(event.dyName) + '】的目标');
 								'step 3'
 								if (result.bool) {
@@ -1917,12 +1922,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (!names.contains(nm)) names.push(nm);
 								}
 								event.dyNames = names;
-								player.chooseButton(['破竹：选择一种牌名（本回合使用无次数与距离限制）', names], true);
+								// ★ 同武库：[list,'vcard'] 对才是标准写法；裸字符串数组会让
+								//   dialog.add 把第二个牌名当按钮 type，switch 无匹配而崩溃。
+								player.chooseButton(['破竹：选择一种牌名（本回合使用无次数与距离限制）', [names, 'vcard']], true);
 								'step 1'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
-								player.storage.dy_pz_name = result.links[0];
+								// vcard 按钮的 link 是 [type,'',name] 三元组，牌名取 [2]
+								var dyname = (typeof result.links[0] == 'string') ? result.links[0] : result.links[0][2];
+								player.storage.dy_pz_name = dyname;
 								player.addTempSkill('dy_pozhu_turn');
-								game.log(player, '发动了', '#g【破竹】', '，本回合使用【', '#y' + get.translation(result.links[0]), '】无次数与距离限制');
+								game.log(player, '发动了', '#g【破竹】', '，本回合使用【', '#y' + get.translation(dyname), '】无次数与距离限制');
 							},
 							ai: { order: 2, result: { player: 1 } },
 						},
