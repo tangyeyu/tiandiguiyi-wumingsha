@@ -224,7 +224,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_liubei.jpg']],
 						tdgx_duyu: ['male', 'qun', 4, [
-							'dy_wuku', 'dy_wuku_use', 'dy_wuku_respond', 'dy_wuku_respond_sha', 'dy_wuku_respond_wuxie',
+							'dy_wuku', 'dy_wuku_use', 'dy_wuku_respond',
 							'dy_pozhu', 'dy_pozhu_turn', 'dy_pozhu_perm', 'dy_pozhu_check',
 							'dy_zhenqiao', 'dy_zhenqiao_devour', 'dy_zhenqiao_boost',
 							'dy_miewu',
@@ -320,12 +320,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 子技能（sub）也补 _info：lint C5 只对 sub 技能降级为 INFO，
 						// 缺 _info 会被判 WARN（C5 的判据是 lib.translate[skill+'_info'] 是否存在）。
 						'dy_wuku_use_info': '出牌阶段限一次：消耗一个「备」标记，将你区域内的一张牌当非装备牌使用。',
-						'dy_wuku_respond': '武库·启备（闪）',
-						'dy_wuku_respond_info': '响应时：消耗一个「备」标记，将你区域内的一张牌当【闪】打出（与「使用」共用每回合一次的额度）。',
-						'dy_wuku_respond_sha': '武库·启备（杀）',
-						'dy_wuku_respond_sha_info': '响应时：消耗一个「备」标记，将你区域内的一张牌当【杀】打出（与「使用」共用每回合一次的额度）。',
-						'dy_wuku_respond_wuxie': '武库·启备（无懈）',
-						'dy_wuku_respond_wuxie_info': '响应时：消耗一个「备」标记，将你区域内的一张牌当【无懈可击】打出（与「使用」共用每回合一次的额度）。',
+						'dy_wuku_respond': '武库·启备（打出）',
+						'dy_wuku_respond_info': '响应时：消耗一个「备」标记，将你区域内的一张牌当当前索要的非装备牌打出（牌名范围与「使用」相同，且与「使用」共用每回合一次的额度）。',
 						'dy_pozhu': '破竹',
 						'dy_pozhu_info': '出牌阶段限一次，你可以选择一种你手牌里有的牌名：本回合你使用此牌无次数和距离限制。若你本回合使用此牌造成过伤害，本局游戏你使用此牌名无次数和距离限制。',
 						'dy_pozhu_turn': '破竹·势',
@@ -1829,74 +1825,56 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							ai: { order: 4, result: { player: 1 } },
 						},
-						// 武库·启备（打出）：响应期把一张牌当**响应牌**打出。
+						// 武库·启备（打出）：响应期把一张牌当**任意非装备牌**打出。
 						// ── 设计口径（两项待定的落地）──────────────────────────────
-						// ① 打出时用什么牌名：**限定三种响应牌**——杀 / 闪 / 无懈可击。
-						//    理由：允许"任意非装备牌"等于随时能响应任何索要，明显过强；
-						//    而这三者恰是引擎响应窗口实际会索要的牌名，覆盖面够用且可控。
-						//    ★ 实现形态：**每种牌名一个固定 viewAs 的子技能**，而不是用一个
-						//      viewAs 函数去"动态取名"。原因：chooseToRespond 没有"先选牌名"
-						//      的钩子，动态取名会因为没有东西去设 storage.dy_wk_resp 而退化为
-						//      永远产出同一个牌名（本文件第一版就写成那样，已改）。
-						//      固定 viewAs 时，引擎在做响应可用性判定时会用
-						//      `event.filterCard(info.viewAs, player, event)`（game.js:42931）
-						//      拿该牌名去比对当前索要，**由引擎决定哪个子技能可用** —— 这才是稳的。
+						// ① 打出时用什么牌名：**不预设白名单**，与「使用」同一口径 ——
+						//    候选取自 lib.card 里全部 enable 含 phaseUse 的非装备牌名
+						//    （即玩家自己选牌名），对齐原版武库的"当非装备牌使用或打出"。
+						//    之所以不会变成"万能响应"：产出哪个牌名由 **viewAs 函数按当前索要**决定 ——
+						//    响应窗口索要的牌名可从 `_status.event._args[0].name` 读到
+						//    （全库 7 处调用全是 chooseToRespond({name:'sha'|'shan'})，
+						//     如 hearth.js:8642 / yws.js:2388），且 chooseToRespond 会校验所选牌
+						//     是否满足 filterCard（不满足会重新询问）⇒ 无法用【闪】去顶【杀】。
+						//    ★ 与固定 viewAs 的关系：引擎在**响应可用性判定**时只拿固定 viewAs 比对
+						//      （game.js:42931 `typeof info.viewAs!='function'` 才比对），函数形态会跳过该比对；
+						//      因此 skill.enable 就是本武将视角的"有活可干"（持有「备」且本回合未用过）。
 						// ② 使用与打出如何共用限次：共用同一个 storage.dy_wk_used（每回合 1 次），
 						//    见 dy_wuku_use 注释。viewAs 技能不能有 content ⇒ 扣减写在 onrespond 里
 						//    （game.js:20010-20012 在 respond 事件中调用 lib.skill[event.skill].onrespond）。
 						// ── 机制依据 ──────────────────────────────────────────────
 						//   形态照抄引擎自带的 aozhan_sha（game.js:34153-34179）：
-						//   enable / filterCard / viewAs / position / prompt / onrespond。
+						//   enable / filterCard / position / prompt / onrespond；
+						//   viewAs 用函数形式（game.js:58671 在玩家确认选择后调用，此时可按索要取名）。
 						dy_wuku_respond: {
 							audio: 'wuku',
 							enable: ['chooseToRespond'],
 							filterCard: function (card, player) {
 								return player.countMark('dy_bei') > 0 && !player.storage.dy_wk_used;
 							},
-							viewAs: { name: 'shan', isCard: true },
+							viewAs: function (cards, player) {
+								// 产出「当前响应窗口索要的牌名」——这就是原版武库"当非装备牌"的语义：
+								// 牌名取自 lib.card 的全部非装备牌名，但**实际用哪个由索要决定**
+								// （读 _args[0].name，全库响应调用均为 chooseToRespond({name:'sha'|'shan'})）。
+								// 读不到时兜底 'sha'。
+								// ★ 为什么不在函数里开对话框让玩家手选牌名：viewAs 是在玩家点"确定"的
+								//   UI 回调里同步求值的（game.js:58653 的 ok: handler → 58671 调用 viewAs），
+								//   在那里再开对话框不安全（无先例，且可能卡住响应流程）。故不做手选。
+								var need = '';
+								try {
+									var args = _status.event && _status.event._args;
+									if (args && args[0] && args[0].name) need = args[0].name;
+								} catch (e) { need = ''; }
+								return { name: need || 'sha', isCard: true };
+							},
 							position: 'he',
-							prompt: '武库：消耗一个「备」，将一张牌当【闪】打出',
+							prompt: '武库：消耗一个「备」，将一张牌当非装备牌打出',
 							check: function () { return 1 },
 							onrespond: function (event, player) {
 								player.removeMark('dy_bei', 1);
 								player.storage.dy_wk_used = 1;
-								game.log(player, '消耗了一个「备」，将一张牌当【闪】打出');
+								game.log(player, '消耗了一个「备」，将一张牌当非装备牌打出');
 							},
-							ai: { respondShan: true, order: 1 },
-						},
-						dy_wuku_respond_sha: {
-							audio: 'wuku',
-							enable: ['chooseToRespond'],
-							filterCard: function (card, player) {
-								return player.countMark('dy_bei') > 0 && !player.storage.dy_wk_used;
-							},
-							viewAs: { name: 'sha', isCard: true },
-							position: 'he',
-							prompt: '武库：消耗一个「备」，将一张牌当【杀】打出',
-							check: function () { return 1 },
-							onrespond: function (event, player) {
-								player.removeMark('dy_bei', 1);
-								player.storage.dy_wk_used = 1;
-								game.log(player, '消耗了一个「备」，将一张牌当【杀】打出');
-							},
-							ai: { respondSha: true, order: 1 },
-						},
-						dy_wuku_respond_wuxie: {
-							audio: 'wuku',
-							enable: ['chooseToRespond'],
-							filterCard: function (card, player) {
-								return player.countMark('dy_bei') > 0 && !player.storage.dy_wk_used;
-							},
-							viewAs: { name: 'wuxie', isCard: true },
-							position: 'he',
-							prompt: '武库：消耗一个「备」，将一张牌当【无懈可击】打出',
-							check: function () { return 1 },
-							onrespond: function (event, player) {
-								player.removeMark('dy_bei', 1);
-								player.storage.dy_wk_used = 1;
-								game.log(player, '消耗了一个「备」，将一张牌当【无懈可击】打出');
-							},
-							ai: { respondWuxie: true, order: 1 },
+							ai: { respondSha: true, respondShan: true, order: 1 },
 						},
 						// 破竹：选手牌里的一个牌名 → 本回合无次数距离限制；造成过伤害 → 本局永久
 						dy_pozhu: {
