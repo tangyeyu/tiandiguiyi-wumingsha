@@ -202,6 +202,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   初始可用 1 次；你的首次击杀令使用次数 +1（该加成每局游戏限一次）。
 						// 类别机制载体 tdgx_shenwei_kill / tdgx_turn_reset 为共用隐藏技，
 						// 必须列进每个武将的技能数组（心得 §4.3：不列进数组就不会被触发）。
+						// ⚠ 但这条只适用于 **trigger 型**子技能（filterTrigger 只查数组）；
+						//   **mod 型**子技能绝不能列进数组——列了就是开局常驻：
+						//   mlb_zhangwu_mod / lx_zhangcai_mod / dy_pozhu_turn 曾被错列，
+						//   刘备「开局无限出杀」即由此而来（2026-09-13 修复）。
+						//   mod 走动态挂载即可被 checkMod 读到：getSkills() 包含
+						//   tempSkills（game.js 当次核实），addTempSkill/addSkill 挂载即生效。
 						// 暂无立绘，[4] 缺省（引擎会补空数组，展平兜底里同样处理）。
 						// 四将立绘：走与 zhuan_caomao 相同的 [4] + 'ext:' 官方途径
 						//   game.js:8934 extimage=value → 8953 src=extimage.replace(/ext:/,'extension/')
@@ -214,18 +220,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						tdgx_luxun: ['male', 'wu', 4, [
 							'lx_lianying', 'lx_lianying_draw', 'lx_lianying_end',
 							'lx_chiyang', 'lx_chiyang_end',
-							'lx_qianxun', 'lx_zhangcai', 'lx_zhangcai_mod',
+							'lx_qianxun', 'lx_zhangcai',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_luxun.jpg']],
 						tdgx_liubei: ['male', 'shu', 4, [
 							'mlb_rende', 'mlb_rende_reclaim', 'mlb_rende_draw',
 							'mlb_rende_nullify', 'mlb_rende_give',
-							'mlb_zhangwu', 'mlb_zhangwu_mod', 'mlb_xinghan',
+							'mlb_zhangwu', 'mlb_xinghan',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_liubei.jpg']],
 						tdgx_duyu: ['male', 'qun', 4, [
 							'dy_wuku', 'dy_wuku_use', 'dy_wuku_respond',
-							'dy_pozhu', 'dy_pozhu_turn', 'dy_pozhu_perm', 'dy_pozhu_check',
+							'dy_pozhu', 'dy_pozhu_perm', 'dy_pozhu_check',
 							'dy_zhenqiao', 'dy_zhenqiao_devour', 'dy_zhenqiao_boost',
 							'dy_miewu',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
@@ -1753,6 +1759,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 兴汉（主公技）：蜀势力伤害免疫（每名角色每回合限 1 次）
 						// mlb_xh_log[攻击者 playerid] 由 tdgx_turn_reset 每回合清空
+						// ★ filter 再加一道 isZhu2 闸门：引擎只在玩家 init 时按 zhuSkill 过滤
+						//   （game.js:22930-22933），实测非主公的刘备身上出现过该技能
+						//   （获得路径未定位，可能被其他扩展改写 init）——这里兜底保证
+						//   非主公必定不生效，与仁德开局 +1「仁」的 isZhu2 判定同口径。
 						mlb_xinghan: {
 							audio: 2,
 							zhuSkill: true,
@@ -1761,6 +1771,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							popup: false,
 							trigger: { player: 'damageBegin' },
 							filter: function (event, player) {
+								if (!player.isZhu2()) return false;
 								var source = event.source;
 								if (!source || source == player) return false;
 								if (source.group != 'shu') return false;
