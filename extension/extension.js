@@ -2826,9 +2826,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   （game.js:32321 在 gameStart 时置 true）。
 								if (!_status.gameStarted) return false;
 								if (tn == 'loseAfter' || tn == 'gainAfter') return true;
-								// 批次边界：玩家的新动作（新回合 / 新打出一张牌）⇒ 重开一批
+								// 批次边界：**只有你自己**的新动作（新回合 / 自己打出一张牌）才重开一批。
+								// ★ 第一版把这两个时机写成 global 且不判归属，于是**别人打牌也重置你的批次**
+								//   ⇒ 下一个自动结算又能摸一张（用户实测："没发动技能，用一张牌就摸一张"）。
+								//   useCard 事件上当前使用者是 trigger.player；phaseBegin 是 trigger.player。
+								var _own = trigger && trigger.player === player;
 								if (tn == 'phaseBegin' || tn == 'useCard') {
-									player.storage.bz_kc_batch = 0;
+									if (_own) player.storage.bz_kc_batch = 0;
 									return false;
 								}
 								// 阴（storage=false）：发动技能后摸一张，但**同一批只摸一次**
@@ -2909,6 +2913,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (tn == undefined) tn = event.name;
 								if (tn == 'phaseBegin') return player.isIn();
 								if (!event.card) return false;
+								// ★ 只认**你自己**使用的牌：useCardBegin 是 player 侧，但为稳妥仍判归属
+								//   （十周年UI 等扩展会把事件派发到全场）。
+								if (trigger && trigger.player && trigger.player !== player) return false;
+								// ★ 诊断：把每次评估的实况写进战报，便于确认"第二张到底有没有被评估/被什么挡住"
+								game.log(player, '【情势·诊断】评估', get.translation(event.card),
+									'/ opts=', (player.storage.bz_qs_opts || 0),
+									'/ used=', (player.storage.bz_qs_used || 0));
 								var tt = get.type(get.name(event.card));
 								if (tt != 'trick' && tt != 'delay') return false;
 								// ★ 兜底：闸门是"本回合"的状态，正常情况下由 phaseBegin 清零。
