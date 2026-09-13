@@ -2612,12 +2612,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									event.goto(3); return;
 								}
 								event.gzCur = cur;
+								// ★ ai 回调纯闭包：不读 _status.event（其内容随引擎上下文变化，
+								//   曾导致 bz_owner 取到 undefined）。闭包变量在回调触发时仍有效。
+								var gzOwner = player;
+								var gzCur = cur;
 								cur.chooseBool('兵权：是否令' + get.translation(player) + '获得一个「兵」？')
-									.set('bz_owner', player)
 									.set('ai', function () {
-										// ★ 事件 .parent 在琉璃版未被赋值，getParent().player 为 undefined
-										//   会抛异常卡死询问（用户实测）——改用 .set 挂在事件上的引用
-										return get.attitude(_status.event.player, _status.event.bz_owner) > 0;
+										return get.attitude(gzCur, gzOwner) > 0;
 									});
 								'step 4'
 								if (result.bool) {
