@@ -250,20 +250,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'bz_bingquan', 'bz_bingquan_draw', 'bz_bingquan_buff',
 							'bz_jiufa', 'bz_jiufa_track',
 							'bz_kongcheng', 'bz_kongcheng_yin', 'bz_kongcheng_yang',
-							'bz_bing'
-						]],
+							'bz_qingshi', 'bz_bing'
+						], ['ext:天地归一/bing_zhugeliang.jpg']],
 						tdgx_zhouyu: ['male', 'wu', 4, [
 							'mzy_yingzi', 'mzy_fanjian', 'mzy_yingyan', 'mzy_yingyan_fire',
 							'mzy_shanmou', 'mzy_jichu', 'mzy_jichu_effect',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
-						]],
+						], ['ext:天地归一/tdgx_zhouyu.jpg']],
 						tdgx_peixiu: ['male', 'qun', 4, [
 							'mpx_xingtu', 'mpx_juezhi', 'mpx_juezhi_opt1', 'mpx_juezhi_opt2',
 							'mpx_xietu', 'mpx_tu_guard', 'mpx_tu_discard',
 							'mpx_wantu', 'mpx_wantu_sync',
 							'mpx_tu', 'mpx_zengtu',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
-						]],
+						], ['ext:天地归一/tdgx_peixiu.jpg']],
 					},
 					characterIntro: {
 						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你可以选择一名其他角色令其获得「策」（放弃发动则本技能本局不再生效），你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你可以摸X+1张牌（X为「策」的效果数，至多4）；若场上没有「策」，你摸一张牌。',
@@ -322,6 +322,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'tdgx_liubei': '名·刘备',
 						'tdgx_duyu': '名·杜预',
 						'tdgx_lukang': '名·陆抗',
+						'bing_zhugeliang': '兵·诸葛亮',
+						'tdgx_zhouyu': '名·周瑜',
+						'tdgx_peixiu': '名·裴秀',
 						'lx_lianying': '连营',
 						'lx_lianying_info': '锁定技，每当你因非使用和打出而失去牌时，你获得X个「谦」标记（X为本次失去牌的数量的一半，向上取整）。当你没有手牌时，你将手牌摸至体力上限。出牌阶段开始时，你摸等同于「谦」数量的牌，并弃置所有的「谦」。结束阶段，若你使用或打出的牌数不大于你的体力值，你摸等同于你弃牌阶段弃置牌数的牌。',
 						'lx_lianying_draw': '连营·清囊',
