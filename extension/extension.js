@@ -2770,7 +2770,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						bz_kongcheng: {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { player: ['loseAfter', 'gainAfter', 'logSkill', 'damageBegin'] },
+							// ★ 触发时机扩展（为了"同批次只摸一次"的限流）：
+							//   phaseBegin / useCard 是"玩家新动作"的边界，用来重置批次。
+							trigger: { player: ['loseAfter', 'gainAfter', 'logSkill', 'damageBegin'], global: ['phaseBegin', 'useCard'] },
 							// ★ 接引擎原生"转换技"：zhuanhuanji:true 会让技能被识别为转换技
 							//   （game.js:60267 归入"转换技"标签）；当前形态存放在
 							//   player.storage.bz_kongcheng（true=阳 / false=阴）——
@@ -2804,6 +2806,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// （旧版用 bz_kc_yin 且初始化成 false 却按"true=阴"判，导致开局落在阳面、
 								//   阴面的摸牌永不触发——用户实测「空城一直不触发」。）
 								if (typeof player.storage.bz_kongcheng != 'boolean') player.storage.bz_kongcheng = false;
+								if (typeof player.storage.bz_kc_batch != 'number') player.storage.bz_kc_batch = 0;   // 同批次限流闸门
 								player.storage.bz_kc_nonzero = true;   // 手牌"非零"状态（开局有手牌）
 							},
 							filter: function (event, player) {
@@ -2815,9 +2818,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								var tn = event.triggername;
 								if (tn == undefined) tn = event.name;
 								if (!player.isIn()) return false;
+								// ★★ 开局前一律不触发 ★★
+								//   引擎在 gameStart **之前**也会派发 logSkill（初始化/发牌阶段
+								//   各锁定技的自动触发都算），于是空城·阴会在"游戏还没开始"
+								//   时被喂一堆牌（用户实测：开局就摸了 7 张）。
+								//   判据用引擎自己在 trigger 里用的同一个标志：_status.gameStarted
+								//   （game.js:32321 在 gameStart 时置 true）。
+								if (!_status.gameStarted) return false;
 								if (tn == 'loseAfter' || tn == 'gainAfter') return true;
-								// 阴（storage=false）：发动技能后摸一张
-								if (tn == 'logSkill') return !player.storage.bz_kongcheng;
+								// 批次边界：玩家的新动作（新回合 / 新打出一张牌）⇒ 重开一批
+								if (tn == 'phaseBegin' || tn == 'useCard') {
+									player.storage.bz_kc_batch = 0;
+									return false;
+								}
+								// 阴（storage=false）：发动技能后摸一张，但**同一批只摸一次**
+								if (tn == 'logSkill') return !player.storage.bz_kongcheng && !player.storage.bz_kc_batch;
 								// 阳（storage=true）：受到伤害时判定
 								if (tn == 'damageBegin') return !!player.storage.bz_kongcheng && event.num > 0;
 								return false;
@@ -2828,6 +2843,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// 但这里同样做 name 兜底，避免两条路径不一致时行为分叉。
 								var tn = event.triggername;
 								if (tn == undefined) tn = event.name;
+								// 双保险：即使 filter 因时序被绕过，content 也不在开局前生效
+								if (!_status.gameStarted) { event.finish(); return; }
 								if (tn == 'loseAfter' || tn == 'gainAfter') {
 									var now = player.countCards('h') > 0;
 									if (now != player.storage.bz_kc_nonzero) {
@@ -2840,6 +2857,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								if (tn == 'logSkill') {
 									player.draw(1);
+									// 落批次闸门：同一批（连续自动结算）只摸这一次
+									player.storage.bz_kc_batch = 1;
 									game.log(player, '【空城·阴】：发动技能后摸了一张牌');
 									event.finish(); return;
 								}
