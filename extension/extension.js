@@ -384,7 +384,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'bz_jiufa': '九伐',
 						'bz_jiufa_info': '限定技。回合开始时，当场上每名角色于游戏开始至今均使用/打出/失去过【杀】，并且你的体力值不为最多，你可以展示牌堆内剩余的所有基本牌，然后你可以从中选择(5+X)张牌无使用次数和距离限制地使用或打出，未被选择的牌洗回牌堆。（X为「兵」的数量）',
 						'bz_kongcheng': '空城',
-						'bz_kongcheng_info': '转换技。条件：当你手牌数变为零或从零改变时，你转换阴阳形态。阴：当你发动技能时（含锁定技的自动触发），你摸一张牌。阳：当你受到伤害时，你进行一次判定：①若判定牌为锦囊牌，你令此伤害-1（至多减至0）；②若判定牌不为锦囊牌，你弃置一名角色的一张牌。',
+						'bz_kongcheng_info': '转换技。条件：当你手牌数变为零或从零改变时，你转换阴阳形态。阴：当你发动技能时（含锁定技的自动触发），你摸一张牌。阳：当你受到伤害时，你进行一次判定：①若判定牌为锦囊牌，你令此伤害-1（至多减至0）；②若判定牌不为锦囊牌，你弃置一名角色的一张牌。<br>（游戏开始时你处于阴形态；角色牌面上的「空城」标记与技能提示会显示当前形态）',
 						'bz_qingshi': '情势',
 						'bz_qingshi_info': '锁定技。回合开始时，你摸X张牌（X为「兵」的数量，且至少为1）；当你本回合使用前两张锦囊牌时，你可以选择以下选项执行：①本牌造成伤害+1（若此牌不造成伤害，则此项无效果）；②多执行一次。并获得一个「兵」。（你以此法每回合至多得到两个「兵」，你以此法获得的「兵」三轮移除一次）',
 						'bz_qingshi_dmg': '情势·锐',
@@ -2778,17 +2778,25 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//   intro.content 时传的是 player.storage[技能名]（game.js:28208-28211）。
 							//   翻转请统一走 player.changeZhuanhuanji('bz_kongcheng')：
 							//   它会翻转 storage、广播牌面翻转动画、并刷新标记（game.js:22209-22218）。
+							// ★ 用 mark:true（**不要**用 mark:'character'）——原版转换技就是 mark:true，
+							//   见 clan.js:569 钟琰「观骨」：zhuanhuanji:true + mark:true + intro.content。
+							//   mark:'character' 会走引擎的 markSkillCharacter（game.js:28227），
+							//   而那个分支传的是 `caption`（来自 info.intro.name，且引擎误写成 info.name），
+							//   十周年UI 扩展的 markCharacter 拿它当**角色 id** 去 `name.indexOf(...)`，
+							//   于是直接抛 `TypeError: name.indexOf is not a function` 并把选将/初始化打断。
+							//   mark:true 走的是普通标记路径，intro.content(storage) 照样按形态显示。
 							zhuanhuanji: true,
 							// 引擎的"是否处于阳面"判定（game.js:64963-64971）
 							zhuanhuanji2: function (skill, player) { return !!player.storage.bz_kongcheng; },
-							mark: 'character',
+							mark: true,
+							marktext: '空城',
 							intro: {
 								name: '空城',
-								// storage 就是 player.storage.bz_kongcheng，据此显示当前面
+								// storage 就是 player.storage.bz_kongcheng（记得引擎传的是 storage[技能名]）
 								content: function (storage) {
 									return storage
-										? '阳：你受到伤害时判定——锦囊牌令此伤害-1，否则弃一名角色一张牌。'
-										: '阴：你发动技能时摸一张牌。';
+										? '转换技（当前·阳）。你受到伤害时进行一次判定：①若判定牌为锦囊牌，你令此伤害-1（至多减至0）；②若判定牌不为锦囊牌，你弃置一名角色的一张牌。'
+										: '转换技（当前·阴）。你发动技能时摸一张牌。（当你手牌数变为零或从零改变时转换形态）';
 								},
 							},
 							init: function (player) {
