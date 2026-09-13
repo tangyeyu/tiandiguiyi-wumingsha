@@ -247,7 +247,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 转职时由 bz_bingquan_round 统一移除），情势为动态获得技能，
 						// **不列进数组**（列了开局就有），由 addSkill 获得。
 						bing_zhugeliang: ['male', 'shu', 4, [
-							'bz_bingquan', 'bz_jiufa',
+							'bz_bingquan', 'bz_jiufa', 'bz_jiufa_track',
 							'bz_kongcheng', 'bz_qingshi',
 							'bz_bing'
 						], ['ext:天地归一/bing_zhugeliang.jpg']],
@@ -2652,16 +2652,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							limited: true,
 							skillAnimation: true,
 							animationColor: 'water',
-							trigger: { player: 'phaseBegin', global: ['useCardAfter', 'respondAfter', 'loseAfter'] },
+							trigger: { player: 'phaseBegin' },
 							init: function (player) { player.storage.bz_jiufa = false; },
 							filter: function (event, player) {
-								if (event.triggername != 'phaseBegin') {
-									var cards0 = event.cards || (event.card ? [event.card] : []);
-									for (var i = 0; i < cards0.length; i++) {
-										if (get.name(cards0[i]) == 'sha') return true;
-									}
-									return false;
-								}
 								if (player.storage.bz_jiufa) return false;
 								for (var i = 0; i < game.players.length; i++) {
 									if (!game.players[i].storage.bz_sha_seen) return false;
@@ -2679,11 +2672,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								if (event.triggername != 'phaseBegin') {
-									var p0 = trigger.player;
-									if (!p0.storage.bz_sha_seen) p0.storage.bz_sha_seen = true;
-									event.finish(); return;
-								}
 								player.storage.bz_jiufa = true;
 								var x = player.countMark('bz_bing');
 								event.pool = [];
@@ -2693,6 +2681,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								event.count = 5 + x;
 								game.log(player, '发动了限定技', '#g【九伐】', '，展示了牌堆内所有的基本牌');
+								// ★ 保险：牌堆基本牌为空/解析异常时不弹空选择框（用户报「进度条但没选项」）
+								if (!event.pool.length) { event.finish(); return; }
 								'step 1'
 								if (event.count <= 0 || !event.pool.length) { event.finish(); return; }
 								player.chooseCardButton(event.pool, '九伐：从中选择一张基本牌使用（还可选择' + event.count + '张）')
@@ -2707,6 +2697,24 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.chooseUseTarget(card, '九伐：是否使用' + get.translation(card) + '？（无次数和距离限制）');
 								'step 3'
 								event.goto(1);
+							},
+						},
+						// 杀见闻追踪器：必须独立静默（forced+direct+popup:false）。不可并入九伐——
+						// 九伐带 skillAnimation 且非 forced，合并后每次有人用/弃【杀】都会空放
+						// 一次全屏技能动画且无任何选项（用户实测「一进游戏就技能进度条但没选项」）。
+						bz_jiufa_track: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { global: ['useCardAfter', 'respondAfter', 'loseAfter'] },
+							filter: function (event, player) {
+								var cards = event.cards || (event.card ? [event.card] : []);
+								for (var i = 0; i < cards.length; i++) {
+									if (get.name(cards[i]) == 'sha') return true;
+								}
+								return false;
+							},
+							content: function () {
+								var p = trigger.player;
+								if (!p.storage.bz_sha_seen) p.storage.bz_sha_seen = true;
 							},
 						},
 						bz_kongcheng: {
