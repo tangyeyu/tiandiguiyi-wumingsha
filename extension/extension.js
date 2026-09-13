@@ -2776,6 +2776,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							locked: true,
 							forced: true,
 							charlotte: true,
+							popup: false,
+							direct: true,
 							trigger: { player: 'useCardBegin', global: 'phaseBegin' },
 							filter: function (event, player) {
 								if (event.triggername == 'phaseBegin') return player.isIn();
@@ -3163,6 +3165,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						mpx_juezhi: {
 							audio: 2,
 							enable: 'phaseUse',
+							forced: true, locked: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'useCardToPlayered', source: 'damageBegin2' },
 							filter: function (event, player) {
 								if (event.triggername == 'useCardToPlayered') return event.card && get.name(event.card) == 'sha' && player.storage.mpx_juezhi_opt1 == true;
@@ -3292,6 +3295,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						mpx_wantu: {
 							audio: 2,
 							enable: 'phaseUse',
+							forced: true, locked: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'gainAfter' },
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
