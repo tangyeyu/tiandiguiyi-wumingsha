@@ -2617,10 +2617,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									// 转职判定读 roundStart 之前快照下来的"上一轮获得的兵数"，
 									// -1 = 首轮豁免。
 									var g14 = player.storage.bz_bing_carry;
-									if (typeof g14 == 'number' && g14 >= 0 && g14 <= 2) {
+								if (typeof g14 == 'number' && g14 >= 0 && g14 <= 2) {
 										game.log(player, '本轮获得的「兵」不大于二，失去了', '#g【兵权】', '并获得', '#g【情势】');
 										player.removeSkill('bz_bingquan');
 										if (!player.hasSkill('bz_qingshi')) player.addSkill('bz_qingshi');
+										// ★ 情势的"每回合闸门"必须在这里清一次：它靠自己的 phaseBegin 清零，
+										//   但获得情势的这个回合，情势的 phaseBegin 已经跑过了（当时还没这技能）
+										//   ⇒ 闸门会带着上一手的状态进入下一回合，表现为"只有第一张锦囊能触发"。
+										player.storage.bz_qs_opts = 0;
+										player.storage.bz_qs_used = 0;
+										player.storage.bz_qs_gained = 0;
 									}
 									event.finish(); return;
 								}
@@ -2746,8 +2752,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { player: ['loseAfter', 'gainAfter', 'logSkill', 'damageBegin'] },
 							init: function (player) {
-								player.storage.bz_kc_nonzero = true;
-								player.storage.bz_kc_yin = false;
+								// ★ bz_kc_yin = true 表示**阴**形态；正文要求"游戏一开始就是阴形态"，
+								//   故这里必须初始化成 true。
+								//   （旧版写成 false ⇒ 开局是阳：阴面的"发动技能摸牌"永不触发
+								//     （filter 判 `bz_kc_yin == true`），而阳面只在受伤时才判定
+								//     ⇒ 平时完全看不到空城发动，用户实测「空城一直不触发」。）
+								player.storage.bz_kc_nonzero = true;   // 手牌"非零"状态（开局有手牌）
+								player.storage.bz_kc_yin = true;       // 阴
 							},
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
@@ -2820,13 +2831,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!event.card) return false;
 								var tt = get.type(get.name(event.card));
 								if (tt != 'trick' && tt != 'delay') return false;
-								// ★「本回合使用的前两张锦囊牌」= 每回合至多执行 2 次。
-								//   用 storage 里**本回合**的计数/闸门（phaseBegin 时清零），
-								//   不用 getHistory（「额外结算一次」的嵌套 useCard 尚未入历史，
-								//   数出来恒为 0 ⇒ 无限连锁，用户实测过），
-								//   也不用 addTempSkill 当闸门（临时技的过期时机取决于
-								//   过期表是否被设过，实测会出现"只有第一张能触发"，
-								//   即闸门没被清掉、后续牌全被挡）。
+								// ★ 兜底：闸门是"本回合"的状态，正常情况下由 phaseBegin 清零。
+								//   但若本回合 phaseBegin 时还没拿到情势（例如本回合才因兵权失去而获得情势），
+								//   闸门会带着旧回合的 1 进来 ⇒ 表现就是"只有第一张锦囊能触发"。
+								//   这里发现"计数为 0 但闸门仍是 1"（即本回合还没执行过任何一次），
+								//   就判定闸门是脏的，就地清掉。
+								if (player.storage.bz_qs_used && !(player.storage.bz_qs_opts || 0)) {
+									player.storage.bz_qs_used = 0;
+									player.storage.bz_qs_gained = 0;
+								}
 								if ((player.storage.bz_qs_opts || 0) >= 2) return false;
 								if (player.storage.bz_qs_used) return false;
 								return true;
