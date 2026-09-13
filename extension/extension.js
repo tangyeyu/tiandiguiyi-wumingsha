@@ -2827,10 +2827,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!_status.gameStarted) return false;
 								if (tn == 'loseAfter' || tn == 'gainAfter') return true;
 								// 批次边界：**只有你自己**的新动作（新回合 / 自己打出一张牌）才重开一批。
-								// ★ 第一版把这两个时机写成 global 且不判归属，于是**别人打牌也重置你的批次**
-								//   ⇒ 下一个自动结算又能摸一张（用户实测："没发动技能，用一张牌就摸一张"）。
-								//   useCard 事件上当前使用者是 trigger.player；phaseBegin 是 trigger.player。
-								var _own = trigger && trigger.player === player;
+								// ★★ filter 里**不能**用 trigger ★★
+								//   filter 的形参只有 (event, player) —— 用 trigger 会抛
+								//   `ReferenceError: trigger is not defined`（用户实测），
+								//   而引擎把异常吞掉后 filter 返回 undefined ⇒ 技能**静默失效**。
+								//   （trigger 只在 content 里存在：引擎在 game.js:15553 设置 next._trigger。）
+								var _own = event && event.player === player;
 								if (tn == 'phaseBegin' || tn == 'useCard') {
 									if (_own) player.storage.bz_kc_batch = 0;
 									return false;
@@ -2913,9 +2915,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (tn == undefined) tn = event.name;
 								if (tn == 'phaseBegin') return player.isIn();
 								if (!event.card) return false;
-								// ★ 只认**你自己**使用的牌：useCardBegin 是 player 侧，但为稳妥仍判归属
-								//   （十周年UI 等扩展会把事件派发到全场）。
-								if (trigger && trigger.player && trigger.player !== player) return false;
+								// ★ 只认**你自己**使用的牌。注意：filter 里没有 trigger（形参只有 event/player），
+								//   必须用 event.player —— 用 trigger 会 ReferenceError 并被引擎吞掉，
+								//   后果是技能静默失效（本处曾因此整条触发失效）。
+								if (event.player && event.player !== player) return false;
 								// ★ 诊断：把每次评估的实况写进战报，便于确认"第二张到底有没有被评估/被什么挡住"
 								game.log(player, '【情势·诊断】评估', get.translation(event.card),
 									'/ opts=', (player.storage.bz_qs_opts || 0),
