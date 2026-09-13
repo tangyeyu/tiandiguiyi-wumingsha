@@ -3111,6 +3111,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
+								// ★ 只结算善谋**当前面**的效果，不翻转状态（2026-09-13 修复）：
+								//   善谋本体（转换技）在同一次 logSkill 上已效果+翻转各一次；
+								//   技出·承若再翻转，两面来回横跳——阴面强制选人对话框
+								//   每次发动技能都弹出（用户报的「卡在选择下一个技能」）。
 								if (!player.storage.mzy_shanmou_yin) {
 									if (player.hp < player.maxHp) {
 										player.recover(1);
@@ -3128,7 +3132,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										game.log(player, '【技出】额外触发【善谋·阴】：对', result.targets[0], '造成了1点伤害');
 									}
 								}
-								player.storage.mzy_shanmou_yin = !player.storage.mzy_shanmou_yin;
 							},
 						},
 
