@@ -2771,7 +2771,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						bz_kongcheng: {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ 触发时机扩展（为了"同批次只摸一次"的限流）：
-							//   phaseBegin / useCard 是"玩家新动作"的边界，用来重置批次。
+							//   phaseBegin 是"你自己新回合"的批次边界；useCard 只用来**屏蔽**
+							//   （返回 false），不再重置批次。
 							trigger: { player: ['loseAfter', 'gainAfter', 'logSkill', 'damageBegin'], global: ['phaseBegin', 'useCard'] },
 							// ★ 接引擎原生"转换技"：zhuanhuanji:true 会让技能被识别为转换技
 							//   （game.js:60267 归入"转换技"标签）；当前形态存放在
@@ -2826,19 +2827,34 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   （game.js:32321 在 gameStart 时置 true）。
 								if (!_status.gameStarted) return false;
 								if (tn == 'loseAfter' || tn == 'gainAfter') return true;
-								// 批次边界：**只有你自己**的新动作（新回合 / 自己打出一张牌）才重开一批。
+								// 批次边界：只有**你自己回合开始**才重开一批。
 								// ★★ filter 里**不能**用 trigger ★★
 								//   filter 的形参只有 (event, player) —— 用 trigger 会抛
 								//   `ReferenceError: trigger is not defined`（用户实测），
 								//   而引擎把异常吞掉后 filter 返回 undefined ⇒ 技能**静默失效**。
 								//   （trigger 只在 content 里存在：引擎在 game.js:15553 设置 next._trigger。）
 								var _own = event && event.player === player;
-								if (tn == 'phaseBegin' || tn == 'useCard') {
+								if (tn == 'phaseBegin') {
 									if (_own) player.storage.bz_kc_batch = 0;
 									return false;
 								}
+								// ★ 不再把 'useCard' 当批次边界：你**打出一张牌**会触发一堆锁定技，
+								//   若出牌就重开闸门，就会变成"每出一张牌都摸一张"
+								//   （用户实测："阴面不发动技能，打出一张牌也能摸牌"）。
+								//   批次边界只保留"你自己回合开始"。
+								if (tn == 'useCard') return false;
 								// 阴（storage=false）：发动技能后摸一张，但**同一批只摸一次**
-								if (tn == 'logSkill') return !player.storage.bz_kongcheng && !player.storage.bz_kc_batch;
+								// ★★ 排除空城自己 ★★
+								//   空城是 locked:true，它**自己的发动也会派发 logSkill**。
+								//   不排除就会形成自触发链：
+								//     某技能发动 → 空城摸 1 张 → 空城自己的发动又派发 logSkill
+								//     → 被自己的 filter 接住 → 再摸 1 张 ……（用户实测"没发动技能也摸牌"）
+								//   所以这里要求：被记录的那个技能**不是空城自己**。
+								if (tn == 'logSkill') {
+									if (player.storage.bz_kongcheng) return false;
+									if (event.skill == 'bz_kongcheng' || event.skill == 'bz_kongcheng_stance') return false;
+									return !player.storage.bz_kc_batch;
+								}
 								// 阳（storage=true）：受到伤害时判定
 								if (tn == 'damageBegin') return !!player.storage.bz_kongcheng && event.num > 0;
 								return false;
