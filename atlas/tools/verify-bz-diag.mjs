@@ -91,7 +91,7 @@ ok('正例：已打补丁的文件能写入 __bzTrace', tryRun('已打补丁的�
    这正是我第一版翻车的原因（引用了包级闭包里的局部变量 trace，
    而 Legacy 用 new Function 编译，运行时看不到闭包）。这里逐行把插桩行里
    出现的标识符抠出来，任何不在白名单里的都判失败。 */
-const ALLOWED = new Set(['game', 'event', 'player', 'try', 'catch', 'e', 'if', 'typeof', 'length', 'push', 'slice', 'join', 'log', 'countMark', 'bz_bing', 'bz_bingquan', 'bz_qingshi', 'bz_jiufa', 'bz_kongcheng', 'phaseBegin', 'Number', 'String'])
+const ALLOWED = new Set(['game', 'event', 'player', 'try', 'catch', 'e', 'e1', 'e2', 'if', 'typeof', 'length', 'push', 'slice', 'join', 'log', 'countMark', 'bz_bing', 'bz_bingquan', 'bz_qingshi', 'bz_jiufa', 'bz_kongcheng', 'phaseBegin', 'Number', 'String', 'require', 'fs', 'appendFileSync', 'Date', 'toLocaleTimeString', '_ms', 'var'])
 const BAD_WORDS = new Set(['trace', 'undefined_var', 'self'])
 const lines = SRC.split('\n').filter((l) => l.includes('__bzTrace'))
 ok('补丁确实插入了插桩行', lines.length > 0, `${lines.length} 行`)
@@ -108,8 +108,28 @@ for (const l of lines) {
   }
 }
 ok('插桩行不引用任何闭包局部变量 / 浏览器全局', offenders.length === 0, offenders.length ? [...new Set(offenders)].join(',') : '仅用 game/event/player')
+
+/* ★ 汇总行的位置必须"可达"：它要在最后一个 'step N' 标签**之后**紧跟着出现，
+   而不是落在末步的 event.finish(); return; 之后（那是死代码，语法合法但永不执行——
+   第一版就是这个坑：node --check 能过，运行时战报里却一行都没有）。 */
 const summaryLines = SRC.split('\n').filter((l) => l.includes('BZ诊断'))
 ok('每个被插桩的技能都有一行战报汇总', summaryLines.length === 4, `${summaryLines.length} 行`)
+const srcLines = SRC.split('\n')
+const unreachable = []
+for (let i = 0; i < srcLines.length; i++) {
+  if (!srcLines[i].includes('BZ诊断')) continue
+  // 往上找最近的 'step N'
+  let stepIdx = -1
+  for (let j = i - 1; j >= 0 && j > i - 14; j--) { if (/'step \d+'/.test(srcLines[j])) { stepIdx = j; break } }
+  if (stepIdx === -1) { unreachable.push(`L${i + 1} 找不到所属步骤`); continue }
+  // 汇总行与 step 标签之间不允许出现 return/finish（那就是不可达）
+  let blocked = null
+  for (let j = stepIdx + 1; j < i; j++) {
+    if (/event\.finish\(\)|return\s*;/.test(srcLines[j])) { blocked = j + 1; break }
+  }
+  if (blocked) unreachable.push(`L${i + 1} 之前有 finish/return（L${blocked}）⇒ 不可达`)
+}
+ok('汇总行可达（不在末步的 finish/return 之后）', unreachable.length === 0, unreachable.length ? unreachable.join('; ') : '4 处均位于步骤开头')
 
 /* 反向守卫自检：把插桩行人为改坏，上面的判据必须能抓到 */
 const brokenSrc = SRC.replace(/game\.__bzTrace/g, 'trace.__bzTrace')

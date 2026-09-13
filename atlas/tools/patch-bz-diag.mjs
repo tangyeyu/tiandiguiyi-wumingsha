@@ -40,17 +40,26 @@ function instrumentSkill (src, skillId, tnExpr) {
     const seq = `${indent}try { game.__bzStep = (game.__bzStep || 0) + 1; } catch (e) { }`
     return `\n${base}\n${seq}\n${indent}'step ${n}'`
   })
-  // 汇总行：必须落在 **content 函数体内部**、最后一个 'step N' 之后。
-  // 定位方式：取最后一个 'step N' 的位置，再往后找第一个单独成行的内容函数收尾
-  // ——即 "\n\t\t\t\t\t\t\t}" （7 个 tab），它属于 content: function () { ... }。
+  // ★★ 汇总行放在**最后一个步骤的开头**，不是末尾！★★
+  //   第一版插在最后一个步骤的 `event.finish(); return;` **之后** —— 那是死代码，
+  //   虽然 node --check 能过（语法合法），但永远不会执行 ⇒ 战报/文件里什么都看不到。
+  //   放在末步开头的好处：只要执行到最后一个步骤就一定会输出一行，
+  //   于是"卡死时最后一行"既包含已走完的步数，也包含正在走的这一步。
   if (count > 0) {
     const lastStepIdx = out.lastIndexOf("'step ")
-    const tail = out.slice(lastStepIdx)
-    const closeRel = tail.search(/\n\t{7}\}/)
-    if (closeRel !== -1) {
-      const at = lastStepIdx + closeRel
-      const summary = `\n\t\t\t\t\t\t\t\ttry { game.log('【BZ诊断·${skillId}】' + (${tnExpr}) + ' 共执行 ' + (game.__bzStep || 0) + ' 步 —— ' + (game.__bzTrace || []).slice(-6).join(' → ')); game.__bzStep = 0; game.__bzTrace = []; } catch (e) { }`
-      out = out.slice(0, at) + summary + out.slice(at)
+    if (lastStepIdx !== -1) {
+      const nl = out.indexOf('\n', lastStepIdx)
+      const indent = '\t'.repeat(9)
+      const summary = `\n${indent}try {
+${indent}\tgame.__bzStep = (game.__bzStep || 0) + 1;
+${indent}\tgame.__bzTrace = game.__bzTrace || [];
+${indent}\tgame.__bzTrace.push('${skillId}|' + (${tnExpr}) + '|进入末步');
+${indent}\tvar _ms = '【BZ诊断·${skillId}】' + (${tnExpr}) + ' 已执行 ' + game.__bzStep + ' 步 —— ' + game.__bzTrace.join(' → ');
+${indent}\tgame.log(_ms);
+${indent}\tgame.__bzStep = 0; game.__bzTrace = [];
+${indent}\ttry { require('fs').appendFileSync('C:/bz-diag.log', new Date().toLocaleTimeString() + '  ' + _ms + '\\n'); } catch (e1) { }
+${indent}} catch (e2) { }`
+      out = out.slice(0, nl) + summary + out.slice(nl)
     }
   }
   return { src: src.slice(0, start) + out + src.slice(end), count, summary: count > 0 }
@@ -80,9 +89,11 @@ fs.writeFileSync(FILE, out, 'utf8')
 console.log('诊断补丁已写入：' + FILE)
 console.log('备份（还原用）：' + bak)
 console.log(report.join('  '))
-console.log('\n下一步：重启游戏 → 用诸葛亮开一局 →走到卡住那一刻，看游戏里的「战报」：')
-console.log('  · 每次技能走完会有一行  【BZ诊断·技能名】时机 共执行 N 步 —— …')
-console.log('  · **卡住时最后一行就是死点**；如果连一行都没有，说明死点不在诸葛亮这四个技能里')
-console.log('把最后 5~8 行【BZ诊断】截图或抄给我即可（不需要 F12 控制台）。')
+console.log('\n下一步：重启游戏 → 用诸葛亮开一局 → 走到卡住那一刻，然后任选一种方式看结果：')
+console.log('  方式①（最省事）：用记事本打开  C:\\bz-diag.log')
+console.log('           —— 每一步都有记录，**最后一行就是死点**')
+console.log('  方式②：游戏里右侧「战报」面板（最新一条在最上面）找 【BZ诊断…】')
+console.log('  方式③：F12 控制台里执行  game.__bzTrace')
+console.log('把最后 5~8 行发我即可。')
 console.log('\n还原：node atlas/tools/bz-diag.mjs off')
 
