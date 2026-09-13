@@ -408,7 +408,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'mpx_xingtu': '行图',
 						'mpx_xingtu_info': '锁定技。每当你使用或打出牌结算结束后：若你的手牌数大于体力上限，你可以弃置一张牌，然后你摸一张牌；若你的手牌数小于体力上限，你可以选择一项：摸一张牌，或获得其他一名角色区域内的一张牌；若你的手牌数等于体力上限，「爵制」本局游戏的使用次数上限+1。',
 						'mpx_juezhi': '爵制',
-						'mpx_juezhi_info': '每局游戏限一次，出牌阶段，你可以弃置任意数量的牌并摸等量的牌，然后你本局游戏使用【杀】的次数上限+1，并选择一项执行：①本局游戏你使用的【杀】无法被响应；②本局游戏你使用【杀】造成的伤害+1；③对一名角色造成1点伤害，然后你增加1点体力上限；④令一名角色减少1点体力上限（若其体力值大于体力上限，其将体力值减至体力上限）。',
+						'mpx_juezhi_info': '每局游戏限一次，出牌阶段，你可以弃置任意数量的牌并摸等量的牌，然后你本局游戏使用【杀】的次数上限+1，并选择一项执行：①本局游戏你使用的【杀】无法被响应；②本局游戏你使用【杀】造成的伤害+1；③对一名角色造成1点伤害，然后你增加1点体力上限；④令一名角色减少1点体力上限并失去1点体力（若其体力值大于体力上限，其将体力值减至体力上限）。',
 						'mpx_juezhi_mod': '爵制·烈',
 						'mpx_juezhi_mod_info': '本局游戏你使用【杀】的次数上限+X（X为发动爵制时累加的次数）。',
 						'mpx_xietu': '携图',
@@ -3236,7 +3236,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									game.log(player, '增加了1点体力上限');
 								}
 								else {
-									player.chooseTarget(true, '爵制：令一名角色减少1点体力上限', function (card, player, target) {
+									player.chooseTarget(true, '爵制：令一名角色减少1点体力上限并失去1点体力', function (card, player, target) {
 										return target.isIn();
 									}).set('ai', function (target) {
 										return -get.attitude(_status.event.player, target);
@@ -3244,6 +3244,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									'step 5'
 									if (result.bool && result.targets && result.targets.length) {
 										result.targets[0].loseMaxHp(1);
+										if (result.targets[0].hp > 0) result.targets[0].loseHp(1);
 									}
 								}
 							},
@@ -3262,11 +3263,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						mpx_xietu: {
 							forced: true, locked: true, charlotte: true, direct: true, popup: false,
 							enable: 'phaseUse',
-							trigger: { player: ['phaseJieshuBegin', 'damageBegin'] },
+							trigger: { player: ['phaseJieshuBegin', 'damageBegin2'] },
 							filter: function (event, player) {
-								if (event.triggername == 'phaseJieshuBegin') return !player.hasMark('mpx_tu') && (player.storage.mpx_xingtu_count || 0) > player.maxHp;
-								if (event.triggername == 'damageBegin') return player.hasMark('mpx_tu') && player.isIn();
-								return player.hasMark('mpx_tu');
+								if (event.triggername == 'phaseJieshuBegin') {
+									// 诊断：结束阶段把行图计数写进战报，避免“满足了条件”各说各话
+									game.log(player, '【携图】判定：行图已发动', (player.storage.mpx_xingtu_count || 0), '次 / 体力上限', player.maxHp);
+									return !player.hasMark('mpx_tu') && player.isIn() && (player.storage.mpx_xingtu_count || 0) > player.maxHp;
+								}
+								if (event.triggername == 'damageBegin2') return player.hasMark('mpx_tu') && player.isIn();
+								return false;
 							},
 							content: function () {
 								'step 0'
@@ -3275,7 +3280,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									game.log(player, '获得了「图」');
 									event.finish(); return;
 								}
-								if (event.triggername == 'damageBegin') {
+								if (event.triggername == 'damageBegin2') {
 									if (!event.card || get.name(event.card) != 'sha') {
 										trigger.cancel();
 										game.log(player, '持有「图」，只能被【杀】造成伤害，取消了此伤害');
