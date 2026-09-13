@@ -2946,13 +2946,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							popup: false,
 							direct: true,
-							// ★★ 必须声明为 global ★★
-							//   实测：写成 `player: 'useCard'` 时 **filter 会放行、但 content 从不执行**
-							//   （用户实测：战报里只有"放行=1"却没有任何询问框）。
-							//   本包能正常工作的同类先例都是 global：
-							//     bz_jiufa_track: { global: ['useCardAfter','respondAfter','loseAfter'] }
-							//   归属判断放在 filter 里用 event.player 做（filter 里没有 trigger）。
-							trigger: { global: ['useCard', 'phaseBegin'] },
+							// ★★ 改用"已证实能工作"的结构 ★★
+							//   病史：原来写 `player: 'useCardBegin'` / `player: 'useCard'` / `global:'useCard'`，
+							//   filter 都会放行（战报/日志都能看到"放行=1"），但 **content 从不执行**
+							//   —— 无论哪种声明都一样。不再纠缠引擎内部原因，照抄本包已验证的结构：
+							//     bz_jiufa_track: forced+locked+popup:false+direct:true
+							//                     + trigger { global: ['useCardAfter', ...] }
+							//   该技能的 content 确实在执行（bz_sha_seen 被写、九伐诊断能读到）。
+							//   时机选 useCardAfter：每张牌**结算完**派发一次，语义上正好对应
+							//   正文的"当你本回合使用前两张锦囊牌时"。
+							trigger: { global: ['useCardAfter', 'phaseBegin'] },
 							init: function (player) {
 								// 显式初始化三个状态位，避免依赖 undefined 的隐式语义：
 								//   bz_qs_opts   本回合已执行的选项次数（上限 2）
@@ -2975,17 +2978,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   必须用 event.player —— 用 trigger 会 ReferenceError 并被引擎吞掉，
 								//   后果是技能静默失效（本处曾因此整条触发失效）。
 								if (event.player && event.player !== player) return false;
-								// 诊断见下（写文件，作者自读）
 								var tt = get.type(get.name(event.card));
 								if (tt != 'trick' && tt != 'delay') return false;
 								var _dup = (player.storage.bz_qs_card === event.card);
 								var _full = ((player.storage.bz_qs_opts || 0) >= 2);
 								try { game.bzDiag('情势filter ' + get.translation(event.card) + ' tn=' + tn + ' opts=' + (player.storage.bz_qs_opts || 0) + ' 重复=' + (_dup ? 1 : 0) + ' 满=' + (_full ? 1 : 0) + ' 放行=' + ((_dup || _full) ? 0 : 1)); } catch (eL) { }
-								// ★ 按牌去重（替代原来"一刀切"的 used 闸门）：
-								//   同一张牌可能被多个时机重复评估（useCardBegin / useCard、
-								//   或引擎对同一次使用做多次检查）——重复的**不能算掉一次额度**，
-								//   否则第二张锦囊会被顶掉（用户实测症状）。
-								//   所以只对"新的一张牌"落闸。
+								// 去重：同一次使用（同一个牌对象）只算一张。
+								// 这不会"顶掉第二张锦囊"——第二张是**另一个牌对象**。
 								if (_dup) return false;
 								player.storage.bz_qs_card = event.card;
 								if (_full) return false;
