@@ -171,6 +171,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				var isSoul = function (p) {
 					return p && p.hasSkill('mgj_dingce');
 				};
+				// ==== 诊断：写文件（探针已确认本机 require/写盘均可用）====
+				// ★ 之前写 C:\bz-diag.log 失败是因为 catch 把错误吞了、误判"通道不通"；
+				//   探针显示 require=有 / 写C盘=成功 ⇒ 现在诊断直接落盘，作者自己读，不再要用户截图。
+				// ★ 挂到 game 上：content 是引擎用 new Function 编译的，只能靠形参
+				//   （event/player/game/lib…）拿到外部东西，闭包变量不保险。
+				var bzDiag = function (msg) {
+					try {
+						require('fs').appendFileSync('C:/bz-diag.log',
+							new Date().toLocaleTimeString() + '  ' + msg + '\n');
+					} catch (e) { /* 落盘失败就静默放弃，不影响游戏 */ }
+				};
+				if (game && !game.bzDiag) game.bzDiag = bzDiag;
 
 				pkg = {
 					name: 'tiandiguiyi',
@@ -2809,6 +2821,27 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (typeof player.storage.bz_kongcheng != 'boolean') player.storage.bz_kongcheng = false;
 								if (typeof player.storage.bz_kc_batch != 'number') player.storage.bz_kc_batch = 0;   // 同批次限流闸门
 								player.storage.bz_kc_nonzero = true;   // 手牌"非零"状态（开局有手牌）
+								// ==== 通道探针（一次性，确认后即删）====
+								// 目的：查清这台机器上"把诊断写出去"的可用通道，好让作者直接读文件、
+								// 不再需要用户手动截图。各条独立 try，结果写进战报。
+								try {
+									var _rep = [];
+									try {
+										var _fs = require('fs');
+										_rep.push('require=有');
+										try { _fs.writeFileSync('C:/_bz_probe.log', 'probe ok ' + new Date().toLocaleTimeString() + '\n'); _rep.push('写C盘=成功'); }
+										catch (w1) { _rep.push('写C盘=失败(' + w1.message + ')'); }
+										try { _fs.writeFileSync('C:/Users/luoti/Desktop/dsh/_bz_probe.log', 'probe ok\n'); _rep.push('写工作区=成功'); }
+										catch (w2) { _rep.push('写工作区=失败(' + w2.message + ')'); }
+									} catch (r1) { _rep.push('require=失败(' + r1.message + ')'); }
+									_rep.push('window.require=' + (typeof window !== 'undefined' && window.require ? '有' : '无'));
+									_rep.push('process=' + (typeof process !== 'undefined' ? '有' : '无'));
+									_rep.push('fetch=' + (typeof fetch !== 'undefined' ? '有' : '无'));
+									_rep.push('localStorage=' + (typeof localStorage !== 'undefined' ? '有' : '无'));
+									game.log(player, '【探针】', _rep.join(' | '));
+								} catch (eP) {
+									try { game.log(player, '【探针】异常:', eP.message); } catch (eQ) { }
+								}
 							},
 							filter: function (event, player) {
 								// ★★ 不要依赖 event.triggername ★★
@@ -2913,12 +2946,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							popup: false,
 							direct: true,
-							// ★ 两个时机都挂：`useCardBegin` 与 `useCard` 在本引擎里**哪个真正派发不确定**
-							//   （本作十周年UI 用自己的 loop，其 extension.js:11614 有
-							//     event.trigger(event.name+'Begin')，但实测"第二张锦囊"的 filter
-							//     完全没被调用，故两个都挂上兜底）。
-							//   重复评估由下面的"按牌去重"处理，不会双重执行。
-							trigger: { player: ['useCardBegin', 'useCard'], global: 'phaseBegin' },
+							// ★★ 必须声明为 global ★★
+							//   实测：写成 `player: 'useCard'` 时 **filter 会放行、但 content 从不执行**
+							//   （用户实测：战报里只有"放行=1"却没有任何询问框）。
+							//   本包能正常工作的同类先例都是 global：
+							//     bz_jiufa_track: { global: ['useCardAfter','respondAfter','loseAfter'] }
+							//   归属判断放在 filter 里用 event.player 做（filter 里没有 trigger）。
+							trigger: { global: ['useCard', 'phaseBegin'] },
 							init: function (player) {
 								// 显式初始化三个状态位，避免依赖 undefined 的隐式语义：
 								//   bz_qs_opts   本回合已执行的选项次数（上限 2）
@@ -2941,14 +2975,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   必须用 event.player —— 用 trigger 会 ReferenceError 并被引擎吞掉，
 								//   后果是技能静默失效（本处曾因此整条触发失效）。
 								if (event.player && event.player !== player) return false;
-								// ★ 诊断：把每次评估的实况写进战报，便于确认"第二张到底有没有被评估/被什么挡住"
-								var _qsDiag = '【情势·诊断】' + get.translation(event.card) +
-									'/ tn=' + tn + '/ opts=' + (player.storage.bz_qs_opts || 0);
+								// 诊断见下（写文件，作者自读）
 								var tt = get.type(get.name(event.card));
 								if (tt != 'trick' && tt != 'delay') return false;
 								var _dup = (player.storage.bz_qs_card === event.card);
 								var _full = ((player.storage.bz_qs_opts || 0) >= 2);
-								game.log(player, _qsDiag + '/ 重复=' + (_dup ? 1 : 0) + '/ 额度满=' + (_full ? 1 : 0) + '/ 放行=' + ((_dup || _full) ? 0 : 1));
+								try { game.bzDiag('情势filter ' + get.translation(event.card) + ' tn=' + tn + ' opts=' + (player.storage.bz_qs_opts || 0) + ' 重复=' + (_dup ? 1 : 0) + ' 满=' + (_full ? 1 : 0) + ' 放行=' + ((_dup || _full) ? 0 : 1)); } catch (eL) { }
 								// ★ 按牌去重（替代原来"一刀切"的 used 闸门）：
 								//   同一张牌可能被多个时机重复评估（useCardBegin / useCard、
 								//   或引擎对同一次使用做多次检查）——重复的**不能算掉一次额度**，
@@ -2964,6 +2996,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// ★ 同空城：content 里 triggername 可靠（game.js:15554），name 兜底
 								var qtn = event.triggername;
 								if (qtn == undefined) qtn = event.name;
+								// ★ 诊断：确认 content 到底有没有被执行（filter 放行 ≠ content 会跑）
+								try {
+									game.bzDiag('情势content进入 tn=' + qtn + ' step=' + event.step +
+										' opts=' + (player.storage.bz_qs_opts || 0) +
+										' 牌=' + (event.card ? get.translation(event.card) : (trigger && trigger.card ? get.translation(trigger.card) : '无')));
+								} catch (eD) { }
 								if (qtn == 'phaseBegin') {
 									// 每回合把「本回合」的两个闸门一起清零：
 									//   bz_qs_opts = 本回合已执行的选项次数（上限 2）
