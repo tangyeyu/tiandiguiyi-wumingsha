@@ -2585,87 +2585,82 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							filter: function (event, player) { return player.isIn(); },
 							content: function () {
+								// ★★ 步骤号必须**连续**（0,1,2,3,4,5）★★
+								//   实测事故：旧版写成 0/3/4/14/16（不连续），游戏里诸葛亮直接卡死。
+								//   诊断插桩显示「引擎传 step=169407 且不断增长」——
+								//   step 无限增长 = event.finish() 从未被调用 = 内容里那个
+								//   "末步守卫" 根本没建立起来 ⇒ event.goto(3) 自然也无效，
+								//   于是只剩第一段代码被反复执行（游戏卡在 roundStart）。
+								//   引擎的步骤机制是：parsex 把 'step N' 逐个替换成 `break;case N:`，
+								//   并在开头补 `if(event.step==末步+1){event.finish();return;}`。
+								//   编号一断，替换链就建不起来，整个 switch 落空。
+								//   ⇒ 本技能一律用连续编号，并且不再使用 goto。
 								'step 0'
-								// 多时机分支（一个技能挂三个时机，content 首步按 event.triggername 分派）。
-								// roundStart 的送兵循环用 storage 座位下标推进，每步从 game.players
-								// 现场重读，不依赖 event 跨步骤数组。
-								if (event.triggername == 'phaseEnd') { event.goto(16); return; }
-								if (event.triggername == 'phaseBegin') { event.goto(14); return; }
-								// roundStart：只重置本轮获得计数，然后逐个问其他角色是否给兵。
-								// ★ 转职判定要读的是**上一轮**获得的兵数，所以必须在重置之前把它
-								//   快照进 bz_bing_carry（phaseBegin 时再判）。-1 = 首轮豁免。
-								// ★ 清兵不在这里做：roundStart 是在**本人回合之内**广播的，紧接着
-								//   phaseBegin 就要按兵数摸牌/给增益，清完就恒为 0（旧实现的老毛病）。
-								//   清兵放在 phaseEnd（step 16），兵整回合留在身上，玩家也能自己数。
+								if (event.triggername == 'phaseEnd') {
+									// 回合结束时：移除所有的兵 + 清掉本回合增益快照
+									var rm = player.countMark('bz_bing');
+									if (rm > 0) {
+										player.removeMark('bz_bing', rm);
+										game.log(player, '回合结束，移除了所有的「兵」');
+									}
+									player.storage.bz_bing_buff = 0;
+									event.finish(); return;
+								}
+								if (event.triggername == 'phaseBegin') {
+									// 回合开始时：摸X张牌 → 兵≥2 给增益 → 转职判定
+									// X 读的是"此刻当场兵数"：本轮的兵是回合开始前刚送进来的，
+									// 清兵要到 phaseEnd 才做 ⇒ 整回合兵都在身上。
+									var x14 = player.countMark('bz_bing');
+									if (x14 > 0) {
+										player.draw(x14);
+										game.log(player, '「兵权」：摸', get.cnNumber(x14), '张牌');
+									}
+									if (x14 >= 2) {
+										player.storage.bz_bing_buff = x14;
+										player.addTempSkill('bz_bingquan_mod');
+										game.log(player, '本回合使用牌无距离限制，且【杀】的使用次数上限+', get.cnNumber(x14));
+									}
+									// 转职判定读 roundStart 之前快照下来的"上一轮获得的兵数"，
+									// -1 = 首轮豁免。
+									var g14 = player.storage.bz_bing_carry;
+									if (typeof g14 == 'number' && g14 >= 0 && g14 <= 2) {
+										game.log(player, '本轮获得的「兵」不大于二，失去了', '#g【兵权】', '并获得', '#g【情势】');
+										player.removeSkill('bz_bingquan');
+										if (!player.hasSkill('bz_qingshi')) player.addSkill('bz_qingshi');
+									}
+									event.finish(); return;
+								}
+								// roundStart：先快照上一轮的获得数，再重置本轮计数与座位下标
 								var prev = player.storage.bz_bing_gained;
 								player.storage.bz_bing_carry = (typeof prev == 'number' && prev >= 0) ? prev : -1;
 								player.storage.bz_bing_gained = 0;
 								player.storage.bz_ask_seat = 0;
-								event.goto(3);
-								'step 3'
+								'step 1'
+								// 逐个问其他角色是否给兵。每次进入本步推进一个座位：
+								// 跳过自己与已离场者，问到人就弹询问并等下一步；问完就结束。
 								var i = player.storage.bz_ask_seat || 0;
-								if (i >= game.players.length) { event.finish(); return; }
-								var cur = game.players[i];
-								if (cur == player || !cur.isIn()) {
-									player.storage.bz_ask_seat = i + 1;
-									event.goto(3); return;
+								var asked = false;
+								while (!asked) {
+									if (i >= game.players.length) { event.finish(); return; }
+									var cur = game.players[i];
+									if (cur == player || !cur.isIn()) { i++; continue; }
+									event.gzCur = cur;
+									// ★ ai 回调纯闭包：不读 _status.event（其内容随引擎上下文变化）
+									var gzOwner = player;
+									var gzCur = cur;
+									cur.chooseBool('兵权：是否令' + get.translation(player) + '获得一个「兵」？')
+										.set('ai', function () {
+											return get.attitude(gzCur, gzOwner) > 0;
+										});
+									asked = true;
 								}
-								event.gzCur = cur;
-								// ★ ai 回调纯闭包：不读 _status.event（其内容随引擎上下文变化，
-								//   曾导致 bz_owner 取到 undefined）。闭包变量在回调触发时仍有效。
-								var gzOwner = player;
-								var gzCur = cur;
-								cur.chooseBool('兵权：是否令' + get.translation(player) + '获得一个「兵」？')
-									.set('ai', function () {
-										return get.attitude(gzCur, gzOwner) > 0;
-									});
-								'step 4'
+								'step 2'
 								if (result.bool) {
 									player.addMark('bz_bing', 1);
 									player.storage.bz_bing_gained = (player.storage.bz_bing_gained || 0) + 1;
 									game.log(event.gzCur, '令', player, '获得了一个「兵」');
 								}
 								player.storage.bz_ask_seat = (player.storage.bz_ask_seat || 0) + 1;
-								event.goto(3);
-								'step 14'
-								// 回合开始时，顺序按正文：摸X张牌 → 兵≥2 给增益 → 转职判定。
-								// ★ X 读的是「此刻当场兵数」：本轮的兵是回合开始前刚送进来的，
-								//   而清兵在回合结束（step 16）才发生 ⇒ 整回合兵都在身上，读到的
-								//   就是正文里的「你拥有的兵」。旧实现把增益写在出牌阶段开始、
-								//   且清兵写在 roundStart，两处叠加导致 X 恒为 0（增益一次都不生效）。
-								var x14 = player.countMark('bz_bing');
-								if (x14 > 0) {
-									player.draw(x14);
-									game.log(player, '「兵权」：摸', get.cnNumber(x14), '张牌');
-								}
-								if (x14 >= 2) {
-									// 把数量快照下来：mod 在出牌阶段可能被反复调用，那时兵已清空
-									player.storage.bz_bing_buff = x14;
-									player.addTempSkill('bz_bingquan_mod');
-									game.log(player, '本回合使用牌无距离限制，且【杀】的使用次数上限+', get.cnNumber(x14));
-								}
-								// 转职判定：读 roundStart 之前快照下来的"上一轮获得的兵数"。
-								// -1 = 首轮豁免，不判。兵是在上一次 phaseEnd 清掉的，所以此刻
-								// x14 就是"本轮 roundStart 里别人刚送给你的兵"，两种读法各自成立。
-								var g14 = player.storage.bz_bing_carry;
-								if (typeof g14 == 'number' && g14 >= 0 && g14 <= 2) {
-									game.log(player, '本轮获得的「兵」不大于二，失去了', '#g【兵权】', '并获得', '#g【情势】');
-									player.removeSkill('bz_bingquan');
-									if (!player.hasSkill('bz_qingshi')) player.addSkill('bz_qingshi');
-								}
-								event.finish(); return;
-								'step 16'
-								// phaseEnd（回合结束时）：移除所有的「兵」+ 清掉本回合增益快照。
-								// ★ 不要在这里清 bz_bing_gained：它是「本轮获得的兵数」，
-								//   要活到下一次 roundStart 被快照进 bz_bing_carry 之后再归零。
-								//   在这里清零会让下一轮快照永远读到 0 ⇒ 每轮都判"不大于二"⇒ 必掉兵权。
-								var rm = player.countMark('bz_bing');
-								if (rm > 0) {
-									player.removeMark('bz_bing', rm);
-									game.log(player, '回合结束，移除了所有的「兵」');
-								}
-								player.storage.bz_bing_buff = 0;
-								event.finish(); return;
 							},
 						},
 						bz_bingquan_mod: {

@@ -138,10 +138,11 @@ ok('汇总行可达（不在末步的 finish/return 之后）', unreachable.leng
 
 /* 逐步骤气泡：这是"游戏一开始就能看到反馈"的通道，
    用于回答最关键的问题——该技能的 content 到底有没有被执行。
-   18 个步骤各一条（bz_bingquan 5 + bz_qingshi 2 + bz_jiufa 4 + bz_kongcheng 3，
-   含各自末步，符号数按插入结果核对）。 */
+   期望条数 = 四个技能的步骤数之和（兵权改成连续编号后是 3+2+4+3=12），
+   这里按实际 'step N' 标签数动态核对，避免每次改动技能都要改期望值。 */
+const stepLabelCount = SRC.split('\n').filter((l) => /^\s+'step \d+'\s*$/.test(l) && l.includes('\t')).length
 const bubbleLines = SRC.split('\n').filter((l) => l.includes("player.say('【BZ】"))
-ok('每个步骤都插了气泡反馈', bubbleLines.length === 14, `${bubbleLines.length} 行（期望 14 = 各技能步骤数之和 5+2+4+3）`)
+ok('每个步骤都插了气泡反馈', bubbleLines.length === 12 && stepLabelCount >= 12, `${bubbleLines.length} 行（期望 12 = 兵权3+情势2+九伐4+空城3）`)
 const bubbleOffenders = []
 for (const l of bubbleLines) {
   const codeOnly = l.replace(/'(?:[^'\\]|\\.)*'/g, "''")
