@@ -91,19 +91,25 @@ ok('正例：已打补丁的文件能写入 __bzTrace', tryRun('已打补丁的�
    这正是我第一版翻车的原因（引用了包级闭包里的局部变量 trace，
    而 Legacy 用 new Function 编译，运行时看不到闭包）。这里逐行把插桩行里
    出现的标识符抠出来，任何不在白名单里的都判失败。 */
-const ALLOWED = new Set(['game', 'event', 'player', 'try', 'catch', 'e', 'if', 'typeof', 'length', 'push', 'countMark', 'bz_bing', 'bz_bingquan', 'bz_qingshi', 'bz_jiufa', 'bz_kongcheng', 'phaseBegin', 'Number', 'String'])
-const BAD_WORDS = new Set(['trace', 'undefined_var', 'self', 'this'])
-const lines = SRC.split('\n').filter((l) => l.includes('__bzTrace.push'))
+const ALLOWED = new Set(['game', 'event', 'player', 'try', 'catch', 'e', 'if', 'typeof', 'length', 'push', 'slice', 'join', 'log', 'countMark', 'bz_bing', 'bz_bingquan', 'bz_qingshi', 'bz_jiufa', 'bz_kongcheng', 'phaseBegin', 'Number', 'String'])
+const BAD_WORDS = new Set(['trace', 'undefined_var', 'self'])
+const lines = SRC.split('\n').filter((l) => l.includes('__bzTrace'))
 ok('补丁确实插入了插桩行', lines.length > 0, `${lines.length} 行`)
 const offenders = []
 for (const l of lines) {
-  for (const m of l.matchAll(/(?<![.\w$])([A-Za-z_$][\w$]*)/g)) {
+  // ★ 先剥掉字符串字面量内容再扫标识符：'step 3' / '【BZ诊断…' 里的词不是变量，
+  //   不剥掉会把 step / BZ 误判成非法标识符（第一版就是这么误报的）。
+  const codeOnly = l.replace(/'(?:[^'\\]|\\.)*'/g, "''").replace(/"(?:[^"\\]|\\.)*"/g, '""')
+  for (const m of codeOnly.matchAll(/(?<![.\w$])([A-Za-z_$][\w$]*)/g)) {
     const id = m[1]
-    if (ALLOWED.has(id) || BAD_WORDS.has(id)) { if (BAD_WORDS.has(id)) offenders.push(id); continue }
-    if (id === 'window' || id === 'document') offenders.push(id) // 不允许依赖浏览器全局
+    if (BAD_WORDS.has(id)) { offenders.push(id); continue }
+    if (ALLOWED.has(id)) continue
+    offenders.push(id)   // 未列入白名单 ⇒ 可能是闭包局部变量或浏览器全局
   }
 }
 ok('插桩行不引用任何闭包局部变量 / 浏览器全局', offenders.length === 0, offenders.length ? [...new Set(offenders)].join(',') : '仅用 game/event/player')
+const summaryLines = SRC.split('\n').filter((l) => l.includes('BZ诊断'))
+ok('每个被插桩的技能都有一行战报汇总', summaryLines.length === 4, `${summaryLines.length} 行`)
 
 /* 反向守卫自检：把插桩行人为改坏，上面的判据必须能抓到 */
 const brokenSrc = SRC.replace(/game\.__bzTrace/g, 'trace.__bzTrace')
