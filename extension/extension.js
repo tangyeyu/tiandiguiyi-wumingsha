@@ -2559,7 +2559,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							ai: { order: 6, result: { player: 1 } },
 						},
 
-						// ============ 兵·诸葛亮（定稿见 docs/新将文本定稿-20260913.md）============
 						// 合并式实现：兵权一个技能覆盖 roundStart（转职/清兵/送兵）、phaseEnd
 						// （摸X）、phaseUseBegin（兵≥2 本回合增益）三个时机，content 内按
 						// event.triggername 分支；九伐兼并杀见闻追踪（独立静默子技能）。
@@ -2686,20 +2685,41 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							trigger: { player: 'phaseBegin' },
 							init: function (player) { player.storage.bz_jiufa = false; },
 							filter: function (event, player) {
-								if (player.storage.bz_jiufa) return false;
+								// 四个门槛，任一条不成立就不发动。条件满足却不触发时，
+								// 靠 player.storage.bz_jiufa_why 自报是**哪一条**挡住的
+								// （战报里会打印），避免只能猜。
+								if (player.storage.bz_jiufa) {
+									player.storage.bz_jiufa_why = '已发动过';
+									return false;
+								}
 								for (var i = 0; i < game.players.length; i++) {
-									if (!game.players[i].storage.bz_sha_seen) return false;
+									if (!game.players[i].storage.bz_sha_seen) {
+										player.storage.bz_jiufa_why = '未见过【杀】: ' + get.translation(game.players[i]);
+										game.log(player, '【九伐·诊断】暂不可发动：', get.translation(game.players[i]), '尚未使用/打出/失去过【杀】');
+										return false;
+									}
 								}
 								var max = 0;
 								for (var i = 0; i < game.players.length; i++) {
 									if (game.players[i].hp > max) max = game.players[i].hp;
 								}
-								if (player.hp >= max) return false;
+								if (player.hp >= max) {
+									player.storage.bz_jiufa_why = '体力为最多(' + player.hp + '/' + max + ')';
+									game.log(player, '【九伐·诊断】暂不可发动：你的体力值是最多的（', player.hp, '/', max, '）');
+									return false;
+								}
+								var basics = 0;
 								for (var i = 0; i < ui.cardPile.childElementCount; i++) {
 									var node = ui.cardPile.childNodes[i];
-									if (get.name(node) && get.type(get.name(node)) == 'basic') return true;
+									if (get.name(node) && get.type(get.name(node)) == 'basic') { basics++; }
 								}
-								return false;
+								if (!basics) {
+									player.storage.bz_jiufa_why = '牌堆内无基本牌';
+									game.log(player, '【九伐·诊断】暂不可发动：牌堆里没有基本牌');
+									return false;
+								}
+								player.storage.bz_jiufa_why = '可发动（' + basics + ' 张基本牌）';
+								return true;
 							},
 							content: function () {
 								'step 0'
@@ -2751,21 +2771,41 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						bz_kongcheng: {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { player: ['loseAfter', 'gainAfter', 'logSkill', 'damageBegin'] },
+							// ★ 接引擎原生"转换技"：zhuanhuanji:true 会让技能被识别为转换技
+							//   （game.js:60267 归入"转换技"标签）；当前形态存放在
+							//   player.storage.bz_kongcheng（true=阳 / false=阴）——
+							//   这个键名**必须**与技能名同名，因为引擎调用
+							//   intro.content 时传的是 player.storage[技能名]（game.js:28208-28211）。
+							//   翻转请统一走 player.changeZhuanhuanji('bz_kongcheng')：
+							//   它会翻转 storage、广播牌面翻转动画、并刷新标记（game.js:22209-22218）。
+							zhuanhuanji: true,
+							// 引擎的"是否处于阳面"判定（game.js:64963-64971）
+							zhuanhuanji2: function (skill, player) { return !!player.storage.bz_kongcheng; },
+							mark: 'character',
+							intro: {
+								name: '空城',
+								// storage 就是 player.storage.bz_kongcheng，据此显示当前面
+								content: function (storage) {
+									return storage
+										? '阳：你受到伤害时判定——锦囊牌令此伤害-1，否则弃一名角色一张牌。'
+										: '阴：你发动技能时摸一张牌。';
+								},
+							},
 							init: function (player) {
-								// ★ bz_kc_yin = true 表示**阴**形态；正文要求"游戏一开始就是阴形态"，
-								//   故这里必须初始化成 true。
-								//   （旧版写成 false ⇒ 开局是阳：阴面的"发动技能摸牌"永不触发
-								//     （filter 判 `bz_kc_yin == true`），而阳面只在受伤时才判定
-								//     ⇒ 平时完全看不到空城发动，用户实测「空城一直不触发」。）
+								// 正文要求"游戏一开始就是阴形态" ⇒ false = 阴。
+								// （旧版用 bz_kc_yin 且初始化成 false 却按"true=阴"判，导致开局落在阳面、
+								//   阴面的摸牌永不触发——用户实测「空城一直不触发」。）
+								if (typeof player.storage.bz_kongcheng != 'boolean') player.storage.bz_kongcheng = false;
 								player.storage.bz_kc_nonzero = true;   // 手牌"非零"状态（开局有手牌）
-								player.storage.bz_kc_yin = true;       // 阴
 							},
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
 								var tn = event.triggername;
 								if (tn == 'loseAfter' || tn == 'gainAfter') return true;
-								if (tn == 'logSkill') return player.storage.bz_kc_yin == true;
-								if (tn == 'damageBegin') return player.storage.bz_kc_yin == false && event.num > 0;
+								// 阴（storage=false）：发动技能后摸一张
+								if (tn == 'logSkill') return !player.storage.bz_kongcheng;
+								// 阳（storage=true）：受到伤害时判定
+								if (tn == 'damageBegin') return !!player.storage.bz_kongcheng && event.num > 0;
 								return false;
 							},
 							content: function () {
@@ -2775,8 +2815,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var now = player.countCards('h') > 0;
 									if (now != player.storage.bz_kc_nonzero) {
 										player.storage.bz_kc_nonzero = now;
-										player.storage.bz_kc_yin = !player.storage.bz_kc_yin;
-										game.log(player, '发动了', '#g【空城】', '，转换为', '#g' + (player.storage.bz_kc_yin ? '阴' : '阳') + '态');
+										// 走引擎原生翻转：同时更新 storage、动画与标记
+										player.changeZhuanhuanji('bz_kongcheng');
+										game.log(player, '发动了', '#g【空城】', '，转换为', '#g' + (player.storage.bz_kongcheng ? '阳' : '阴') + '态');
 									}
 									event.finish(); return;
 								}
@@ -3496,6 +3537,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true, sub: true,
 						},
 					},
+					// ── 动态技能说明：转换技显示"当前形态" ──
+					// 引擎在 game.js:62155 的 get.skillInfoTranslation 里查这里：
+					//     if(player && lib.dynamicTranslate[name]) return lib.dynamicTranslate[name](player,name);
+					// 另有 game.js:15472（发动时的提示）与 58645（技能详情弹窗）也读它。
+					// 只写"当前形态"那一句 —— 两边都写全会看不清重点。
+					dynamicTranslate: {
+						bz_kongcheng: function (player) {
+							return player.storage.bz_kongcheng
+								? '转换技（当前·阳）。你受到伤害时进行一次判定：①若判定牌为锦囊牌，你令此伤害-1（至多减至0）；②若判定牌不为锦囊牌，你弃置一名角色的一张牌。'
+								: '转换技（当前·阴）。你发动技能时摸一张牌。（当你手牌数变为零或从零改变时转换形态）';
+						},
+					},
 				};
 				return pkg;
 			});
@@ -3537,6 +3590,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				if (pkg.translate) {
 					for (var tk in pkg.translate) {
 						if (lib.translate[tk] == undefined) lib.translate[tk] = pkg.translate[tk];
+					}
+				}
+				// ── 动态技能说明：lib.dynamicTranslate[skill] ──
+				// 与 skill/translate 同理：precontent 里 import 的包**不保证**被引擎展平，
+				// 这里手动补一遍（幂等、带 undefined 守卫）。缺失时转换技就只显示静态 _info，
+				// 不会崩 —— 只是看不到"当前形态"。
+				if (pkg.dynamicTranslate) {
+					if (!lib.dynamicTranslate) lib.dynamicTranslate = {};
+					for (var dk in pkg.dynamicTranslate) {
+						if (lib.dynamicTranslate[dk] == undefined) lib.dynamicTranslate[dk] = pkg.dynamicTranslate[dk];
 					}
 				}
 				// ── 武将简介：lib.characterIntro[name] ──
