@@ -2945,6 +2945,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.fjGuess = event.fjT[1 - vi];
 								if (event.fjView.countCards('h') == 0) { event.finish(); return; }
 								'step 3'
+								// 安全兜底：观看者已无手牌则直接进入终止结算
+								if (event.fjView.countCards('h') == 0) { event.goto(8); return; }
 								player.chooseCardButton(event.fjView.getCards('h'), '反间：观看并选择其中一张牌', true);
 								'step 4'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
@@ -2958,8 +2960,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (guess == real) {
 									game.log(event.fjGuess, '猜对了，获得了一张牌');
 									event.fjGuess.gain(event.fjCard, event.fjView);
-									if (event.fjView.countCards('h') == 0 || event.fjGuess.countCards('h') == 0) { event.goto(8); }
-									else { event.goto(3); }
+									event.goto(6);
 								}
 								else {
 									game.log(event.fjGuess, '猜错了，失去了全部手牌');
@@ -2967,6 +2968,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (hs.length) event.fjGuess.discard(hs);
 									event.goto(8);
 								}
+								'step 6'
+								// ★ 终止判定必须在队列结算之后：gain/discard 是入队事件，
+								//   步骤边界才落地——同一步内 countCards 仍是旧值，观看者的
+								//   最后一张牌被拿走时检测不到 ⇒ 技能不终止（用户实测）。
+								if (event.fjView.countCards('h') == 0 || event.fjGuess.countCards('h') == 0) { event.goto(8); }
+								else { event.goto(3); }
 								'step 8'
 								for (var i = 0; i < event.fjT.length; i++) {
 									var t = event.fjT[i];
