@@ -2807,8 +2807,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.storage.bz_kc_nonzero = true;   // 手牌"非零"状态（开局有手牌）
 							},
 							filter: function (event, player) {
-								if (!player.isIn()) return false;
+								// ★★ 不要依赖 event.triggername ★★
+								//   实测（气泡诊断）：filter 收到的第一个参数上
+								//   `triggername` 是 **undefined**，而 `name` 是真实的时机名
+								//   （例：`evt=logSkill tn=undefined`）。
+								//   所以按时机名分派一律失效 —— 这里改用 name 优先、triggername 兜底。
 								var tn = event.triggername;
+								if (tn == undefined) tn = event.name;
+								if (!player.isIn()) return false;
 								if (tn == 'loseAfter' || tn == 'gainAfter') return true;
 								// 阴（storage=false）：发动技能后摸一张
 								if (tn == 'logSkill') return !player.storage.bz_kongcheng;
@@ -2818,7 +2824,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
+								// content 里 triggername 是可靠的（引擎在 game.js:15554 显式设置），
+								// 但这里同样做 name 兜底，避免两条路径不一致时行为分叉。
 								var tn = event.triggername;
+								if (tn == undefined) tn = event.name;
 								if (tn == 'loseAfter' || tn == 'gainAfter') {
 									var now = player.countCards('h') > 0;
 									if (now != player.storage.bz_kc_nonzero) {
@@ -2876,7 +2885,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (typeof player.storage.bz_qs_rounds != 'number') player.storage.bz_qs_rounds = 0;
 							},
 							filter: function (event, player) {
-								if (event.triggername == 'phaseBegin') return player.isIn();
+								// ★ 同空城：filter 里 triggername 可能是 undefined（实测），用 name 兜底。
+								var tn = event.triggername;
+								if (tn == undefined) tn = event.name;
+								if (tn == 'phaseBegin') return player.isIn();
 								if (!event.card) return false;
 								var tt = get.type(get.name(event.card));
 								if (tt != 'trick' && tt != 'delay') return false;
@@ -2895,7 +2907,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								if (event.triggername == 'phaseBegin') {
+								// ★ 同空城：content 里 triggername 可靠（game.js:15554），name 兜底
+								var qtn = event.triggername;
+								if (qtn == undefined) qtn = event.name;
+								if (qtn == 'phaseBegin') {
 									// 每回合把「本回合」的两个闸门一起清零：
 									//   bz_qs_opts = 本回合已执行的选项次数（上限 2）
 									//   bz_qs_used = 本回合是否已经通过情势拿过兵（上限 2，见 step 1）
@@ -3112,8 +3127,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							trigger: { global: 'damageBegin2', source: 'damageBegin1' },
 							filter: function (event, player) {
+								// ★ filter 里 triggername 可能是 undefined（实测），name 兜底
+								var mtn = event.triggername;
+								if (mtn == undefined) mtn = event.name;
 								if (!player.isIn()) return false;
-								if (event.triggername == 'damageBegin1') return event.nature != 'fire';
+								if (mtn == 'damageBegin1') return event.nature != 'fire';
 								if (event.nature != 'fire') return false;
 								return player.countCards('he') > 0 || player.hp > 0;
 							},
@@ -3346,8 +3364,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true, locked: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'useCardToPlayered', source: 'damageBegin2' },
 							filter: function (event, player) {
-								if (event.triggername == 'useCardToPlayered') return event.card && get.name(event.card) == 'sha' && player.storage.mpx_juezhi_opt1 == true;
-								if (event.triggername == 'damageBegin2') return event.card && get.name(event.card) == 'sha' && player.storage.mpx_juezhi_opt2 == true;
+								// ★ filter 里 triggername 可能是 undefined（实测），name 兜底
+								var jtn = event.triggername;
+								if (jtn == undefined) jtn = event.name;
+								if (jtn == 'useCardToPlayered') return event.card && get.name(event.card) == 'sha' && player.storage.mpx_juezhi_opt1 == true;
+								if (jtn == 'damageBegin2') return event.card && get.name(event.card) == 'sha' && player.storage.mpx_juezhi_opt2 == true;
 								if ((player.storage.mpx_juezhi_usedtimes || 0) >= 1 + (player.storage.mpx_juezhi_extra || 0)) return false;
 								return player.countCards('he') > 0;
 							},
@@ -3444,12 +3465,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							enable: 'phaseUse',
 							trigger: { player: ['phaseJieshuBegin', 'damageBegin2'] },
 							filter: function (event, player) {
-								if (event.triggername == 'phaseJieshuBegin') {
+								// ★ filter 里 triggername 可能是 undefined（实测），name 兜底
+								var xtn = event.triggername;
+								if (xtn == undefined) xtn = event.name;
+								if (xtn == 'phaseJieshuBegin') {
 									// 诊断：结束阶段把行图计数写进战报，避免“满足了条件”各说各话
 									game.log(player, '【携图】判定：行图已发动', (player.storage.mpx_xingtu_count || 0), '次 / 体力上限', player.maxHp);
 									return !player.hasMark('mpx_tu') && player.isIn() && (player.storage.mpx_xingtu_count || 0) > player.maxHp;
 								}
-								if (event.triggername == 'damageBegin2') return player.hasMark('mpx_tu') && player.isIn();
+								if (xtn == 'damageBegin2') return player.hasMark('mpx_tu') && player.isIn();
 								return false;
 							},
 							content: function () {
