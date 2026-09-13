@@ -2558,13 +2558,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 
 						// ============ 兵·诸葛亮（定稿见 docs/新将文本定稿-20260913.md）============
-						// 兵权多段锁定技分装 4 个子技能（全部列进数组以便触发；情势动态获得，
-						// 不列数组——列了开局就有）。转职时由 bz_bingquan_round 统一移除。
-						// 「本轮结束时移除所有的兵」引擎无 roundEnd 时机 ⇒ 等价实现：
-						// 新一轮 roundStart 先判转职、清兵/重置计数，再收新兵。
-						// 「发动技能」探针用 logSkill 时机（game.js:27175 当次核实：每次产生
-						// 战报的技能发动都派发 logSkill 事件，event.skill 为技能 id）——静默
-						// 内部子技能（popup:false）不产生战报，天然不算“发动技能”防自触发。
+						// 合并式实现：兵权一个技能覆盖 roundStart（转职/清兵/送兵）、phaseEnd
+						// （摸X）、phaseUseBegin（兵≥2 本回合增益）三个时机，content 内按
+						// event.triggername 分支；九伐兼并杀见闻追踪（独立静默子技能）。
+						// 「发动技能」探针 = logSkill 时机（game.js:27175，静默内部技能不算）。
 						bz_bing: {
 							charlotte: true,
 							sub: true,
@@ -2814,7 +2811,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									player.addTempSkill('bz_qingshi_dmg');
 									player.storage.bz_qs_use = trigger;
 								} else {
+									// ★ createEvent 会自动把事件压入当前队列（game.js:40348）——
+									//   必须先 event.next.remove 再排入 useCard 完成后，
+									//   否则同一事件在两个队列各执行一次 ⇒ 额外结算×2
+									//   （官方同款套路：game.js:27189-27191 logSkill 重排队）。
 									var next = player.useCard(trigger.card, trigger.cards ? trigger.cards.slice(0) : [], (trigger.targets || []).slice(0));
+									event.next.remove(next);
 									trigger.next.push(next);
 								}
 							},
@@ -2968,7 +2970,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!player.isIn()) return false;
 								if (event.triggername == 'damageBegin1') return event.nature != 'fire';
 								if (event.nature != 'fire') return false;
-								if (!player.isIn()) return false;
 								return player.countCards('he') > 0 || player.hp > 0;
 							},
 							content: function () {
