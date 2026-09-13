@@ -270,7 +270,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						tdgx_liubei: '名·刘备。<br>仁德：开局3个「仁」，回合开始收回全部「仁」，出牌阶段按「仁」数摸牌；有「仁」者被指定为目标时可付代价令此牌无效（每回合限一次）；结束阶段可把「仁」分配给不同角色。<br>章武（神威技）：回合开始时额外执行一个出牌阶段且本回合使用牌无次数限制。<br>兴汉（主公技）：开局多得1个「仁」；蜀势力角色对你造成的伤害免疫（每名角色每回合限1次）。',
 						tdgx_duyu: '名·杜预。<br>武库：场上有人装备牌时获「备」并摸牌（上限5）；出牌阶段可耗「备」把一张牌当非装备牌使用（每回合限一次）。<br>破竹：每回合限一次选一种牌名，本回合无次数距离限制地使用；若以此造成过伤害则本局永久解锁。<br>振鞘：锁定技，装备武器时使用牌无法被响应；造成伤害时可令其免疫并夺取其装备区所有牌；用【杀】造成伤害时伤害+X（攻击范围-体力值，最小0）。<br>灭吴（神威技）：摸等同于「备」数+体力上限的牌。',
 						tdgx_lukang: '名·陆抗。<br>毁堰：出牌阶段废除自己的一个区域换对应效果（武器/防具/进攻马/防御马/判定区/手牌区，六选一，各有一次性效果）。<br>抗晋：被体力不低于你的角色伤害时可弃牌判定免伤；造成伤害后可让一名角色的区域状态本轮与你相同，并恢复自己一个装备栏（每回合限两次）。<br>背水（神威技）：恢复所有已废除的区域。',
-						bing_zhugeliang: '兵·诸葛亮。<br>兵权：每轮开始时其他角色可选令你获得「兵」；回合结束摸X张牌；出牌阶段开始时若「兵」不小于二，本回合使用牌无距离限制且杀次数+X；回合开始时若本轮获得的「兵」不大于二，失去兵权并获得情势；本轮结束移除所有「兵」。<br>九伐（限定技）：回合开始时，全场每名角色都使用/打出/失去过【杀】且你的体力值不为最多，你可以展示牌堆内所有基本牌并从中选(5+X)张无次数距离限制地使用或打出。<br>空城（转换技）：手牌数变为零或从零改变时转换形态；阴：发动技能后摸一张牌；阳：受到伤害时判定，锦囊牌令此伤害-1，否则弃其他角色一张牌。<br>情势（锁定技）：本回合使用的前两张锦囊牌结算开始时可选：伤害+1，或此牌额外结算一次，然后获得一个「兵」（至多两个）。',
+						bing_zhugeliang: '兵·诸葛亮。<br>兵权：每轮开始时场上所有其他武将可依次令你获得「兵」；回合开始时你摸X张牌，若「兵」不小于二则本回合使用牌无距离限制且【杀】次数上限+X；若你本轮获得的「兵」不大于二，你失去兵权并获得情势；你移除以此法获得的「兵」。<br>九伐（限定技）：回合开始时，全场每名角色都使用/打出/失去过【杀】且你的体力值不为最多，你可以展示牌堆内所有基本牌并从中选(5+X)张无次数距离限制地使用或打出。<br>空城（转换技）：手牌数变为零或从零改变时转换形态；阴：发动技能时摸一张牌；阳：受到伤害时判定，锦囊牌令此伤害-1，否则弃一名角色一张牌。<br>情势（锁定技）：本回合使用前两张锦囊牌时可选：伤害+1，或多执行一次，并获得一个「兵」（每回合至多两个，三轮移除一次）。',
 						tdgx_zhouyu: '名·周瑜。<br>英姿：回合开始时按体力与手牌状态执行效果（少体力摸三张/手牌多则本回合无限制/手牌少则回血补牌；体力或手牌等于上限则全部执行），触发后跳过弃牌阶段。<br>反间：观看一名角色的手牌并选一张，令另一名角色猜花色，猜错失去全部手牌（终止结算），猜对获得此牌并重复。<br>映炎：场上有人受到火焰伤害时，可弃牌波及相邻角色/令伤害+1/失去体力执行前两项；造成伤害可改为火焰伤害。<br>善谋（转换技）：发动技能后转换形态；阳面发动技能回复体力，阴面发动技能对一名角色造成伤害。<br>技出（神威技）：本回合发动技能后额外触发一次善谋的效果。',
 						tdgx_peixiu: '名·裴秀。<br>行图：使用或打出牌结算后按手牌数与体力上限的关系执行（多则可弃牌摸牌/少则摸牌或拿其他角色一张牌/相等则爵制次数上限+1）。<br>爵制（每局限一次）：弃任意牌摸等量牌，杀次数上限+1并选一项（本局杀不可被响应/杀伤害+1/伤一名角色并加上限/令一人减上限）。<br>携图：结束阶段若发动行图次数大于体力上限获得「图」（持有者只能被【杀】造成伤害）；出牌阶段可弃「图」本回合使用牌无次数距离限制。<br>完图（神威技）：令至多两名其他角色获得「赠图」，你本回合每摸一张牌，其摸一张牌。',
 					},
@@ -378,19 +378,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'lkang_beishui': '背水',
 						'lkang_beishui_info': '神威技，出牌阶段，你可以发动：恢复你所有已失效的区域。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
 						'bz_bingquan': '兵权',
-						'bz_bingquan_info': '锁定技。每轮开始时，场上其他武将可以选择让你得到一个「兵」标记；回合结束时，你摸X张牌（X为「兵」的数量）；出牌阶段开始时，若你拥有的「兵」不小于二，你于本回合使用牌无距离限制，且使用【杀】的次数上限+X；回合开始时，若你于本轮获得的「兵」不大于二，你失去〖兵权〗并获得技能〖情势〗；本轮结束时，你移除所有的「兵」。',
+						'bz_bingquan_info': '锁定技。每轮开始时，场上所有其他武将可以依次选择让你得到一个「兵」标记；回合开始时，你摸X张牌，若你拥有的「兵」不小于二，则你本回合使用牌无距离限制且使用【杀】的次数上限+X；若你于本轮获得的「兵」不大于二，你失去〖兵权〗并获得技能〖情势〗；你移除以此法获得的「兵」。（X为「兵」的数量）',
 						'bz_bingquan_mod': '兵权·锋',
 						'bz_bingquan_mod_info': '本回合你使用牌无距离限制，且使用【杀】的次数上限+X。',
 						'bz_jiufa': '九伐',
-						'bz_jiufa_info': '限定技。回合开始时，若场上每名角色于游戏开始至今均使用/打出/失去过【杀】，且你的体力值不为最多，你可以展示牌堆内剩余的所有基本牌，然后从中选择(5+X)张牌（X为「兵」的数量）无使用次数和距离限制地使用或打出，未被选择的牌洗回牌堆。',
+						'bz_jiufa_info': '限定技。回合开始时，当场上每名角色于游戏开始至今均使用/打出/失去过【杀】，并且你的体力值不为最多，你可以展示牌堆内剩余的所有基本牌，然后你可以从中选择(5+X)张牌无使用次数和距离限制地使用或打出，未被选择的牌洗回牌堆。（X为「兵」的数量）',
 						'bz_kongcheng': '空城',
-						'bz_kongcheng_info': '转换技。当你手牌数变为0，或从0变为非0时，你转换阴阳形态。阴：当你发动技能后（含锁定技的自动触发），你摸一张牌。阳：当你受到伤害时，你进行一次判定：若判定牌为锦囊牌，此伤害-1（至多减至0）；若判定牌不为锦囊牌，你弃置其他一名角色的一张牌。',
+						'bz_kongcheng_info': '转换技。条件：当你手牌数变为零或从零改变时，你转换阴阳形态。阴：当你发动技能时（含锁定技的自动触发），你摸一张牌。阳：当你受到伤害时，你进行一次判定：①若判定牌为锦囊牌，你令此伤害-1（至多减至0）；②若判定牌不为锦囊牌，你弃置一名角色的一张牌。',
 						'bz_qingshi': '情势',
-						'bz_qingshi_info': '锁定技。当你于本回合使用的前两张锦囊牌结算开始时，你可以选择一项执行：①此牌造成的伤害+1（若此牌不造成伤害，则此项无效果）；②此牌额外结算一次。执行后你获得一个「兵」（你以此法至多获得两个「兵」）。',
+						'bz_qingshi_info': '锁定技。当你本回合使用前两张锦囊牌时，你可以选择以下选项执行：①本牌造成伤害+1（若此牌不造成伤害，则此项无效果）；②多执行一次。并获得一个「兵」。（你以此法每回合至多得到两个「兵」，你以此法获得的「兵」三轮移除一次）',
 						'bz_qingshi_dmg': '情势·锐',
 						'bz_qingshi_dmg_info': '此牌造成的伤害+1。',
+						'bz_qingshi_used': '情势·闸',
+						'bz_qingshi_used_info': '本回合你已通过〖情势〗得到过「兵」（每回合至多两次）。',
 						'bz_bing': '兵',
-						'bz_bing_info': '兵权的计数标记（X 为其数量）。本轮结束时移除。',
+						'bz_bing_info': '兵权的计数标记（X 为其数量）。',
 						'mzy_yingzi': '英姿',
 						'mzy_yingzi_info': '锁定技。回合开始时，若你满足相应的条件，你执行相应的效果：①体力值小于体力上限，你摸三张牌；②手牌数大于体力值，本回合你使用牌无次数和距离限制；③手牌数小于体力值，你回复1点体力，然后将手牌补至体力上限；④体力值或手牌数等于体力上限，无视①②③各自的触发条件，依次执行①②③的效果。若你此次触发的效果数不为零，本回合你跳过弃牌阶段。',
 						'mzy_yingzi_mod': '英姿·弘',
@@ -2565,7 +2567,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						bz_bing: {
 							charlotte: true,
 							sub: true,
-							intro: { name: '兵', content: '兵权的计数标记（X 为其数量）。本轮结束时移除。' },
+							intro: { name: '兵', content: '兵权的计数标记（X 为其数量）。' },
 						},
 						bz_bingquan: {
 							locked: true,
@@ -2573,33 +2575,30 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							popup: false,
 							direct: true,
-							trigger: { global: 'roundStart', player: ['phaseEnd', 'phaseUseBegin'] },
+							trigger: { global: 'roundStart', player: ['phaseBegin', 'phaseEnd'] },
 							init: function (player) {
-								// 首轮不转职：初始视为已达标（99 > 2）
-								player.storage.bz_bing_gained = 99;
+								// 首轮豁免：第一轮还没有「上一轮获得的兵」可判，用 -1 当"暂不判定"哨兵。
+								// （若用 99 当哨兵，roundStart 会把它重置成 0，phaseBegin 紧接着
+								//   就会把 0<=2 判成"该失去兵权"，首轮必掉技能。）
+								player.storage.bz_bing_gained = 0;
+								player.storage.bz_bing_carry = -1;
 							},
 							filter: function (event, player) { return player.isIn(); },
 							content: function () {
 								'step 0'
-								// 多时机分支。roundStart 的送兵循环用 storage 座位下标推进，
-								// 每步从 game.players 现场重读，不依赖 event 跨步骤数组；
-								// step 20 兜底，任何 step 异常都会终止（防空转卡死）。
-								if (event.triggername == 'phaseEnd') { event.goto(10); return; }
-								if (event.triggername == 'phaseUseBegin') { event.goto(12); return; }
-								// roundStart：先转职判定（用上一轮的获得数）
-								var gained = player.storage.bz_bing_gained || 0;
-								if (gained <= 2) {
-									game.log(player, '本轮获得的「兵」不大于二，失去了', '#g【兵权】', '并获得', '#g【情势】');
-									player.removeSkill('bz_bingquan');
-									player.removeSkill('bz_bingquan_buff');
-									player.addSkill('bz_qingshi');
-									event.finish(); return;
-								}
-								var n = player.countMark('bz_bing');
-								if (n > 0) {
-									player.removeMark('bz_bing', n);
-									game.log(player, '移除了所有的「兵」');
-								}
+								// 多时机分支（一个技能挂三个时机，content 首步按 event.triggername 分派）。
+								// roundStart 的送兵循环用 storage 座位下标推进，每步从 game.players
+								// 现场重读，不依赖 event 跨步骤数组。
+								if (event.triggername == 'phaseEnd') { event.goto(16); return; }
+								if (event.triggername == 'phaseBegin') { event.goto(14); return; }
+								// roundStart：只重置本轮获得计数，然后逐个问其他角色是否给兵。
+								// ★ 转职判定要读的是**上一轮**获得的兵数，所以必须在重置之前把它
+								//   快照进 bz_bing_carry（phaseBegin 时再判）。-1 = 首轮豁免。
+								// ★ 清兵不在这里做：roundStart 是在**本人回合之内**广播的，紧接着
+								//   phaseBegin 就要按兵数摸牌/给增益，清完就恒为 0（旧实现的老毛病）。
+								//   清兵放在 phaseEnd（step 16），兵整回合留在身上，玩家也能自己数。
+								var prev = player.storage.bz_bing_gained;
+								player.storage.bz_bing_carry = (typeof prev == 'number' && prev >= 0) ? prev : -1;
 								player.storage.bz_bing_gained = 0;
 								player.storage.bz_ask_seat = 0;
 								event.goto(3);
@@ -2628,29 +2627,58 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								player.storage.bz_ask_seat = (player.storage.bz_ask_seat || 0) + 1;
 								event.goto(3);
-								'step 10'
-								var x = player.countMark('bz_bing');
-								if (x > 0) player.draw(x);
-								event.finish(); return;
-								'step 12'
-								if (player.countMark('bz_bing') >= 2) {
+								'step 14'
+								// 回合开始时，顺序按正文：摸X张牌 → 兵≥2 给增益 → 转职判定。
+								// ★ X 读的是「此刻当场兵数」：本轮的兵是回合开始前刚送进来的，
+								//   而清兵在回合结束（step 16）才发生 ⇒ 整回合兵都在身上，读到的
+								//   就是正文里的「你拥有的兵」。旧实现把增益写在出牌阶段开始、
+								//   且清兵写在 roundStart，两处叠加导致 X 恒为 0（增益一次都不生效）。
+								var x14 = player.countMark('bz_bing');
+								if (x14 > 0) {
+									player.draw(x14);
+									game.log(player, '「兵权」：摸', get.cnNumber(x14), '张牌');
+								}
+								if (x14 >= 2) {
+									// 把数量快照下来：mod 在出牌阶段可能被反复调用，那时兵已清空
+									player.storage.bz_bing_buff = x14;
 									player.addTempSkill('bz_bingquan_mod');
-									game.log(player, '本回合使用牌无距离限制，且【杀】的使用次数上限+', player.countMark('bz_bing'));
+									game.log(player, '本回合使用牌无距离限制，且【杀】的使用次数上限+', get.cnNumber(x14));
+								}
+								// 转职判定：读 roundStart 之前快照下来的"上一轮获得的兵数"。
+								// -1 = 首轮豁免，不判。兵是在上一次 phaseEnd 清掉的，所以此刻
+								// x14 就是"本轮 roundStart 里别人刚送给你的兵"，两种读法各自成立。
+								var g14 = player.storage.bz_bing_carry;
+								if (typeof g14 == 'number' && g14 >= 0 && g14 <= 2) {
+									game.log(player, '本轮获得的「兵」不大于二，失去了', '#g【兵权】', '并获得', '#g【情势】');
+									player.removeSkill('bz_bingquan');
+									if (!player.hasSkill('bz_qingshi')) player.addSkill('bz_qingshi');
 								}
 								event.finish(); return;
-								'step 20'
-								event.finish();
+								'step 16'
+								// phaseEnd（回合结束时）：移除所有的「兵」+ 清掉本回合增益快照。
+								// ★ 不要在这里清 bz_bing_gained：它是「本轮获得的兵数」，
+								//   要活到下一次 roundStart 被快照进 bz_bing_carry 之后再归零。
+								//   在这里清零会让下一轮快照永远读到 0 ⇒ 每轮都判"不大于二"⇒ 必掉兵权。
+								var rm = player.countMark('bz_bing');
+								if (rm > 0) {
+									player.removeMark('bz_bing', rm);
+									game.log(player, '回合结束，移除了所有的「兵」');
+								}
+								player.storage.bz_bing_buff = 0;
+								event.finish(); return;
 							},
 						},
 						bz_bingquan_mod: {
 							charlotte: true, sub: true,
+							onremove: function (player) { player.storage.bz_bing_buff = 0; },
 							mod: {
 								targetInRange: function () { return true; },
 								cardUsable: function (card, player, num) {
 									if (get.name(card) == 'sha') {
 										if (num === false) return false;
 										if (typeof num != 'number') num = 0;
-										return num + player.countMark('bz_bing');
+										// 读快照而不是当场兵数：出牌阶段时兵可能已被清空
+										return num + (player.storage.bz_bing_buff || 0);
 									}
 								},
 							},
@@ -2792,17 +2820,34 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!event.card) return false;
 								var tt = get.type(get.name(event.card));
 								if (tt != 'trick' && tt != 'delay') return false;
-								// ★「本回合使用的前两张」用**选项执行计数**实现（每回合上限 2 次）：
+								// ★「本回合使用的前两张」= 每回合至多执行 2 次（选项执行计数）：
 								//   getHistory 不可用——「额外结算一次」的 useCard 是嵌套立即执行的，
 								//   第一次使用尚未计入历史 ⇒ 每次数出来都是 0 ⇒ 无限连锁（用户实测）。
-								//   计数由情势的 phaseBegin 分支在每个回合开始清零。
 								if ((player.storage.bz_qs_opts || 0) >= 2) return false;
+								// ★「以此法每回合至多得到两个兵」：用回合结束即失效的 temp 技能当
+								//   每回合闸门（phaseBegin 时判定，phaseEnd 自动过期）。
+								if (player.hasSkill('bz_qingshi_used')) return false;
 								return true;
 							},
 							content: function () {
 								'step 0'
 								if (event.triggername == 'phaseBegin') {
+									// 每回合清零「本回合已执行次数」（不是每轮）
 									player.storage.bz_qs_opts = 0;
+									// 「兵」满三轮后移除：计时器在获得首个兵时置 3，
+									// 每次本人回合开始减一，减到 0 即清空并复位。
+									var left = player.storage.bz_qs_rounds;
+									if (typeof left == 'number' && left > 0) {
+										left--;
+										player.storage.bz_qs_rounds = left;
+										if (left == 0) {
+											var qn = player.countMark('bz_bing');
+											if (qn > 0) {
+												player.removeMark('bz_bing', qn);
+												game.log(player, '「情势」所得的「兵」已满三轮，移除了', get.cnNumber(qn), '个「兵」');
+											}
+										}
+									}
 									event.finish(); return;
 								}
 								player.chooseControl(['①此牌造成的伤害+1', '②此牌额外结算一次', 'cancel2'])
@@ -2811,13 +2856,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								'step 1'
 								if (result.control == 'cancel2') { event.finish(); return; }
 								player.storage.bz_qs_opts = (player.storage.bz_qs_opts || 0) + 1;
-								var gained = player.storage.bz_bing_gained || 0;
-								if (gained < 2) {
+								// ★ 兵的上限与「选中几项」无关：本轮选了一项也要落一次闸，
+								//   且兵权时期的 bz_bing_gained 不参与这里的判定（两者互斥）。
+								var qg = player.storage.bz_qs_gained || 0;
+								if (qg < 2) {
 									player.addMark('bz_bing', 1);
-									player.storage.bz_bing_gained = gained + 1;
-									game.log(player, '获得了一个「兵」');
+									player.storage.bz_qs_gained = qg + 1;
+									if (typeof player.storage.bz_qs_rounds != 'number' || player.storage.bz_qs_rounds <= 0) {
+										player.storage.bz_qs_rounds = 3;
+									}
+									game.log(player, '获得了一个「兵」（情势所得 ' + (qg + 1) + '/2）');
 								}
-								else game.log(player, '「兵」已达上限，不再获得');
+								player.addTempSkill('bz_qingshi_used');
 								if (result.control.indexOf('①') == 0) {
 									player.addTempSkill('bz_qingshi_dmg');
 									player.storage.bz_qs_use = trigger;
@@ -2831,6 +2881,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									trigger.next.push(next);
 								}
 							},
+						},
+						bz_qingshi_used: {
+							charlotte: true, sub: true, popup: false,
+							onremove: function (player) { player.storage.bz_qs_gained = 0; },
 						},
 						bz_qingshi_dmg: {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
