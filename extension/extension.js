@@ -250,7 +250,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'bz_bingquan', 'bz_bingquan_draw', 'bz_bingquan_buff',
 							'bz_jiufa', 'bz_jiufa_track',
 							'bz_kongcheng', 'bz_kongcheng_yin', 'bz_kongcheng_yang',
-							'bz_qingshi', 'bz_bing'
+							'bz_qingshi', 'bz_qingshi_reset', 'bz_bing'
 						], ['ext:天地归一/bing_zhugeliang.jpg']],
 						tdgx_zhouyu: ['male', 'wu', 4, [
 							'mzy_yingzi', 'mzy_fanjian', 'mzy_yingyan', 'mzy_yingyan_fire',
@@ -2814,14 +2814,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!event.card) return false;
 								var tt = get.type(get.name(event.card));
 								if (tt != 'trick' && tt != 'delay') return false;
-								var n = 0;
-								var history = player.getHistory('useCard');
-								for (var i = 0; i < history.length; i++) {
-									var hname = history[i].card ? get.name(history[i].card) : '';
-									var ht = get.type(hname);
-									if (ht == 'trick' || ht == 'delay') n++;
-								}
-								return n < 2;
+								// ★「本回合使用的前两张」用**选项执行计数**实现（每回合上限 2 次）：
+								//   getHistory 不可用——「额外结算一次」的 useCard 是嵌套立即执行的，
+								//   第一次使用尚未计入历史 ⇒ 每次数出来都是 0 ⇒ 无限连锁（用户实测）。
+								//   计数由 bz_qingshi_reset 在每个回合开始清零。
+								if ((player.storage.bz_qs_opts || 0) >= 2) return false;
+								return true;
 							},
 							content: function () {
 								'step 0'
@@ -2830,6 +2828,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									.set('ai', function () { return 0; });
 								'step 1'
 								if (result.control == 'cancel2') { event.finish(); return; }
+								player.storage.bz_qs_opts = (player.storage.bz_qs_opts || 0) + 1;
 								var gained = player.storage.bz_bing_gained || 0;
 								if (gained < 2) {
 									player.addMark('bz_bing', 1);
@@ -2844,6 +2843,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var next = player.useCard(trigger.card, trigger.cards ? trigger.cards.slice(0) : [], (trigger.targets || []).slice(0));
 									trigger.next.push(next);
 								}
+							},
+						},
+						bz_qingshi_reset: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { global: 'phaseBegin' },
+							filter: function (event, player) { return player.isIn(); },
+							content: function () {
+								player.storage.bz_qs_opts = 0;
 							},
 						},
 						bz_qingshi_dmg: {
