@@ -2581,54 +2581,64 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) { return player.isIn(); },
 							content: function () {
 								'step 0'
-								// 多时机分支：roundStart=送兵/转职/清兵；phaseEnd=摸X；phaseUseBegin=增益
-								if (event.triggername == 'roundStart') { event.goto(5); return; }
+								// 多时机分支。roundStart 的送兵循环用 storage 座位下标推进，
+								// 每步从 game.players 现场重读，不依赖 event 跨步骤数组；
+								// step 20 兜底，任何 step 异常都会终止（防空转卡死）。
 								if (event.triggername == 'phaseEnd') { event.goto(10); return; }
-								if (player.countMark('bz_bing') >= 2) {
-									player.addTempSkill('bz_bingquan_mod');
-									game.log(player, '本回合使用牌无距离限制，且【杀】的使用次数上限+', player.countMark('bz_bing'));
-								}
-								event.finish(); return;
-								'step 5'
+								if (event.triggername == 'phaseUseBegin') { event.goto(12); return; }
+								// roundStart：先转职判定（用上一轮的获得数）
 								var gained = player.storage.bz_bing_gained || 0;
 								if (gained <= 2) {
 									game.log(player, '本轮获得的「兵」不大于二，失去了', '#g【兵权】', '并获得', '#g【情势】');
 									player.removeSkill('bz_bingquan');
 									player.removeSkill('bz_bingquan_buff');
 									player.addSkill('bz_qingshi');
-									event.finish();
-									return;
+									event.finish(); return;
 								}
-								'step 6'
 								var n = player.countMark('bz_bing');
 								if (n > 0) {
 									player.removeMark('bz_bing', n);
 									game.log(player, '移除了所有的「兵」');
 								}
 								player.storage.bz_bing_gained = 0;
-								'step 7'
-								event.gzList = game.filterPlayer(function (current) {
-									return current != player && current.isIn();
-								});
-								event.gzIndex = 0;
-								'step 8'
-								if (event.gzIndex >= event.gzList.length) { event.finish(); return; }
-								event.gzCur = event.gzList[event.gzIndex];
-								event.gzCur.chooseBool('兵权：是否令' + get.translation(player) + '获得一个「兵」？')
+								player.storage.bz_ask_seat = 0;
+								event.goto(3);
+								'step 3'
+								var i = player.storage.bz_ask_seat || 0;
+								if (i >= game.players.length) { event.finish(); return; }
+								var cur = game.players[i];
+								if (cur == player || !cur.isIn()) {
+									player.storage.bz_ask_seat = i + 1;
+									event.goto(3); return;
+								}
+								event.gzCur = cur;
+								cur.chooseBool('兵权：是否令' + get.translation(player) + '获得一个「兵」？')
+									.set('bz_owner', player)
 									.set('ai', function () {
-										return get.attitude(_status.event.player, _status.event.getParent().player) > 0;
+										// ★ 事件 .parent 在琉璃版未被赋值，getParent().player 为 undefined
+										//   会抛异常卡死询问（用户实测）——改用 .set 挂在事件上的引用
+										return get.attitude(_status.event.player, _status.event.bz_owner) > 0;
 									});
-								'step 9'
+								'step 4'
 								if (result.bool) {
 									player.addMark('bz_bing', 1);
 									player.storage.bz_bing_gained = (player.storage.bz_bing_gained || 0) + 1;
 									game.log(event.gzCur, '令', player, '获得了一个「兵」');
 								}
-								event.gzIndex++;
-								event.goto(8);
+								player.storage.bz_ask_seat = (player.storage.bz_ask_seat || 0) + 1;
+								event.goto(3);
 								'step 10'
 								var x = player.countMark('bz_bing');
 								if (x > 0) player.draw(x);
+								event.finish(); return;
+								'step 12'
+								if (player.countMark('bz_bing') >= 2) {
+									player.addTempSkill('bz_bingquan_mod');
+									game.log(player, '本回合使用牌无距离限制，且【杀】的使用次数上限+', player.countMark('bz_bing'));
+								}
+								event.finish(); return;
+								'step 20'
+								event.finish();
 							},
 						},
 						bz_bingquan_mod: {
