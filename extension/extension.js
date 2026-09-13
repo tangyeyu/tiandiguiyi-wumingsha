@@ -3075,6 +3075,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						mzy_jichu: {
 							audio: 2,
 							enable: 'phaseUse',
+							forced: true, locked: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'logSkill' },
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
