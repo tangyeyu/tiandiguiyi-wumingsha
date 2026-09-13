@@ -36,11 +36,14 @@ function instrumentSkill (src, skillId, tnExpr) {
   let count = 0
   let out = block.replace(/\n(\t{8})'step (\d+)'/g, (full, indent, n) => {
     count++
-    const base = `${indent}try { game.__bzTrace = game.__bzTrace || []; if (game.__bzTrace.length < 400) game.__bzTrace.push('${skillId}|' + (${tnExpr}) + '|step ${n}|兵=' + (player && player.countMark ? player.countMark('bz_bing') : '?')); } catch (e) { }`
+    const base = `${indent}try { game.__bzTrace = game.__bzTrace || []; if (game.__bzTrace.length < 400) game.__bzTrace.push('${skillId}|' + (${tnExpr}) + '|step ${n}|引擎step=' + step + '|event.step=' + event.step + '|兵=' + (player && player.countMark ? player.countMark('bz_bing') : '?')); } catch (e) { }`
     const seq = `${indent}try { game.__bzStep = (game.__bzStep || 0) + 1; } catch (e) { }`
     // ★ 每个 'step N' 处都顺带冒一条气泡：这样**游戏一开始**就能看到反馈，
     //   不必等到末步。用于回答最关键的问题：这个技能的 content 到底有没有被执行。
-    const bubble = `${indent}try { if (player && player.say && (player === game.me || !lib.config.no_any_chat)) player.say('【BZ】${skillId} ' + (${tnExpr}) + ' 到 step ${n}（兵' + (player && player.countMark ? player.countMark('bz_bing') : '?') + '）'); } catch (eb) { }`
+    //   ★ 同时把引擎传进来的 `step`（第 2 个形参）与 event.step 都打出来：
+    //     两者不一致 ⇒ event.goto() 改的不是主循环读的那个 step（goto 失效）；
+    //     一致 ⇒ goto 没问题，是步骤分派没建立起来。
+    const bubble = `${indent}try { if (player && player.say && (player === game.me || !lib.config.no_any_chat)) player.say('【BZ】${skillId} ' + (${tnExpr}) + ' 到 step ${n}（引擎传step=' + step + ' event.step=' + event.step + ' 兵' + (player && player.countMark ? player.countMark('bz_bing') : '?') + '）'); } catch (eb) { }`
     return `\n${base}\n${seq}\n${bubble}\n${indent}'step ${n}'`
   })
   // ★★ 汇总行放在**最后一个步骤的开头**，不是末尾！★★

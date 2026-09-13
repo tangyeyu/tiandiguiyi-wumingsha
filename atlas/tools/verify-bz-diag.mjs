@@ -91,7 +91,7 @@ ok('正例：已打补丁的文件能写入 __bzTrace', tryRun('已打补丁的�
    这正是我第一版翻车的原因（引用了包级闭包里的局部变量 trace，
    而 Legacy 用 new Function 编译，运行时看不到闭包）。这里逐行把插桩行里
    出现的标识符抠出来，任何不在白名单里的都判失败。 */
-const ALLOWED = new Set(['game', 'lib', 'event', 'player', 'try', 'catch', 'e', 'e0', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'eb', 'if', 'for', 'typeof', 'length', 'push', 'slice', 'join', 'log', 'countMark', 'bz_bing', 'bz_bingquan', 'bz_qingshi', 'bz_jiufa', 'bz_kongcheng', 'phaseBegin', 'Number', 'String', 'require', 'fs', 'appendFileSync', 'Date', 'toLocaleTimeString', 'var', '_bzMsg', '_bzErr', '_bzBubble', '_bzPaths', '_bzOk', '_bzI', 'message'])
+const ALLOWED = new Set(['game', 'lib', 'event', 'player', 'step', 'try', 'catch', 'e', 'e0', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'eb', 'if', 'for', 'typeof', 'length', 'push', 'slice', 'join', 'log', 'countMark', 'bz_bing', 'bz_bingquan', 'bz_qingshi', 'bz_jiufa', 'bz_kongcheng', 'phaseBegin', 'Number', 'String', 'require', 'fs', 'appendFileSync', 'Date', 'toLocaleTimeString', 'var', '_bzMsg', '_bzErr', '_bzBubble', '_bzPaths', '_bzOk', '_bzI', 'message'])
 const BAD_WORDS = new Set(['trace', 'undefined_var', 'self'])
 const MARKER = '【BZ】'
 const lines = SRC.split('\n').filter((l) => l.includes('__bzTrace'))
