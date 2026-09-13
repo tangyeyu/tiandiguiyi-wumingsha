@@ -2897,7 +2897,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							popup: false,
 							direct: true,
-							trigger: { player: 'useCardBegin', global: 'phaseBegin' },
+							// ★ 两个时机都挂：`useCardBegin` 与 `useCard` 在本引擎里**哪个真正派发不确定**
+							//   （本作十周年UI 用自己的 loop，其 extension.js:11614 有
+							//     event.trigger(event.name+'Begin')，但实测"第二张锦囊"的 filter
+							//     完全没被调用，故两个都挂上兜底）。
+							//   重复评估由下面的"按牌去重"处理，不会双重执行。
+							trigger: { player: ['useCardBegin', 'useCard'], global: 'phaseBegin' },
 							init: function (player) {
 								// 显式初始化三个状态位，避免依赖 undefined 的隐式语义：
 								//   bz_qs_opts   本回合已执行的选项次数（上限 2）
@@ -2908,6 +2913,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (typeof player.storage.bz_qs_used != 'number') player.storage.bz_qs_used = 0;
 								if (typeof player.storage.bz_qs_gained != 'number') player.storage.bz_qs_gained = 0;
 								if (typeof player.storage.bz_qs_rounds != 'number') player.storage.bz_qs_rounds = 0;
+								player.storage.bz_qs_card = null;   // 按牌去重用的"上一张已处理的牌"
 							},
 							filter: function (event, player) {
 								// ★ 同空城：filter 里 triggername 可能是 undefined（实测），用 name 兜底。
@@ -2920,22 +2926,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   后果是技能静默失效（本处曾因此整条触发失效）。
 								if (event.player && event.player !== player) return false;
 								// ★ 诊断：把每次评估的实况写进战报，便于确认"第二张到底有没有被评估/被什么挡住"
-								game.log(player, '【情势·诊断】评估', get.translation(event.card),
-									'/ opts=', (player.storage.bz_qs_opts || 0),
-									'/ used=', (player.storage.bz_qs_used || 0));
+								var _qsDiag = '【情势·诊断】' + get.translation(event.card) +
+									'/ tn=' + tn + '/ opts=' + (player.storage.bz_qs_opts || 0);
 								var tt = get.type(get.name(event.card));
 								if (tt != 'trick' && tt != 'delay') return false;
-								// ★ 兜底：闸门是"本回合"的状态，正常情况下由 phaseBegin 清零。
-								//   但若本回合 phaseBegin 时还没拿到情势（例如本回合才因兵权失去而获得情势），
-								//   闸门会带着旧回合的 1 进来 ⇒ 表现就是"只有第一张锦囊能触发"。
-								//   这里发现"计数为 0 但闸门仍是 1"（即本回合还没执行过任何一次），
-								//   就判定闸门是脏的，就地清掉。
-								if (player.storage.bz_qs_used && !(player.storage.bz_qs_opts || 0)) {
-									player.storage.bz_qs_used = 0;
-									player.storage.bz_qs_gained = 0;
-								}
-								if ((player.storage.bz_qs_opts || 0) >= 2) return false;
-								if (player.storage.bz_qs_used) return false;
+								var _dup = (player.storage.bz_qs_card === event.card);
+								var _full = ((player.storage.bz_qs_opts || 0) >= 2);
+								game.log(player, _qsDiag + '/ 重复=' + (_dup ? 1 : 0) + '/ 额度满=' + (_full ? 1 : 0) + '/ 放行=' + ((_dup || _full) ? 0 : 1));
+								// ★ 按牌去重（替代原来"一刀切"的 used 闸门）：
+								//   同一张牌可能被多个时机重复评估（useCardBegin / useCard、
+								//   或引擎对同一次使用做多次检查）——重复的**不能算掉一次额度**，
+								//   否则第二张锦囊会被顶掉（用户实测症状）。
+								//   所以只对"新的一张牌"落闸。
+								if (_dup) return false;
+								player.storage.bz_qs_card = event.card;
+								if (_full) return false;
 								return true;
 							},
 							content: function () {
@@ -2950,6 +2955,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									player.storage.bz_qs_opts = 0;
 									player.storage.bz_qs_used = 0;
 									player.storage.bz_qs_gained = 0;
+									player.storage.bz_qs_card = null;   // 新回合：允许新的"第一张锦囊"
 									// ★ 回合开始时摸X张牌（X = 兵数，且**至少为 1**）：
 									//   兵权还在时兵数可能为 0，但正文要求至少摸一张，故取 max(1, 兵数)。
 									var qx = player.countMark('bz_bing');
