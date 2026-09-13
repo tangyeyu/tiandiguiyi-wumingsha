@@ -2597,7 +2597,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (gained <= 2) {
 									game.log(player, '本轮获得的「兵」不大于二，失去了', '#g【兵权】', '并获得', '#g【情势】');
 									player.removeSkill('bz_bingquan');
-									player.removeSkill('bz_bingquan_draw');
 									player.removeSkill('bz_bingquan_buff');
 									player.addSkill('bz_qingshi');
 									event.finish();
@@ -2778,7 +2777,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// ★「本回合使用的前两张」用**选项执行计数**实现（每回合上限 2 次）：
 								//   getHistory 不可用——「额外结算一次」的 useCard 是嵌套立即执行的，
 								//   第一次使用尚未计入历史 ⇒ 每次数出来都是 0 ⇒ 无限连锁（用户实测）。
-								//   计数由 bz_qingshi_reset 在每个回合开始清零。
+								//   计数由情势的 phaseBegin 分支在每个回合开始清零。
 								if ((player.storage.bz_qs_opts || 0) >= 2) return false;
 								return true;
 							},
@@ -3158,8 +3157,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							enable: 'phaseUse',
 							trigger: { player: 'useCardToPlayered', source: 'damageBegin2' },
 							filter: function (event, player) {
-								if (event.triggername == 'useCardToPlayered') return event.card && get.name(event.card) == 'sha';
-								if (event.triggername == 'damageBegin2') return event.card && get.name(event.card) == 'sha';
+								if (event.triggername == 'useCardToPlayered') return event.card && get.name(event.card) == 'sha' && player.storage.mpx_juezhi_opt1 == true;
+								if (event.triggername == 'damageBegin2') return event.card && get.name(event.card) == 'sha' && player.storage.mpx_juezhi_opt2 == true;
 								if ((player.storage.mpx_juezhi_usedtimes || 0) >= 1 + (player.storage.mpx_juezhi_extra || 0)) return false;
 								return player.countCards('he') > 0;
 							},
@@ -3194,11 +3193,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								var c = result.control;
 								if (c == undefined) { event.finish(); return; }
 								if (c.indexOf('①') == 0) {
-									player.addSkill('mpx_juezhi_opt1');
+									player.storage.mpx_juezhi_opt1 = true;
 									game.log(player, '获得了', '#g【爵制·锐】', '：本局游戏你使用的【杀】无法被响应');
 								}
 								else if (c.indexOf('②') == 0) {
-									player.addSkill('mpx_juezhi_opt2');
+									player.storage.mpx_juezhi_opt2 = true;
 									game.log(player, '获得了', '#g【爵制·猛】', '：本局游戏你使用【杀】造成的伤害+1');
 								}
 								else if (c.indexOf('③') == 0) {
@@ -3285,17 +3284,35 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						mpx_wantu: {
 							audio: 2,
 							enable: 'phaseUse',
+							trigger: { player: 'gainAfter' },
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
 								if (player.storage.tdgx_sw['mpx_wantu'] == undefined) player.storage.tdgx_sw['mpx_wantu'] = 1;
 							},
 							filter: function (event, player) {
+								if (event.triggername == 'gainAfter') {
+									if (!event.getParent('draw')) return false;
+									return game.hasPlayer(function (current) {
+										return current != player && current.isIn() && current.hasSkill('mpx_zengtu_flag');
+									});
+								}
 								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['mpx_wantu'] > 0) && game.hasPlayer(function (current) {
 									return current != player && current.isIn();
 								});
 							},
 							content: function () {
 								'step 0'
+								if (event.triggername == 'gainAfter') {
+									var n = (trigger.cards && trigger.cards.length) ? trigger.cards.length : 1;
+									for (var i = 0; i < game.players.length; i++) {
+										var cur = game.players[i];
+										if (cur != player && cur.isIn() && cur.hasSkill('mpx_zengtu_flag')) {
+											cur.draw(n);
+										}
+									}
+									game.log(player, '触发「完图」，拥有「赠图」的角色各摸了', get.cnNumber(n), '张牌');
+									event.finish(); return;
+								}
 								player.storage.tdgx_sw['mpx_wantu']--;
 								player.chooseTarget([1, 2], true, '完图：令至多两名其他角色获得「赠图」', function (card, player, target) {
 									return target != player && target.isIn();
@@ -3319,26 +3336,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						mpx_zengtu_flag: {
 							charlotte: true, sub: true,
-						},
-						mpx_wantu_sync: {
-							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { player: 'gainAfter' },
-							filter: function (event, player) {
-								if (!event.getParent('draw')) return false;
-								return game.hasPlayer(function (current) {
-									return current != player && current.isIn() && current.hasSkill('mpx_zengtu_flag');
-								});
-							},
-							content: function () {
-								var n = (trigger.cards && trigger.cards.length) ? trigger.cards.length : 1;
-								for (var i = 0; i < game.players.length; i++) {
-									var cur = game.players[i];
-									if (cur != player && cur.isIn() && cur.hasSkill('mpx_zengtu_flag')) {
-										cur.draw(n);
-									}
-								}
-								game.log(player, '触发「完图」，拥有「赠图」的角色各摸了', get.cnNumber(n), '张牌');
-							},
 						},
 					},
 				};
