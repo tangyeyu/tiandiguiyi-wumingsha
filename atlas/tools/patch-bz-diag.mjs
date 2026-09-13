@@ -38,27 +38,54 @@ function instrumentSkill (src, skillId, tnExpr) {
     count++
     const base = `${indent}try { game.__bzTrace = game.__bzTrace || []; if (game.__bzTrace.length < 400) game.__bzTrace.push('${skillId}|' + (${tnExpr}) + '|step ${n}|兵=' + (player && player.countMark ? player.countMark('bz_bing') : '?')); } catch (e) { }`
     const seq = `${indent}try { game.__bzStep = (game.__bzStep || 0) + 1; } catch (e) { }`
-    return `\n${base}\n${seq}\n${indent}'step ${n}'`
+    // ★ 每个 'step N' 处都顺带冒一条气泡：这样**游戏一开始**就能看到反馈，
+    //   不必等到末步。用于回答最关键的问题：这个技能的 content 到底有没有被执行。
+    const bubble = `${indent}try { if (player && player.say && (player === game.me || !lib.config.no_any_chat)) player.say('【BZ】${skillId} ' + (${tnExpr}) + ' 到 step ${n}（兵' + (player && player.countMark ? player.countMark('bz_bing') : '?') + '）'); } catch (eb) { }`
+    return `\n${base}\n${seq}\n${bubble}\n${indent}'step ${n}'`
   })
   // ★★ 汇总行放在**最后一个步骤的开头**，不是末尾！★★
   //   第一版插在最后一个步骤的 `event.finish(); return;` **之后** —— 那是死代码，
   //   虽然 node --check 能过（语法合法），但永远不会执行 ⇒ 战报/文件里什么都看不到。
   //   放在末步开头的好处：只要执行到最后一个步骤就一定会输出一行，
   //   于是"卡死时最后一行"既包含已走完的步数，也包含正在走的这一步。
+  //
+  // ★ 输出四条路，且**互不牵连**（前一条失败不影响后一条）：
+  //   ① player.say —— 角色头顶气泡，游戏自己画的，**不依赖文件/控制台/面板**，最可靠
+  //   ② game.log   —— 战报
+  //   ③ 写文件写不进去由第 ④ 条兜住（上一版把错误吞在 catch 里，导致"文件不存在"
+  //      这种反馈毫无信息量：appendFileSync 的失败原因必须回显出来）
+  //   ④ player.say 回显写入失败原因
   if (count > 0) {
     const lastStepIdx = out.lastIndexOf("'step ")
     if (lastStepIdx !== -1) {
       const nl = out.indexOf('\n', lastStepIdx)
-      const indent = '\t'.repeat(9)
-      const summary = `\n${indent}try {
-${indent}\tgame.__bzStep = (game.__bzStep || 0) + 1;
-${indent}\tgame.__bzTrace = game.__bzTrace || [];
-${indent}\tgame.__bzTrace.push('${skillId}|' + (${tnExpr}) + '|进入末步');
-${indent}\tvar _ms = '【BZ诊断·${skillId}】' + (${tnExpr}) + ' 已执行 ' + game.__bzStep + ' 步 —— ' + game.__bzTrace.join(' → ');
-${indent}\tgame.log(_ms);
-${indent}\tgame.__bzStep = 0; game.__bzTrace = [];
-${indent}\ttry { require('fs').appendFileSync('C:/bz-diag.log', new Date().toLocaleTimeString() + '  ' + _ms + '\\n'); } catch (e1) { }
-${indent}} catch (e2) { }`
+      const I = '\t'.repeat(9)
+      const summary = `
+${I}// ── BZ 诊断（多路输出，各自独立 try，互不牵连）──
+${I}var _bzMsg = null, _bzErr = '';
+${I}try {
+${I}\tgame.__bzStep = (game.__bzStep || 0) + 1;
+${I}\tgame.__bzTrace = game.__bzTrace || [];
+${I}\tgame.__bzTrace.push('${skillId}|' + (${tnExpr}) + '|进入末步');
+${I}\t_bzMsg = '【BZ】${skillId} ' + (${tnExpr}) + ' ' + game.__bzStep + '步:' + game.__bzTrace.join(' → ');
+${I}\tgame.__bzStep = 0; game.__bzTrace = [];
+${I}} catch (e0) { _bzMsg = '【BZ】统计失败:' + e0.message; }
+${I}try { game.log(_bzMsg); } catch (e2) { }
+${I}// 气泡是本地玩家专属通道：game.js:23419 对非 game.me 且开了 no_any_chat 时会静默 return，
+${I}// 所以这里先判断"气泡到底会不会显示"，不会显示就走文件 + 把原因回报到战报。
+${I}var _bzBubble = false;
+${I}try { _bzBubble = !!(player && player.say && (player === game.me || !lib.config.no_any_chat)); } catch (e5) { }
+${I}if (_bzBubble) { try { player.say(_bzMsg); } catch (e1) { _bzBubble = false; } }
+${I}var _bzPaths = ['C:/bz-diag.log', 'C:/Users/luoti/Desktop/bz-diag.log', 'C:/Users/luoti/Desktop/dsh/bz-diag.log'];
+${I}var _bzOk = false;
+${I}for (var _bzI = 0; _bzI < _bzPaths.length && !_bzOk; _bzI++) {
+${I}\ttry {
+${I}\t\trequire('fs').appendFileSync(_bzPaths[_bzI], new Date().toLocaleTimeString() + '  ' + _bzMsg + '\\n');
+${I}\t\t_bzOk = true;
+${I}\t} catch (e3) { _bzErr += ' [' + _bzPaths[_bzI] + ': ' + e3.message + ']'; }
+${I}}
+${I}if (!_bzOk) { try { game.log('【BZ】所有路径都写不进去' + _bzErr); } catch (e6) { } }
+${I}if (!_bzBubble && _bzOk) { try { game.log('【BZ】气泡通道不可用(非game.me或no_any_chat已开)，已写文件'); } catch (e7) { } }`
       out = out.slice(0, nl) + summary + out.slice(nl)
     }
   }
@@ -89,11 +116,13 @@ fs.writeFileSync(FILE, out, 'utf8')
 console.log('诊断补丁已写入：' + FILE)
 console.log('备份（还原用）：' + bak)
 console.log(report.join('  '))
-console.log('\n下一步：重启游戏 → 用诸葛亮开一局 → 走到卡住那一刻，然后任选一种方式看结果：')
-console.log('  方式①（最省事）：用记事本打开  C:\\bz-diag.log')
-console.log('           —— 每一步都有记录，**最后一行就是死点**')
-console.log('  方式②：游戏里右侧「战报」面板（最新一条在最上面）找 【BZ诊断…】')
-console.log('  方式③：F12 控制台里执行  game.__bzTrace')
-console.log('把最后 5~8 行发我即可。')
+console.log('\n下一步：重启游戏 → 用诸葛亮开一局，然后看诸葛亮头顶的【BZ】气泡：')
+console.log('  · **进游戏立刻就该冒一条**（roundStart 的 step 0），例如')
+console.log('      【BZ】bz_bingquan roundStart 到 step 0（兵0）')
+console.log('  · 之后每走到一个步骤都会再冒一条；卡住时**最后一条气泡就是死点**（它停在那儿不消失）')
+console.log('  · 如果从头到尾一条都没有 ⇒ 这个技能的 content 根本没被执行，问题在触发/过滤层')
+console.log('  · 气泡默认只有诸葛亮是"你"（game.me）时才显示；若你玩的是别的角色，')
+console.log('    看 C:\\bz-diag.log 或右侧战报，两者内容相同')
+console.log('把最后 5~8 条发我（截图即可）。')
 console.log('\n还原：node atlas/tools/bz-diag.mjs off')
 

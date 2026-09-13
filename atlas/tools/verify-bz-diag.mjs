@@ -91,13 +91,14 @@ ok('正例：已打补丁的文件能写入 __bzTrace', tryRun('已打补丁的�
    这正是我第一版翻车的原因（引用了包级闭包里的局部变量 trace，
    而 Legacy 用 new Function 编译，运行时看不到闭包）。这里逐行把插桩行里
    出现的标识符抠出来，任何不在白名单里的都判失败。 */
-const ALLOWED = new Set(['game', 'event', 'player', 'try', 'catch', 'e', 'e1', 'e2', 'if', 'typeof', 'length', 'push', 'slice', 'join', 'log', 'countMark', 'bz_bing', 'bz_bingquan', 'bz_qingshi', 'bz_jiufa', 'bz_kongcheng', 'phaseBegin', 'Number', 'String', 'require', 'fs', 'appendFileSync', 'Date', 'toLocaleTimeString', '_ms', 'var'])
+const ALLOWED = new Set(['game', 'lib', 'event', 'player', 'try', 'catch', 'e', 'e0', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'eb', 'if', 'for', 'typeof', 'length', 'push', 'slice', 'join', 'log', 'countMark', 'bz_bing', 'bz_bingquan', 'bz_qingshi', 'bz_jiufa', 'bz_kongcheng', 'phaseBegin', 'Number', 'String', 'require', 'fs', 'appendFileSync', 'Date', 'toLocaleTimeString', 'var', '_bzMsg', '_bzErr', '_bzBubble', '_bzPaths', '_bzOk', '_bzI', 'message'])
 const BAD_WORDS = new Set(['trace', 'undefined_var', 'self'])
+const MARKER = '【BZ】'
 const lines = SRC.split('\n').filter((l) => l.includes('__bzTrace'))
 ok('补丁确实插入了插桩行', lines.length > 0, `${lines.length} 行`)
 const offenders = []
 for (const l of lines) {
-  // ★ 先剥掉字符串字面量内容再扫标识符：'step 3' / '【BZ诊断…' 里的词不是变量，
+  // ★ 先剥掉字符串字面量内容再扫标识符：'step 3' / '【BZ】…' 里的词不是变量，
   //   不剥掉会把 step / BZ 误判成非法标识符（第一版就是这么误报的）。
   const codeOnly = l.replace(/'(?:[^'\\]|\\.)*'/g, "''").replace(/"(?:[^"\\]|\\.)*"/g, '""')
   for (const m of codeOnly.matchAll(/(?<![.\w$])([A-Za-z_$][\w$]*)/g)) {
@@ -111,16 +112,20 @@ ok('插桩行不引用任何闭包局部变量 / 浏览器全局', offenders.len
 
 /* ★ 汇总行的位置必须"可达"：它要在最后一个 'step N' 标签**之后**紧跟着出现，
    而不是落在末步的 event.finish(); return; 之后（那是死代码，语法合法但永不执行——
-   第一版就是这个坑：node --check 能过，运行时战报里却一行都没有）。 */
-const summaryLines = SRC.split('\n').filter((l) => l.includes('BZ诊断'))
+   第一版就是这个坑：node --check 能过，运行时战报里却一行都没有）。
+   ★ 判据只认**拼消息那一行**（`_bzMsg = '【BZ】…`），不能按标记出现次数数：
+     整个汇总块里 【BZ】 出现在 4 行（消息、统计失败、写文件失败、路径失败），
+     按行数数会得出 16 行这种假结果（这就是上一版误报的原因）。 */
+const MSG_RE = /_bzMsg\s*=\s*'【BZ】.*步:/
+const summaryLines = SRC.split('\n').filter((l) => MSG_RE.test(l))
 ok('每个被插桩的技能都有一行战报汇总', summaryLines.length === 4, `${summaryLines.length} 行`)
 const srcLines = SRC.split('\n')
 const unreachable = []
 for (let i = 0; i < srcLines.length; i++) {
-  if (!srcLines[i].includes('BZ诊断')) continue
+  if (!MSG_RE.test(srcLines[i])) continue
   // 往上找最近的 'step N'
   let stepIdx = -1
-  for (let j = i - 1; j >= 0 && j > i - 14; j--) { if (/'step \d+'/.test(srcLines[j])) { stepIdx = j; break } }
+  for (let j = i - 1; j >= 0 && j > i - 40; j--) { if (/'step \d+'/.test(srcLines[j])) { stepIdx = j; break } }
   if (stepIdx === -1) { unreachable.push(`L${i + 1} 找不到所属步骤`); continue }
   // 汇总行与 step 标签之间不允许出现 return/finish（那就是不可达）
   let blocked = null
@@ -130,6 +135,24 @@ for (let i = 0; i < srcLines.length; i++) {
   if (blocked) unreachable.push(`L${i + 1} 之前有 finish/return（L${blocked}）⇒ 不可达`)
 }
 ok('汇总行可达（不在末步的 finish/return 之后）', unreachable.length === 0, unreachable.length ? unreachable.join('; ') : '4 处均位于步骤开头')
+
+/* 逐步骤气泡：这是"游戏一开始就能看到反馈"的通道，
+   用于回答最关键的问题——该技能的 content 到底有没有被执行。
+   18 个步骤各一条（bz_bingquan 5 + bz_qingshi 2 + bz_jiufa 4 + bz_kongcheng 3，
+   含各自末步，符号数按插入结果核对）。 */
+const bubbleLines = SRC.split('\n').filter((l) => l.includes("player.say('【BZ】"))
+ok('每个步骤都插了气泡反馈', bubbleLines.length === 14, `${bubbleLines.length} 行（期望 14 = 各技能步骤数之和 5+2+4+3）`)
+const bubbleOffenders = []
+for (const l of bubbleLines) {
+  const codeOnly = l.replace(/'(?:[^'\\]|\\.)*'/g, "''")
+  for (const m of codeOnly.matchAll(/(?<![.\w$])([A-Za-z_$][\w$]*)/g)) {
+    const id = m[1]
+    if (BAD_WORDS.has(id)) { bubbleOffenders.push(id); continue }
+    if (ALLOWED.has(id)) continue
+    bubbleOffenders.push(id)
+  }
+}
+ok('气泡行也不引用闭包局部变量', bubbleOffenders.length === 0, bubbleOffenders.length ? [...new Set(bubbleOffenders)].join(',') : '仅用 game/player/lib')
 
 /* 反向守卫自检：把插桩行人为改坏，上面的判据必须能抓到 */
 const brokenSrc = SRC.replace(/game\.__bzTrace/g, 'trace.__bzTrace')
