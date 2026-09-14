@@ -183,6 +183,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 					} catch (e) { /* 落盘失败就静默放弃，不影响游戏 */ }
 				};
 				if (game && !game.bzDiag) game.bzDiag = bzDiag;
+				// ★★ 开机自检（无条件执行，用来判定"我改的代码到底有没有被加载"）★★
+				//   这一段在包级闭包里 ⇒ require 可达。写一行状态含关键技能是否存在。
+				try {
+					var _boot = [];
+					_boot.push('版本标记=NEW3-74d8ed6');
+					_boot.push('武将数=' + (pkg && pkg.character ? Object.keys(pkg.character).length : '?'));
+					_boot.push('技能数=' + (pkg && pkg.skill ? Object.keys(pkg.skill).length : '?'));
+					_boot.push('有关羽=' + !!(pkg && pkg.character && pkg.character.tdgx_guanyu));
+					_boot.push('有略标记=' + !!(pkg && pkg.skill && pkg.skill.cc_lue_mark));
+					_boot.push('有破锁=' + !!(pkg && pkg.skill && pkg.skill.gy_po_lock));
+					_boot.push('有星区=' + !!(pkg && pkg.skill && pkg.skill.zl_xing_tu));
+					bzDiag('【开机自检】' + _boot.join(' | '));
+				} catch (eBoot) {
+					try {
+						require('fs').appendFileSync('C:/bz-diag.log', '开机自检异常: ' + eBoot.message + '\n');
+					} catch (e2) { }
+				}
 
 				pkg = {
 					name: 'tiandiguiyi',
@@ -3213,6 +3230,24 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				};
 				return pkg;
 			});
+			// ★★ 开机自检（无条件执行，判定"我改的代码到底有没有被加载"）★★
+			//   放在包工厂之后（pkg 已赋值），且在包级闭包里 ⇒ require 可达。
+			try {
+				var _boot = [];
+				_boot.push('版本=NEW3-boot');
+				_boot.push('武将数=' + (pkg && pkg.character ? Object.keys(pkg.character).length : '?'));
+				_boot.push('技能数=' + (pkg && pkg.skill ? Object.keys(pkg.skill).length : '?'));
+				_boot.push('关羽=' + !!(pkg && pkg.character && pkg.character.tdgx_guanyu));
+				_boot.push('略标记=' + !!(pkg && pkg.skill && pkg.skill.cc_lue_mark));
+				_boot.push('破锁=' + !!(pkg && pkg.skill && pkg.skill.gy_po_lock));
+				_boot.push('星区=' + !!(pkg && pkg.skill && pkg.skill.zl_xing_tu));
+				require('fs').appendFileSync('C:/bz-diag.log',
+					new Date().toLocaleTimeString() + '  【开机自检】' + _boot.join(' | ') + '\n');
+			} catch (eBoot) {
+				try {
+					require('fs').appendFileSync('C:/bz-diag.log', '开机自检异常: ' + eBoot.message + '\n');
+				} catch (e2) { }
+			}
 			// ============ 包名注册三连（雷霆万钧同款，选将界面可见/可选的关键） ============
 			if (!lib.config.all.characters.contains('tiandiguiyi')) {
 				lib.config.all.characters.push('tiandiguiyi');
