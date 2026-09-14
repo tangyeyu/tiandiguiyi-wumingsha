@@ -259,20 +259,30 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 转职时由 bz_bingquan_round 统一移除），情势为动态获得技能，
 						// **不列进数组**（列了开局就有），由 addSkill 获得。
 						bing_zhugeliang: ['male', 'shu', 4, [
-							'bz_bingquan', 'bz_jiufa', 'bz_jiufa_track',
-							'bz_kongcheng', 'bz_qingshi',
-							'bz_bing'
+							'zgl_bingquan',
+							'zgl_jiufa',
+							'zgl_kongcheng',
+							'zgl_qingshi',
+							'zgl_watch',
+							'zgl_bing'
 						], ['ext:天地归一/bing_zhugeliang.jpg']],
 						tdgx_zhouyu: ['male', 'wu', 4, [
-							'mzy_yingzi', 'mzy_fanjian', 'mzy_yingyan',
-							'mzy_shanmou', 'mzy_jichu',
-							'tdgx_shenwei_kill', 'tdgx_turn_reset'
+							'zy_yingzi',
+							'zy_fanjian',
+							'zy_yingyan',
+							'zy_shanmou',
+							'zy_jichu',
+							'tdgx_shenwei_kill',
+							'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_zhouyu.jpg']],
 						tdgx_peixiu: ['male', 'qun', 4, [
-							'mpx_xingtu', 'mpx_juezhi',
-							'mpx_xietu', 'mpx_wantu',
-							'mpx_tu', 'mpx_zengtu',
-							'tdgx_shenwei_kill', 'tdgx_turn_reset'
+							'px_xingtu',
+							'px_juezhi',
+							'px_xietu',
+							'px_wantu',
+							'px_tu',
+							'tdgx_shenwei_kill',
+							'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_peixiu.jpg']],
 					},
 					characterIntro: {
@@ -287,7 +297,59 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						tdgx_peixiu: '名·裴秀。<br>行图：使用或打出牌结算后按手牌数与体力上限的关系执行（多则可弃牌摸牌/少则摸牌或拿其他角色一张牌/相等则爵制次数上限+1）。<br>爵制（每局限一次）：弃任意牌摸等量牌，杀次数上限+1并选一项（本局杀不可被响应/杀伤害+1/伤一名角色并加上限/令一人减上限）。<br>携图：结束阶段若发动行图次数大于体力上限获得「图」（持有者只能被【杀】造成伤害）；出牌阶段可弃「图」本回合使用牌无次数距离限制。<br>完图（神威技）：令至多两名其他角色获得「赠图」，你本回合每摸一张牌，其摸一张牌。',
 					},
 					translate: {
-						'tiandiguiyi': '天地归一',
+
+						'zgl_bing': '兵',
+						'zgl_bing_info': '兵权的计数标记（X 为其数量）。',
+						'zgl_bq_buff': '兵权·锋',
+						'zgl_bq_buff_info': '本回合你使用牌无距离限制，且使用【杀】的次数上限+X。',
+						'zgl_qs_dmg': '情势·锐',
+						'zgl_qs_dmg_info': '此牌造成的伤害+1。',
+						'zgl_bingquan': '兵权',
+						'zgl_bingquan_info': '锁定技。每轮开始时，场上所有其他武将可以依次选择让你得到一个「兵」；回合开始时，你摸X张牌（X为「兵」的数量），若你拥有的「兵」不小于二，则你本回合使用牌无距离限制且使用【杀】的次数上限+X；若你于本轮获得的「兵」不大于二，你失去〖兵权〗并获得〖情势〗；你移除以此法获得的「兵」。',
+						'zgl_jiufa': '九伐',
+						'zgl_jiufa_info': '限定技。回合开始时，当场上每名角色于游戏开始至今均使用/打出/失去过【杀】，且你的体力值不为最多，你可以展示牌堆内剩余的所有基本牌，然后你可以从中选择(5+X)张牌无次数和距离限制地使用或打出，未被选择的牌洗回牌堆。（X为「兵」的数量）',
+						'zgl_kongcheng': '空城',
+						'zgl_kongcheng_info': '转换技。条件：当你手牌数变为零或从零改变时，你转换阴阳形态。阴：当你发动技能时（含锁定技的自动触发），你摸一张牌。阳：当你受到伤害时你进行一次判定——若判定牌为锦囊牌，此伤害-1（至多减至0）；若判定牌不为锦囊牌，你弃置其他一名角色的一张牌。<br>（游戏开始时你处于阴形态）',
+						'zgl_qingshi': '情势',
+						'zgl_qingshi_info': '锁定技。回合开始时，你摸X张牌（X为「兵」的数量，且至少为1）；当你于本回合使用前两张锦囊牌时，此牌额外结算一次，然后你获得一个「兵」。（你以此法每回合至多得到两个「兵」，你以此法获得的「兵」三轮移除一次）',
+						'zgl_watch': '兵权·闻',
+						'zgl_watch_info': '静默追踪：记录全场【杀】的见闻，并驱动〖情势〗。',
+						'zy_yz_buff': '英姿·弘',
+						'zy_yz_buff_info': '本回合你使用牌无次数和距离限制。',
+						'zy_jc_buff': '技出·承',
+						'zy_jc_buff_info': '本回合内，当你发动技能后，你额外触发一次〖善谋〗的效果。',
+						'zy_yingzi': '英姿',
+						'zy_yingzi_info': '锁定技。回合开始时，若你满足相应的条件，你执行相应的效果：①体力值小于体力上限，你摸三张牌；②手牌数大于体力值，本回合你使用牌无次数和距离限制；③手牌数小于体力值，你回复1点体力，然后将手牌补至体力上限；④体力值或手牌数等于体力上限，无视①②③各自的触发条件，依次执行①②③的效果。若你此次触发的效果数不为零，本回合你跳过弃牌阶段。',
+						'zy_fanjian': '反间',
+						'zy_fanjian_info': '出牌阶段限一次。你可以选择两名角色，观看其中一名角色的手牌并从中选择一张牌，令另一名角色猜测此牌的花色：若其猜错，其失去全部手牌，此流程终止；终止后，两名角色分别以本流程开始时的手牌数为基准，本流程中失去的牌数不小于2的角色失去1点体力；若其猜对，其获得此牌，并重复此流程，直到其中一名角色没有手牌。',
+						'zy_yingyan': '映炎',
+						'zy_yingyan_info': '锁定技。当场上一名角色受到火焰伤害时，你选择一项执行：①弃置一张牌，令该角色相邻的角色受到等同伤害；②弃置一张牌，令此伤害+1；③失去1点体力，然后执行①和②。当你造成伤害时，你可以将此伤害修改为火焰伤害。',
+						'zy_shanmou': '善谋',
+						'zy_shanmou_info': '转换技。当你发动技能后，你转换阴阳形态。阳：当你发动技能时，你回复1点体力；阴：当你发动技能时，你对一名角色造成1点伤害。',
+						'zy_jichu': '技出',
+						'zy_jichu_info': '神威技，出牌阶段，你可以发动：本回合内，当你发动技能后，你额外触发一次〖善谋〗的效果（被额外触发的效果不再引发〖技出〗）。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
+						'px_jz_buff': '爵制·烈',
+						'px_jz_buff_info': '本局游戏你使用【杀】的次数上限+X。',
+						'px_jz_rui': '爵制·锐',
+						'px_jz_rui_info': '本局游戏你使用的【杀】无法被响应。',
+						'px_jz_meng': '爵制·猛',
+						'px_jz_meng_info': '本局游戏你使用【杀】造成的伤害+1。',
+						'px_xt_burst': '携图·驰',
+						'px_xt_burst_info': '本回合你使用牌无次数和距离限制。',
+						'px_tu': '图',
+						'px_tu_info': '持有「图」的角色只能被【杀】造成伤害。',
+						'px_zeng': '赠图',
+						'px_zeng_info': '裴秀于本回合每摸一张牌后，你摸一张牌。',
+						'px_xingtu': '行图',
+						'px_xingtu_info': '锁定技。每当你使用或打出牌结算结束后，若你的手牌数大于体力上限，你可以弃置一张牌，然后你摸一张牌；若你的手牌数小于体力上限，你可以选择一项：摸一张牌，或获得其他一名角色区域内的一张牌；若你的手牌数等于体力上限，〖爵制〗本局游戏的使用次数上限+1。',
+						'px_juezhi': '爵制',
+						'px_juezhi_info': '每局游戏限一次，出牌阶段：你可以弃置任意数量的牌并摸等量的牌，然后你本局游戏使用【杀】的次数上限+1，并选择一项执行：①本局游戏你使用的【杀】无法被响应；②本局游戏你使用【杀】造成的伤害+1；③对一名角色造成1点伤害，然后你增加1点体力上限；④令一名角色减少1点体力上限（若其体力值大于体力上限，其将体力值减至体力上限）。（③④的目标均可包含自己）',
+						'px_xietu': '携图',
+						'px_xietu_info': '锁定技。结束阶段，若你于本局游戏发动〖行图〗的次数大于体力上限，你获得一枚「图」。出牌阶段，你可以弃置「图」，则本回合你使用牌无次数和距离限制。「图」持有者的状态：持有「图」的角色只能被【杀】造成伤害。',
+						'px_wantu': '完图',
+						'px_wantu_info': '神威技，出牌阶段，你可以令至多两名角色各获得一枚「赠图」（「赠图」持有者不算「拥有图」，不获得〖携图〗的效果）。当你于本回合每摸一张牌后，每名拥有「赠图」的角色摸一张牌（与你的摸牌数量相同）。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
+						'px_wantu_turn': '完图·启',
+						'px_wantu_turn_info': '本回合内〖完图〗的摸牌联动生效。',						'tiandiguiyi': '天地归一',
 						'mouguojia_soul': '谋郭嘉·魂',
 						'mgj_dingce': '定策',
 						'mgj_dingce_info': '锁定技。游戏开始时，你可以选择一名其他角色，令其获得「策」标记；若你放弃发动，本局此技能不再生效。当你死亡时，你可以选择是否移除「策」。你与拥有「策」的角色相互间无法造成伤害。',
@@ -2575,348 +2637,230 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// （摸X）、phaseUseBegin（兵≥2 本回合增益）三个时机，content 内按
 						// event.triggername 分支；九伐兼并杀见闻追踪（独立静默子技能）。
 						// 「发动技能」探针 = logSkill 时机（game.js:27175，静默内部技能不算）。
-						bz_bing: {
-							charlotte: true,
-							sub: true,
+						// ============================================================
+						// 三将重写版（2026-09-13）—— 从零编写，不复用旧实现
+						//
+						// 设计前提（均为本项目实测结论，违反就会出事故）：
+						//  ① 步骤号必须从 0 连续；'step N' 只能写在函数体顶层（嵌在 if/else 里
+						//     会让 parsex 替换成 `break;case N:` 时语法非法 ⇒ 状态机错位）。
+						//  ② filter 的形参只有 (event, player)：**不能用 trigger**（会 ReferenceError
+						//     并被引擎吞掉 ⇒ 技能静默失效）；时机名要用 event.name 兜底
+						//     （实测 filter 里 event.triggername 常为 undefined）。
+						//  ③ content 的执行可靠性参差：实测"看门型"技能的 content 可能从不执行，
+						//     而带 forced+direct+popup:false 的静默追踪器 content 正常。
+						//     ⇒ 所有"看门/检测"职责集中到 zgl_watch 这个追踪器里，逻辑内联，
+						//       不调用任何外部函数（外部函数在 filter 里可能不可达）。
+						//  ④ 牌"额外结算一次"用引擎内置的 `useCard事件.effectCount++`
+						//     （原版 诗仙 collab.js:2556 就是这么写的），不要手动 useCard 重放。
+						// ============================================================
+
+						// ────────────── 兵·诸葛亮 ──────────────
+
+						// 兵：计数标记（纯显示）
+						zgl_bing: {
+							charlotte: true, sub: true,
 							intro: { name: '兵', content: '兵权的计数标记（X 为其数量）。' },
 						},
-						bz_bingquan: {
-							locked: true,
-							forced: true,
-							charlotte: true,
-							popup: false,
-							direct: true,
-							trigger: { global: 'roundStart', player: ['phaseBegin', 'phaseEnd'] },
-							init: function (player) {
-								// 首轮豁免：第一轮还没有「上一轮获得的兵」可判，用 -1 当"暂不判定"哨兵。
-								// （若用 99 当哨兵，roundStart 会把它重置成 0，phaseBegin 紧接着
-								//   就会把 0<=2 判成"该失去兵权"，首轮必掉技能。）
-								player.storage.bz_bing_gained = 0;
-								player.storage.bz_bing_carry = -1;
-							},
-							filter: function (event, player) { return player.isIn(); },
-							content: function () {
-								// ★★ 步骤号必须**连续**（0,1,2,3,4,5）★★
-								//   实测事故：旧版写成 0/3/4/14/16（不连续），游戏里诸葛亮直接卡死。
-								//   诊断插桩显示「引擎传 step=169407 且不断增长」——
-								//   step 无限增长 = event.finish() 从未被调用 = 内容里那个
-								//   "末步守卫" 根本没建立起来 ⇒ event.goto(3) 自然也无效，
-								//   于是只剩第一段代码被反复执行（游戏卡在 roundStart）。
-								//   引擎的步骤机制是：parsex 把 'step N' 逐个替换成 `break;case N:`，
-								//   并在开头补 `if(event.step==末步+1){event.finish();return;}`。
-								//   编号一断，替换链就建不起来，整个 switch 落空。
-								//   ⇒ 本技能一律用连续编号，并且不再使用 goto。
-								'step 0'
-								if (event.triggername == 'phaseEnd') {
-									// 回合结束时：只清掉本回合增益快照。
-									// ★ 不再清「兵」：正文已把移除交给〖情势〗（三轮一次），
-									//   兵权这边清掉会让情势的兵永远攒不住。
-									player.storage.bz_bing_buff = 0;
-									event.finish(); return;
-								}
-								if (event.triggername == 'phaseBegin') {
-									// 回合开始时：兵≥2 给增益 → 转职判定。
-									// ★ 摸X张牌已按正文移到〖情势〗，此处不再摸牌。
-									//   （"你拥有的兵" = 本轮 roundStart 里别人刚送进来的兵 +
-									//     情势留下的未到期兵，两者都在身上。）
-									var x14 = player.countMark('bz_bing');
-									if (x14 >= 2) {
-										player.storage.bz_bing_buff = x14;
-										player.addTempSkill('bz_bingquan_mod');
-										game.log(player, '本回合使用牌无距离限制，且【杀】的使用次数上限+', get.cnNumber(x14));
-									}
-									// 转职判定读 roundStart 之前快照下来的"上一轮获得的兵数"，
-									// -1 = 首轮豁免。
-									var g14 = player.storage.bz_bing_carry;
-								if (typeof g14 == 'number' && g14 >= 0 && g14 <= 2) {
-										game.log(player, '本轮获得的「兵」不大于二，失去了', '#g【兵权】', '并获得', '#g【情势】');
-										player.removeSkill('bz_bingquan');
-										if (!player.hasSkill('bz_qingshi')) player.addSkill('bz_qingshi');
-										// ★ 情势的"每回合闸门"必须在这里清一次：它靠自己的 phaseBegin 清零，
-										//   但获得情势的这个回合，情势的 phaseBegin 已经跑过了（当时还没这技能）
-										//   ⇒ 闸门会带着上一手的状态进入下一回合，表现为"只有第一张锦囊能触发"。
-										player.storage.bz_qs_opts = 0;
-										player.storage.bz_qs_used = 0;
-										player.storage.bz_qs_gained = 0;
-									}
-									event.finish(); return;
-								}
-								// roundStart：先快照上一轮的获得数，再重置本轮计数与座位下标
-								var prev = player.storage.bz_bing_gained;
-								player.storage.bz_bing_carry = (typeof prev == 'number' && prev >= 0) ? prev : -1;
-								player.storage.bz_bing_gained = 0;
-								player.storage.bz_ask_seat = 0;
-								'step 1'
-								// 逐个问其他角色是否给兵。每次进入本步推进一个座位：
-								// 跳过自己与已离场者，问到人就弹询问并等下一步；问完就结束。
-								var i = player.storage.bz_ask_seat || 0;
-								var asked = false;
-								while (!asked) {
-									if (i >= game.players.length) { event.finish(); return; }
-									var cur = game.players[i];
-									if (cur == player || !cur.isIn()) { i++; continue; }
-									event.gzCur = cur;
-									// ★ ai 回调纯闭包：不读 _status.event（其内容随引擎上下文变化）
-									var gzOwner = player;
-									var gzCur = cur;
-									cur.chooseBool('兵权：是否令' + get.translation(player) + '获得一个「兵」？')
-										.set('ai', function () {
-											return get.attitude(gzCur, gzOwner) > 0;
-										});
-									asked = true;
-								}
-								'step 2'
-								if (result.bool) {
-									player.addMark('bz_bing', 1);
-									player.storage.bz_bing_gained = (player.storage.bz_bing_gained || 0) + 1;
-									game.log(event.gzCur, '令', player, '获得了一个「兵」');
-								}
-								player.storage.bz_ask_seat = (player.storage.bz_ask_seat || 0) + 1;
-							},
-						},
-						bz_bingquan_mod: {
+						// 兵权·锋：本回合使用牌无距离限制、【杀】次数上限+X
+						zgl_bq_buff: {
 							charlotte: true, sub: true,
-							onremove: function (player) { player.storage.bz_bing_buff = 0; },
+							onremove: function (player) { player.storage.zgl_buff = 0; },
 							mod: {
 								targetInRange: function () { return true; },
 								cardUsable: function (card, player, num) {
-									if (get.name(card) == 'sha') {
-										if (num === false) return false;
-										if (typeof num != 'number') num = 0;
-										// 读快照而不是当场兵数：出牌阶段时兵可能已被清空
-										return num + (player.storage.bz_bing_buff || 0);
-									}
+									if (get.name(card) != 'sha') return;
+									if (num === false) return false;
+									if (typeof num != 'number') num = 0;
+									return num + (player.storage.zgl_buff || 0);
 								},
 							},
 						},
-						bz_jiufa: {
-							audio: 2,
-							limited: true,
-							skillAnimation: true,
-							animationColor: 'water',
-							trigger: { player: 'phaseBegin' },
-							init: function (player) { player.storage.bz_jiufa = false; },
+						// 情势·锐：本牌伤害+1
+						zgl_qs_dmg: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { source: 'damageBegin2' },
 							filter: function (event, player) {
-								// 四个门槛，任一条不成立就不发动。条件满足却不触发时，
-								// 靠 player.storage.bz_jiufa_why 自报是**哪一条**挡住的
-								// （战报里会打印），避免只能猜。
-								if (player.storage.bz_jiufa) {
-									player.storage.bz_jiufa_why = '已发动过';
-									return false;
+								// filter 里没有 trigger ⇒ 用 event 的父链找 useCard
+								var uc = event.getParent ? event.getParent('useCard') : null;
+								return !!(uc && player.storage.zgl_qs_uc && uc === player.storage.zgl_qs_uc);
+							},
+							content: function () {
+								trigger.num++;
+								game.log(player, '「情势」：此牌伤害+1');
+							},
+							onremove: function (player) { delete player.storage.zgl_qs_uc; },
+						},
+						// 兵权：问兵（roundStart）+ 回合开始的增益/转职判定
+						zgl_bingquan: {
+							locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							trigger: { global: 'roundStart', player: 'phaseBegin' },
+							init: function (player) {
+								player.storage.zgl_gained = 0;     // 本轮获得的兵数（本回合累计）
+								player.storage.zgl_carry = -1;     // 上一轮获得的兵数（-1 = 首轮豁免）
+								player.storage.zgl_seat = 0;       // 问兵座位游标
+							},
+							filter: function (event, player) { return player.isIn(); },
+							content: function () {
+								'step 0'
+								var tn = event.name;
+								if (tn == 'phaseBegin') { event.goto(3); return; }
+								// ── roundStart：快照上一轮获得数，重置游标，逐个问其他角色 ──
+								var prev = player.storage.zgl_gained;
+								player.storage.zgl_carry = (typeof prev == 'number' && prev >= 0) ? prev : -1;
+								player.storage.zgl_gained = 0;
+								player.storage.zgl_seat = 0;
+								'step 1'
+								var i = player.storage.zgl_seat || 0;
+								if (i >= game.players.length) { event.finish(); return; }
+								var cur = game.players[i];
+								if (cur == player || !cur.isIn()) {
+									player.storage.zgl_seat = i + 1;
+									event.redo(); return;
 								}
+								event.zglCur = cur;
+								// ai 回调用纯闭包，不读 _status.event
+								var me = player;
+								var asker = cur;
+								cur.chooseBool('兵权：是否令' + get.translation(player) + '获得一个「兵」？')
+									.set('ai', function () { return get.attitude(asker, me) > 0; });
+								'step 2'
+								if (result.bool) {
+									player.addMark('zgl_bing', 1);
+									player.storage.zgl_gained = (player.storage.zgl_gained || 0) + 1;
+									game.log(event.zglCur, '令', player, '获得了一个「兵」');
+								}
+								player.storage.zgl_seat = (player.storage.zgl_seat || 0) + 1;
+								event.goto(1);
+								'step 3'
+								// ── phaseBegin：先摸X张牌（X = 兵数），再判增益，最后判转职 ──
+								var x = player.countMark('zgl_bing');
+								if (x > 0) {
+									player.draw(x);
+									game.log(player, '「兵权」：摸', get.cnNumber(x), '张牌');
+								}
+								if (x >= 2) {
+									player.storage.zgl_buff = x;
+									player.addTempSkill('zgl_bq_buff');
+									game.log(player, '本回合使用牌无距离限制，且【杀】的次数上限+', get.cnNumber(x));
+								}
+								var carry = player.storage.zgl_carry;
+								if (typeof carry == 'number' && carry >= 0 && carry <= 2) {
+									game.log(player, '本轮获得的「兵」不大于二，失去了', '#g【兵权】', '并获得', '#g【情势】');
+									player.removeSkill('zgl_bingquan');
+									if (!player.hasSkill('zgl_qingshi')) player.addSkill('zgl_qingshi');
+									// 情势的每回合闸门在"它自己的回合开始"清零；本回合它还没有 phaseBegin，
+									// 故这里补一次清零，避免带着旧回合的状态进门。
+									player.storage.zgl_qs_opts = 0;
+									player.storage.zgl_qs_gain = 0;
+								}
+							},
+						},
+						// 九伐：限定技（展示牌堆基本牌，选 5+X 张使用）
+						zgl_jiufa: {
+							audio: 2, limited: true,
+							trigger: { player: 'phaseBegin' },
+							init: function (player) { player.storage.zgl_jiufa = false; },
+							filter: function (event, player) {
+								if (player.storage.zgl_jiufa) return false;
+								if (!player.isIn()) return false;
+								// 全场每名角色于游戏开始至今都使用/打出/失去过【杀】
 								for (var i = 0; i < game.players.length; i++) {
-									if (!game.players[i].storage.bz_sha_seen) {
-										player.storage.bz_jiufa_why = '未见过【杀】: ' + get.translation(game.players[i]);
-										game.log(player, '【九伐·诊断】暂不可发动：', get.translation(game.players[i]), '尚未使用/打出/失去过【杀】');
-										return false;
-									}
+									if (!game.players[i].storage.zgl_sha_seen) return false;
 								}
+								// 你的体力值不为最多
 								var max = 0;
-								for (var i = 0; i < game.players.length; i++) {
-									if (game.players[i].hp > max) max = game.players[i].hp;
+								for (var j = 0; j < game.players.length; j++) {
+									if (game.players[j].hp > max) max = game.players[j].hp;
 								}
-								if (player.hp >= max) {
-									player.storage.bz_jiufa_why = '体力为最多(' + player.hp + '/' + max + ')';
-									game.log(player, '【九伐·诊断】暂不可发动：你的体力值是最多的（', player.hp, '/', max, '）');
-									return false;
+								if (player.hp >= max) return false;
+								// 牌堆里要有基本牌
+								for (var k = 0; k < ui.cardPile.childElementCount; k++) {
+									var node = ui.cardPile.childNodes[k];
+									if (get.name(node) && get.type(get.name(node)) == 'basic') return true;
 								}
-								var basics = 0;
-								for (var i = 0; i < ui.cardPile.childElementCount; i++) {
-									var node = ui.cardPile.childNodes[i];
-									if (get.name(node) && get.type(get.name(node)) == 'basic') { basics++; }
-								}
-								if (!basics) {
-									player.storage.bz_jiufa_why = '牌堆内无基本牌';
-									game.log(player, '【九伐·诊断】暂不可发动：牌堆里没有基本牌');
-									return false;
-								}
-								player.storage.bz_jiufa_why = '可发动（' + basics + ' 张基本牌）';
-								return true;
+								return false;
 							},
 							content: function () {
 								'step 0'
-								player.storage.bz_jiufa = true;
-								var x = player.countMark('bz_bing');
+								player.storage.zgl_jiufa = true;
 								event.pool = [];
 								for (var i = 0; i < ui.cardPile.childElementCount; i++) {
 									var node = ui.cardPile.childNodes[i];
 									if (get.name(node) && get.type(get.name(node)) == 'basic') event.pool.push(node);
 								}
-								event.count = 5 + x;
-								game.log(player, '发动了限定技', '#g【九伐】', '，展示了牌堆内所有的基本牌');
-								// ★ 保险：牌堆基本牌为空/解析异常时不弹空选择框（用户报「进度条但没选项」）
+								event.left = 5 + player.countMark('zgl_bing');
+								game.log(player, '发动了限定技', '#g【九伐】');
 								if (!event.pool.length) { event.finish(); return; }
 								'step 1'
-								if (event.count <= 0 || !event.pool.length) { event.finish(); return; }
-								player.chooseCardButton(event.pool, '九伐：从中选择一张基本牌使用（还可选择' + event.count + '张）')
-									.set('ai', function (button) {
-										return _status.event.player.getUseValue(button.link);
-									});
+								if (event.left <= 0 || !event.pool.length) { event.finish(); return; }
+								player.chooseCardButton(event.pool,
+									'九伐：选择一张基本牌使用（还可选 ' + event.left + ' 张）', true)
+									.set('ai', function (button) { return 1 + get.value(button.link); });
 								'step 2'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
 								var card = result.links[0];
 								event.pool.remove(card);
-								event.count--;
+								event.left--;
 								player.chooseUseTarget(card, '九伐：是否使用' + get.translation(card) + '？（无次数和距离限制）');
 								'step 3'
 								event.goto(1);
 							},
 						},
-						// 杀见闻追踪器：必须独立静默（forced+direct+popup:false）。不可并入九伐——
-						// 九伐带 skillAnimation 且非 forced，合并后每次有人用/弃【杀】都会空放
-						// 一次全屏技能动画且无任何选项（用户实测「一进游戏就技能进度条但没选项」）。
-						bz_jiufa_track: {
-							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { global: ['useCardAfter', 'respondAfter', 'loseAfter'] },
-							filter: function (event, player) {
-								var cards = event.cards || (event.card ? [event.card] : []);
-								for (var i = 0; i < cards.length; i++) {
-									if (get.name(cards[i]) == 'sha') return true;
-								}
-								return false;
-							},
-							content: function () {
-								var p = trigger.player;
-								if (!p.storage.bz_sha_seen) p.storage.bz_sha_seen = true;
-							},
-						},
-						bz_kongcheng: {
-							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							// ★ 触发时机扩展（为了"同批次只摸一次"的限流）：
-							//   phaseBegin 是"你自己新回合"的批次边界；useCard 只用来**屏蔽**
-							//   （返回 false），不再重置批次。
-							trigger: { player: ['loseAfter', 'gainAfter', 'logSkill', 'damageBegin'], global: ['phaseBegin', 'useCard'] },
-							// ★ 接引擎原生"转换技"：zhuanhuanji:true 会让技能被识别为转换技
-							//   （game.js:60267 归入"转换技"标签）；当前形态存放在
-							//   player.storage.bz_kongcheng（true=阳 / false=阴）——
-							//   这个键名**必须**与技能名同名，因为引擎调用
-							//   intro.content 时传的是 player.storage[技能名]（game.js:28208-28211）。
-							//   翻转请统一走 player.changeZhuanhuanji('bz_kongcheng')：
-							//   它会翻转 storage、广播牌面翻转动画、并刷新标记（game.js:22209-22218）。
-							// ★ 用 mark:true（**不要**用 mark:'character'）——原版转换技就是 mark:true，
-							//   见 clan.js:569 钟琰「观骨」：zhuanhuanji:true + mark:true + intro.content。
-							//   mark:'character' 会走引擎的 markSkillCharacter（game.js:28227），
-							//   而那个分支传的是 `caption`（来自 info.intro.name，且引擎误写成 info.name），
-							//   十周年UI 扩展的 markCharacter 拿它当**角色 id** 去 `name.indexOf(...)`，
-							//   于是直接抛 `TypeError: name.indexOf is not a function` 并把选将/初始化打断。
-							//   mark:true 走的是普通标记路径，intro.content(storage) 照样按形态显示。
+						// 空城（转换技）：开局阴；阴=发动技能摸1张；阳=受伤时判定
+						zgl_kongcheng: {
+							locked: true, forced: true, charlotte: true, sub: true, popup: false, direct: true,
+							// 形态存放在与技能同名的 storage 键上（引擎调用 intro.content 时传 storage[技能名]）
 							zhuanhuanji: true,
-							// 引擎的"是否处于阳面"判定（game.js:64963-64971）
-							zhuanhuanji2: function (skill, player) { return !!player.storage.bz_kongcheng; },
+							zhuanhuanji2: function (skill, player) { return !!player.storage.zgl_kongcheng; },   // true = 阳
 							mark: true,
 							marktext: '空城',
 							intro: {
 								name: '空城',
-								// storage 就是 player.storage.bz_kongcheng（记得引擎传的是 storage[技能名]）
 								content: function (storage) {
 									return storage
-										? '转换技（当前·阳）。你受到伤害时进行一次判定：①若判定牌为锦囊牌，你令此伤害-1（至多减至0）；②若判定牌不为锦囊牌，你弃置一名角色的一张牌。'
-										: '转换技（当前·阴）。你发动技能时摸一张牌。（当你手牌数变为零或从零改变时转换形态）';
+										? '转换技（当前·阳）：你受到伤害时进行判定——锦囊牌令此伤害-1，否则弃一名角色一张牌。'
+										: '转换技（当前·阴）：你发动技能时摸一张牌。';
 								},
 							},
+							trigger: { player: ['loseAfter', 'gainAfter'], global: ['logSkill', 'damageBegin'] },
 							init: function (player) {
-								// 正文要求"游戏一开始就是阴形态" ⇒ false = 阴。
-								// （旧版用 bz_kc_yin 且初始化成 false 却按"true=阴"判，导致开局落在阳面、
-								//   阴面的摸牌永不触发——用户实测「空城一直不触发」。）
-								if (typeof player.storage.bz_kongcheng != 'boolean') player.storage.bz_kongcheng = false;
-								if (typeof player.storage.bz_kc_batch != 'number') player.storage.bz_kc_batch = 0;   // 同批次限流闸门
-								player.storage.bz_kc_nonzero = true;   // 手牌"非零"状态（开局有手牌）
-								// ==== 通道探针（一次性，确认后即删）====
-								// 目的：查清这台机器上"把诊断写出去"的可用通道，好让作者直接读文件、
-								// 不再需要用户手动截图。各条独立 try，结果写进战报。
-								try {
-									var _rep = [];
-									try {
-										var _fs = require('fs');
-										_rep.push('require=有');
-										try { _fs.writeFileSync('C:/_bz_probe.log', 'probe ok ' + new Date().toLocaleTimeString() + '\n'); _rep.push('写C盘=成功'); }
-										catch (w1) { _rep.push('写C盘=失败(' + w1.message + ')'); }
-										try { _fs.writeFileSync('C:/Users/luoti/Desktop/dsh/_bz_probe.log', 'probe ok\n'); _rep.push('写工作区=成功'); }
-										catch (w2) { _rep.push('写工作区=失败(' + w2.message + ')'); }
-									} catch (r1) { _rep.push('require=失败(' + r1.message + ')'); }
-									_rep.push('window.require=' + (typeof window !== 'undefined' && window.require ? '有' : '无'));
-									_rep.push('process=' + (typeof process !== 'undefined' ? '有' : '无'));
-									_rep.push('fetch=' + (typeof fetch !== 'undefined' ? '有' : '无'));
-									_rep.push('localStorage=' + (typeof localStorage !== 'undefined' ? '有' : '无'));
-									game.log(player, '【探针】', _rep.join(' | '));
-								} catch (eP) {
-									try { game.log(player, '【探针】异常:', eP.message); } catch (eQ) { }
-								}
+								if (typeof player.storage.zgl_kongcheng != 'boolean') player.storage.zgl_kongcheng = false;  // false = 阴
+								player.storage.zgl_kc_nonzero = true;
+								player.storage.zgl_kc_batch = 0;
 							},
 							filter: function (event, player) {
-								// ★★ 不要依赖 event.triggername ★★
-								//   实测（气泡诊断）：filter 收到的第一个参数上
-								//   `triggername` 是 **undefined**，而 `name` 是真实的时机名
-								//   （例：`evt=logSkill tn=undefined`）。
-								//   所以按时机名分派一律失效 —— 这里改用 name 优先、triggername 兜底。
-								var tn = event.triggername;
-								if (tn == undefined) tn = event.name;
 								if (!player.isIn()) return false;
-								// ★★ 开局前一律不触发 ★★
-								//   引擎在 gameStart **之前**也会派发 logSkill（初始化/发牌阶段
-								//   各锁定技的自动触发都算），于是空城·阴会在"游戏还没开始"
-								//   时被喂一堆牌（用户实测：开局就摸了 7 张）。
-								//   判据用引擎自己在 trigger 里用的同一个标志：_status.gameStarted
-								//   （game.js:32321 在 gameStart 时置 true）。
 								if (!_status.gameStarted) return false;
+								var tn = event.name;
 								if (tn == 'loseAfter' || tn == 'gainAfter') return true;
-								// 批次边界：只有**你自己回合开始**才重开一批。
-								// ★★ filter 里**不能**用 trigger ★★
-								//   filter 的形参只有 (event, player) —— 用 trigger 会抛
-								//   `ReferenceError: trigger is not defined`（用户实测），
-								//   而引擎把异常吞掉后 filter 返回 undefined ⇒ 技能**静默失效**。
-								//   （trigger 只在 content 里存在：引擎在 game.js:15553 设置 next._trigger。）
-								var _own = event && event.player === player;
-								if (tn == 'phaseBegin') {
-									if (_own) player.storage.bz_kc_batch = 0;
-									return false;
-								}
-								// ★ 不再把 'useCard' 当批次边界：你**打出一张牌**会触发一堆锁定技，
-								//   若出牌就重开闸门，就会变成"每出一张牌都摸一张"
-								//   （用户实测："阴面不发动技能，打出一张牌也能摸牌"）。
-								//   批次边界只保留"你自己回合开始"。
-								if (tn == 'useCard') return false;
-								// 阴（storage=false）：发动技能后摸一张，但**同一批只摸一次**
-								// ★★ 排除空城自己 ★★
-								//   空城是 locked:true，它**自己的发动也会派发 logSkill**。
-								//   不排除就会形成自触发链：
-								//     某技能发动 → 空城摸 1 张 → 空城自己的发动又派发 logSkill
-								//     → 被自己的 filter 接住 → 再摸 1 张 ……（用户实测"没发动技能也摸牌"）
-								//   所以这里要求：被记录的那个技能**不是空城自己**。
 								if (tn == 'logSkill') {
-									if (player.storage.bz_kongcheng) return false;
-									if (event.skill == 'bz_kongcheng' || event.skill == 'bz_kongcheng_stance') return false;
-									return !player.storage.bz_kc_batch;
+									// 阴面：发动技能后摸一张。排除空城自己（否则自触发成环）。
+									if (player.storage.zgl_kongcheng) return false;
+									if (event.skill == 'zgl_kongcheng') return false;
+									return !player.storage.zgl_kc_batch;
 								}
-								// 阳（storage=true）：受到伤害时判定
-								if (tn == 'damageBegin') return !!player.storage.bz_kongcheng && event.num > 0;
+								if (tn == 'damageBegin') return !!player.storage.zgl_kongcheng && event.num > 0;
 								return false;
 							},
 							content: function () {
 								'step 0'
-								// content 里 triggername 是可靠的（引擎在 game.js:15554 显式设置），
-								// 但这里同样做 name 兜底，避免两条路径不一致时行为分叉。
-								var tn = event.triggername;
-								if (tn == undefined) tn = event.name;
-								// 双保险：即使 filter 因时序被绕过，content 也不在开局前生效
-								if (!_status.gameStarted) { event.finish(); return; }
+								var tn = event.name;
 								if (tn == 'loseAfter' || tn == 'gainAfter') {
 									var now = player.countCards('h') > 0;
-									if (now != player.storage.bz_kc_nonzero) {
-										player.storage.bz_kc_nonzero = now;
-										// 走引擎原生翻转：同时更新 storage、动画与标记
-										player.changeZhuanhuanji('bz_kongcheng');
-										game.log(player, '发动了', '#g【空城】', '，转换为', '#g' + (player.storage.bz_kongcheng ? '阳' : '阴') + '态');
+									if (now != player.storage.zgl_kc_nonzero) {
+										player.storage.zgl_kc_nonzero = now;
+										player.changeZhuanhuanji('zgl_kongcheng');
+										game.log(player, '发动了', '#g【空城】', '，转换为', '#g' + (player.storage.zgl_kongcheng ? '阳' : '阴') + '态');
 									}
 									event.finish(); return;
 								}
 								if (tn == 'logSkill') {
 									player.draw(1);
-									// 落批次闸门：同一批（连续自动结算）只摸这一次
-									player.storage.bz_kc_batch = 1;
+									player.storage.zgl_kc_batch = 1;   // 同一串自动结算只摸一次
 									game.log(player, '【空城·阴】：发动技能后摸了一张牌');
 									event.finish(); return;
 								}
+								// 阳面：受伤时判定
 								player.judge();
 								'step 1'
 								var tname = result && result.name;
@@ -2924,11 +2868,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (isTrick) {
 									if (trigger.num > 0) {
 										trigger.num--;
-										game.log(player, '判定为锦囊牌，此伤害-1');
+										game.log(player, '【空城·阳】：判定为锦囊牌，此伤害-1');
 									}
 									event.finish(); return;
 								}
-								game.log(player, '判定不为锦囊牌');
+								game.log(player, '【空城·阳】：判定不为锦囊牌');
 								player.chooseTarget(true, '空城：弃置其他一名角色的一张牌', function (card, player, target) {
 									return target != player && target.countCards('he') > 0;
 								}).set('ai', function (target) {
@@ -2940,192 +2884,112 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 							},
 						},
-						bz_qingshi: {
-							locked: true,
-							forced: true,
-							charlotte: true,
-							popup: false,
-							direct: true,
-							// ★★ 改用"已证实能工作"的结构 ★★
-							//   病史：原来写 `player: 'useCardBegin'` / `player: 'useCard'` / `global:'useCard'`，
-							//   filter 都会放行（战报/日志都能看到"放行=1"），但 **content 从不执行**
-							//   —— 无论哪种声明都一样。不再纠缠引擎内部原因，照抄本包已验证的结构：
-							//     bz_jiufa_track: forced+locked+popup:false+direct:true
-							//                     + trigger { global: ['useCardAfter', ...] }
-							//   该技能的 content 确实在执行（bz_sha_seen 被写、九伐诊断能读到）。
-							//   时机选 useCardAfter：每张牌**结算完**派发一次，语义上正好对应
-							//   正文的"当你本回合使用前两张锦囊牌时"。
-							trigger: { global: ['useCardAfter', 'phaseBegin'] },
+						// 情势（锁定技）：看门在 zgl_watch；本技能只承担显示与状态键
+						zgl_qingshi: {
+							locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							trigger: { global: ['phaseBegin'] },
 							init: function (player) {
-								// 显式初始化三个状态位，避免依赖 undefined 的隐式语义：
-								//   bz_qs_opts   本回合已执行的选项次数（上限 2）
-								//   bz_qs_used   本回合是否已经因情势拿过兵（每回合至多 2 次）
-								//   bz_qs_gained 本回合已因此获得的兵数（上限 2）
-								//   bz_qs_rounds 兵的剩余轮数（3 → 0 时清兵）
-								if (typeof player.storage.bz_qs_opts != 'number') player.storage.bz_qs_opts = 0;
-								if (typeof player.storage.bz_qs_used != 'number') player.storage.bz_qs_used = 0;
-								if (typeof player.storage.bz_qs_gained != 'number') player.storage.bz_qs_gained = 0;
-								if (typeof player.storage.bz_qs_rounds != 'number') player.storage.bz_qs_rounds = 0;
-								player.storage.bz_qs_card = null;   // 按牌去重用的"上一张已处理的牌"
+								if (typeof player.storage.zgl_qs_opts != 'number') player.storage.zgl_qs_opts = 0;   // 本回合已触发次数（上限2）
+								if (typeof player.storage.zgl_qs_gain != 'number') player.storage.zgl_qs_gain = 0;   // 本回合已得兵数（上限2）
+								if (typeof player.storage.zgl_qs_rounds != 'number') player.storage.zgl_qs_rounds = 0; // 兵的剩余轮数
+								player.storage.zgl_qs_last = null;   // 上一张已处理的牌（去重）
 							},
+							// 回合开始：清零每回合闸门 + 摸X张牌（X = 兵数，至少1）+ 兵的三轮计时
 							filter: function (event, player) {
-								// ★ 同空城：filter 里 triggername 可能是 undefined（实测），用 name 兜底。
-								var tn = event.triggername;
-								if (tn == undefined) tn = event.name;
-								if (tn == 'phaseBegin') return player.isIn();
-								if (!event.card) return false;
-								// ★ 只认**你自己**使用的牌。注意：filter 里没有 trigger（形参只有 event/player），
-								//   必须用 event.player —— 用 trigger 会 ReferenceError 并被引擎吞掉，
-								//   后果是技能静默失效（本处曾因此整条触发失效）。
-								if (event.player && event.player !== player) return false;
-								var tt = get.type(get.name(event.card));
-								if (tt != 'trick' && tt != 'delay') return false;
-								var _dup = (player.storage.bz_qs_card === event.card);
-								var _full = ((player.storage.bz_qs_opts || 0) >= 2);
-								try { game.bzDiag('情势filter ' + get.translation(event.card) + ' tn=' + tn + ' opts=' + (player.storage.bz_qs_opts || 0) + ' 重复=' + (_dup ? 1 : 0) + ' 满=' + (_full ? 1 : 0) + ' 放行=' + ((_dup || _full) ? 0 : 1)); } catch (eL) { }
-								// 去重：同一次使用（同一个牌对象）只算一张。
-								// 这不会"顶掉第二张锦囊"——第二张是**另一个牌对象**。
-								if (_dup) return false;
-								player.storage.bz_qs_card = event.card;
-								if (_full) return false;
-								return true;
+								return player.isIn() && event.player === player;
 							},
 							content: function () {
-								'step 0'
-								// ★ 同空城：content 里 triggername 可靠（game.js:15554），name 兜底
-								var qtn = event.triggername;
-								if (qtn == undefined) qtn = event.name;
-								// ★ 诊断：确认 content 到底有没有被执行（filter 放行 ≠ content 会跑）
-								try {
-									game.bzDiag('情势content进入 tn=' + qtn + ' step=' + event.step +
-										' opts=' + (player.storage.bz_qs_opts || 0) +
-										' 牌=' + (event.card ? get.translation(event.card) : (trigger && trigger.card ? get.translation(trigger.card) : '无')));
-								} catch (eD) { }
-								if (qtn == 'phaseBegin') {
-									// 每回合把「本回合」的两个闸门一起清零：
-									//   bz_qs_opts = 本回合已执行的选项次数（上限 2）
-									//   bz_qs_used = 本回合是否已经通过情势拿过兵（上限 2，见 step 1）
-									player.storage.bz_qs_opts = 0;
-									player.storage.bz_qs_used = 0;
-									player.storage.bz_qs_gained = 0;
-									player.storage.bz_qs_card = null;   // 新回合：允许新的"第一张锦囊"
-									// ★ 回合开始时摸X张牌（X = 兵数，且**至少为 1**）：
-									//   兵权还在时兵数可能为 0，但正文要求至少摸一张，故取 max(1, 兵数)。
-									var qx = player.countMark('bz_bing');
-									if (qx < 1) qx = 1;
-									player.draw(qx);
-									game.log(player, '「情势」：摸', get.cnNumber(qx), '张牌（兵数', player.countMark('bz_bing'), '）');
-									// 「兵」满三轮后移除：计时器在获得首个兵时置 3，
-									// 每次本人回合开始减一，减到 0 即清空并复位。
-									var left = player.storage.bz_qs_rounds;
-									if (typeof left == 'number' && left > 0) {
-										left--;
-										player.storage.bz_qs_rounds = left;
-										if (left == 0) {
-											var qn = player.countMark('bz_bing');
-											if (qn > 0) {
-												player.removeMark('bz_bing', qn);
-												game.log(player, '「情势」所得的「兵」已满三轮，移除了', get.cnNumber(qn), '个「兵」');
-											}
+								player.storage.zgl_qs_opts = 0;
+								player.storage.zgl_qs_gain = 0;
+								player.storage.zgl_qs_last = null;
+								var x = player.countMark('zgl_bing');
+								if (x < 1) x = 1;
+								player.draw(x);
+								game.log(player, '「情势」：摸', get.cnNumber(x), '张牌');
+								var left = player.storage.zgl_qs_rounds;
+								if (typeof left == 'number' && left > 0) {
+									left--;
+									player.storage.zgl_qs_rounds = left;
+									if (left == 0) {
+										var n = player.countMark('zgl_bing');
+										if (n > 0) {
+											player.removeMark('zgl_bing', n);
+											game.log(player, '「情势」所得的「兵」已满三轮，移除了', get.cnNumber(n), '个');
 										}
 									}
-									event.finish(); return;
-								}
-								player.chooseControl(['①此牌造成的伤害+1', '②此牌额外结算一次', 'cancel2'])
-									.set('prompt', '情势：【' + get.translation(trigger.card) + '】结算开始，选择一项执行')
-									.set('ai', function () { return 0; });
-								'step 1'
-								if (result.control == 'cancel2') { event.finish(); return; }
-								// 玩家点了取消：不执行任何选项，但**闸门要落下** ——
-								// 否则同一张锦囊会反复弹询问（选中即消耗一次"前两张"的额度）。
-								player.storage.bz_qs_opts = (player.storage.bz_qs_opts || 0) + 1;
-								player.storage.bz_qs_used = 1;
-								// ★ 兵的上限与「选中几项」无关：本轮选了一项也要落一次闸，
-								//   且兵权时期的 bz_bing_gained 不参与这里的判定（两者互斥）。
-								var qg = player.storage.bz_qs_gained || 0;
-								if (qg < 2) {
-									player.addMark('bz_bing', 1);
-									player.storage.bz_qs_gained = qg + 1;
-									if (typeof player.storage.bz_qs_rounds != 'number' || player.storage.bz_qs_rounds <= 0) {
-										player.storage.bz_qs_rounds = 3;
-									}
-									game.log(player, '获得了一个「兵」（情势所得 ' + (qg + 1) + '/2）');
-								}
-								if (result.control.indexOf('①') == 0) {
-									player.addTempSkill('bz_qingshi_dmg');
-									player.storage.bz_qs_use = trigger;
-								} else {
-									// ★ createEvent 会自动把事件压入当前队列（game.js:40348）——
-									//   必须先 event.next.remove 再排入 useCard 完成后，
-									//   否则同一事件在两个队列各执行一次 ⇒ 额外结算×2
-									//   （官方同款套路：game.js:27189-27191 logSkill 重排队）。
-									var next = player.useCard(trigger.card, trigger.cards ? trigger.cards.slice(0) : [], (trigger.targets || []).slice(0));
-									event.next.remove(next);
-									trigger.next.push(next);
 								}
 							},
 						},
-						bz_qingshi_used: {
-							charlotte: true, sub: true, popup: false,
-							// ★ 已弃用：原本当作"每回合闸门"的临时技能，实测会导致
-							//   "只有第一张锦囊牌能触发情势"（闸门没被清掉）。
-							//   现在闸门改为 storage.bz_qs_used，由 phaseBegin 清零。
-							//   保留本条目是为了兼容老存档里已经挂上的临时技能。
-							onremove: function (player) { player.storage.bz_qs_gained = 0; },
-						},
-						bz_qingshi_dmg: {
+						// ★ 看门追踪器：一个静默子技能承担全部"检测"职责（实测这类技能 content 会执行）
+						//   职责一：记录全场"杀见闻"（九伐的门槛）
+						//   职责二：诸葛亮使用前两张锦囊时触发情势
+						zgl_watch: {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { source: 'damageBegin2' },
+							trigger: { global: ['useCardBefore', 'respondAfter', 'loseAfter'] },
 							filter: function (event, player) {
-								var uc = event.getParent('useCard');
-								return uc && player.storage.bz_qs_use && uc == player.storage.bz_qs_use;
+								try {
+									var cards = event.cards || (event.card ? [event.card] : []);
+									for (var i = 0; i < cards.length; i++) {
+										if (get.name(cards[i]) == 'sha') return true;
+									}
+									// 情势看门：诸葛亮使用锦囊
+									var c = event.card || (cards.length ? cards[0] : null);
+									var uce = (event.getParent && event.getParent('useCard')) || event;
+									var owner = event.player || uce.player;
+									if (c && owner === player && player.hasSkill('zgl_qingshi')) {
+										var tt = get.type(get.name(c));
+										if (tt == 'trick' || tt == 'delay') {
+											// 去重：同一张牌（同一个 useCard 事件）只算一次；
+											// 额外结算那一遍事件上带 effectCount>0，也不能再算一次
+											if ((uce.effectCount || 0) > 0) return false;
+											if (player.storage.zgl_qs_last === c) return false;
+											return (player.storage.zgl_qs_opts || 0) < 2;
+										}
+									}
+								} catch (e) { }
+								return false;
 							},
 							content: function () {
-								trigger.num++;
-								game.log(player, '「情势」：此牌伤害+1');
+								var cards = trigger.cards || (trigger.card ? [trigger.card] : []);
+								// ── 职责一：杀见闻 ──
+								for (var i = 0; i < cards.length; i++) {
+									if (get.name(cards[i]) == 'sha') {
+										var sp = trigger.player;
+										if (sp && !sp.storage.zgl_sha_seen) sp.storage.zgl_sha_seen = true;
+									}
+								}
+								// ── 职责二：情势 ──
+								try {
+									var c = trigger.card || (cards.length ? cards[0] : null);
+									var uce = (trigger.getParent && trigger.getParent('useCard')) || trigger;
+									var owner = trigger.player || uce.player;
+									if (!c || owner !== player) return;
+									if (!player.hasSkill('zgl_qingshi')) return;
+									var tt = get.type(get.name(c));
+									if (tt != 'trick' && tt != 'delay') return;
+									if ((uce.effectCount || 0) > 0) return;
+									if (player.storage.zgl_qs_last === c) return;
+									if ((player.storage.zgl_qs_opts || 0) >= 2) return;
+									player.storage.zgl_qs_last = c;
+									player.storage.zgl_qs_opts = (player.storage.zgl_qs_opts || 0) + 1;
+									// 得一个「兵」（每回合至多两个）
+									if ((player.storage.zgl_qs_gain || 0) < 2) {
+										player.addMark('zgl_bing', 1);
+										player.storage.zgl_qs_gain = (player.storage.zgl_qs_gain || 0) + 1;
+										if (!(player.storage.zgl_qs_rounds > 0)) player.storage.zgl_qs_rounds = 3;
+										game.log(player, '「情势」：获得一个「兵」（', player.storage.zgl_qs_gain, '/2）');
+									}
+									// 额外结算一次（引擎内置机制）
+									uce.effectCount = (uce.effectCount || 0) + 1;
+									game.log(player, '「情势」：', get.translation(c), '额外结算一次');
+								} catch (e2) { }
 							},
-							onremove: function (player) { delete player.storage.bz_qs_use; },
 						},
 
-						// ============ 名·周瑜 ============
-						mzy_yingzi: {
-							locked: true,
-							forced: true,
-							charlotte: true,
-							trigger: { player: 'phaseBegin' },
-							filter: function (event, player) { return player.isIn(); },
-							content: function () {
-								'step 0'
-								event.mzyCount = 0;
-								event.mzyAll = (player.hp == player.maxHp || player.countCards('h') == player.maxHp);
-								'step 1'
-								if (event.mzyAll || player.hp < player.maxHp) {
-									player.draw(3);
-									event.mzyCount++;
-									game.log(player, '发动了', '#g【英姿】', '①，摸三张牌');
-								}
-								'step 2'
-								if (event.mzyAll || player.countCards('h') > player.hp) {
-									player.addTempSkill('mzy_yingzi_mod');
-									event.mzyCount++;
-									game.log(player, '发动了', '#g【英姿】', '②，本回合使用牌无次数和距离限制');
-								}
-								'step 3'
-								if (event.mzyAll || player.countCards('h') < player.hp) {
-									if (player.hp < player.maxHp) player.recover(1);
-									var n = player.maxHp - player.countCards('h');
-									if (n > 0) player.draw(n);
-									event.mzyCount++;
-									game.log(player, '发动了', '#g【英姿】', '③，回复1点体力并将手牌补至体力上限');
-								}
-								'step 4'
-								if (event.mzyCount > 0) {
-									player.skip('phaseDiscard');
-									game.log(player, '跳过了本回合的弃牌阶段');
-								}
-							},
-						},
-						mzy_yingzi_mod: {
+						// ────────────── 名·周瑜 ──────────────
+
+						// 英姿·弘：本回合使用牌无次数和距离限制
+						zy_yz_buff: {
 							charlotte: true, sub: true,
 							mod: {
 								targetInRange: function () { return true; },
@@ -3136,10 +3000,48 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								},
 							},
 						},
-						mzy_fanjian: {
-							audio: 2,
-							enable: 'phaseUse',
-							usable: 1,
+						// 技出·承：本回合发动技能后额外触发一次善谋
+						zy_jc_buff: { charlotte: true, sub: true },
+						// 英姿（锁定技）
+						zy_yingzi: {
+							locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							trigger: { player: 'phaseBegin' },
+							filter: function (event, player) { return player.isIn(); },
+							content: function () {
+								'step 0'
+								event.count = 0;
+								// ④ 的判定：体力值或手牌数等于体力上限 ⇒ 无视条件，依次执行①②③
+								event.all = (player.hp == player.maxHp || player.countCards('h') == player.maxHp);
+								'step 1'
+								if (event.all || player.hp < player.maxHp) {
+									player.draw(3);
+									event.count++;
+									game.log(player, '【英姿】①：摸三张牌');
+								}
+								'step 2'
+								if (event.all || player.countCards('h') > player.hp) {
+									player.addTempSkill('zy_yz_buff');
+									event.count++;
+									game.log(player, '【英姿】②：本回合使用牌无次数和距离限制');
+								}
+								'step 3'
+								if (event.all || player.countCards('h') < player.hp) {
+									if (player.hp < player.maxHp) player.recover(1);
+									var n = player.maxHp - player.countCards('h');
+									if (n > 0) player.draw(n);
+									event.count++;
+									game.log(player, '【英姿】③：回复1点体力并将手牌补至体力上限');
+								}
+								'step 4'
+								if (event.count > 0) {
+									player.skip('phaseDiscard');
+									game.log(player, '【英姿】：跳过了本回合的弃牌阶段');
+								}
+							},
+						},
+						// 反间（出牌阶段限一次）
+						zy_fanjian: {
+							audio: 2, enable: 'phaseUse', usable: 1,
 							filter: function (event, player) {
 								return game.hasPlayer(function (current) {
 									return current != player && current.countCards('h') > 0;
@@ -3147,159 +3049,136 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								player.chooseTarget([2, 2], true, '反间：选择两名角色').set('ai', function (target) {
-									return target.countCards('h') > 0 ? get.attitude(_status.event.player, target) : 0;
-								});
+								player.chooseTarget([2, 2], true, '反间：选择两名角色', function (card, player, target) {
+									return target.countCards('h') > 0;
+								}).set('ai', function (target) { return target.countCards('h'); });
 								'step 1'
 								if (!result.bool || !result.targets || result.targets.length != 2) { event.finish(); return; }
-								event.fjT = result.targets.slice(0);
-								event.fjA0 = event.fjT[0].countCards('h');
-								event.fjB0 = event.fjT[1].countCards('h');
-								var labels = [get.translation(event.fjT[0]), get.translation(event.fjT[1])];
-								var controls = [];
-								if (event.fjT[0].countCards('h') > 0) controls.push(labels[0]);
-								if (event.fjT[1].countCards('h') > 0) controls.push(labels[1]);
-								if (!controls.length) { event.finish(); return; }
-								event.fjLabels = controls;
-								player.chooseControl(controls)
+								event.tt = result.targets.slice(0);
+								event.base = [event.tt[0].countCards('h'), event.tt[1].countCards('h')];
+								// 选"观看谁"：只有有手牌的角色可选
+								var labels = [], values = [];
+								for (var i = 0; i < 2; i++) {
+									if (event.tt[i].countCards('h') > 0) {
+										labels.push(get.translation(event.tt[i]));
+										values.push(i);
+									}
+								}
+								if (!labels.length) { event.finish(); return; }
+								event.values = values;
+								player.chooseControl(labels)
 									.set('prompt', '反间：选择观看哪一名角色的手牌')
 									.set('ai', function () { return 0; });
 								'step 2'
 								if (!result.control) { event.finish(); return; }
-								var vi = event.fjLabels.indexOf(result.control);
-								if (vi < 0) { event.finish(); return; }
-								event.fjView = event.fjT[vi];
-								event.fjGuess = event.fjT[1 - vi];
-								if (event.fjView.countCards('h') == 0) { event.finish(); return; }
+								var vi = labels.indexOf(result.control);
+								if (vi < 0) vi = 0;
+								vi = event.values[vi];
+								event.view = event.tt[vi];
+								event.guess = event.tt[1 - vi];
+								if (!event.view.countCards('h')) { event.goto(6); return; }
 								'step 3'
-								// 安全兜底：观看者已无手牌则直接进入终止结算
-								if (event.fjView.countCards('h') == 0) { event.goto(7); return; }
-								player.chooseCardButton(event.fjView.getCards('h'), '反间：观看并选择其中一张牌', true);
+								if (!event.view.countCards('h') || !event.guess.countCards('h')) { event.goto(6); return; }
+								player.chooseCardButton(event.view.getCards('h'), '反间：观看并选择其中一张牌', true);
 								'step 4'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
-								event.fjCard = result.links[0];
-								event.fjGuess.chooseControl(['红色', '黑色'])
+								event.card = result.links[0];
+								event.guess.chooseControl(['红色', '黑色'])
 									.set('prompt', '反间：猜测此牌的花色')
 									.set('ai', function () { return Math.random() < 0.5 ? 0 : 1; });
 								'step 5'
-								var guess = result.control;
-								var real = get.color(event.fjCard) == 'red' ? '红色' : '黑色';
-								if (guess == real) {
-									game.log(event.fjGuess, '猜对了，获得了一张牌');
-									event.fjGuess.gain(event.fjCard, event.fjView);
+								var real = get.color(event.card) == 'red' ? '红色' : '黑色';
+								if (result.control == real) {
+									game.log(event.guess, '猜对了，获得了一张牌');
+									event.guess.gain(event.card, event.view);
+									event.goto(3);
+								} else {
+									game.log(event.guess, '猜错了，失去了全部手牌');
+									var hs = event.guess.getCards('h');
+									if (hs.length) event.guess.discard(hs);
 									event.goto(6);
 								}
-								else {
-									game.log(event.fjGuess, '猜错了，失去了全部手牌');
-									var hs = event.fjGuess.getCards('h');
-									if (hs.length) event.fjGuess.discard(hs);
-									event.goto(7);
-								}
 								'step 6'
-								// ★ 终止判定必须在队列结算之后：gain/discard 是入队事件，
-								//   步骤边界才落地——同一步内 countCards 仍是旧值，观看者的
-								//   最后一张牌被拿走时检测不到 ⇒ 技能不终止（用户实测）。
-								if (event.fjView.countCards('h') == 0 || event.fjGuess.countCards('h') == 0) { event.goto(7); }
-								else { event.goto(3); }
-								'step 7'
-								for (var i = 0; i < event.fjT.length; i++) {
-									var t = event.fjT[i];
-									var n0 = (i == 0 ? event.fjA0 : event.fjB0);
-									var lost = n0 - t.countCards('h');
+								// 终止结算：与流程开始时的手牌数对比，失去≥2 张者失去1点体力
+								for (var k = 0; k < event.tt.length; k++) {
+									var t = event.tt[k];
+									var lost = event.base[k] - t.countCards('h');
 									if (lost >= 2) {
 										t.loseHp(1);
-										game.log(t, '失去了' + get.cnNumber(lost) + '张牌，失去1点体力');
+										game.log(t, '本流程失去了' + get.cnNumber(lost) + '张牌，失去1点体力');
 									}
 								}
 							},
 						},
-						mzy_yingyan: {
-							locked: true,
-							forced: true,
-							charlotte: true,
+						// 映炎（锁定技）
+						zy_yingyan: {
+							locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { global: 'damageBegin2', source: 'damageBegin1' },
 							filter: function (event, player) {
-								// ★ filter 里 triggername 可能是 undefined（实测），name 兜底
-								var mtn = event.triggername;
-								if (mtn == undefined) mtn = event.name;
 								if (!player.isIn()) return false;
-								if (mtn == 'damageBegin1') return event.nature != 'fire';
-								if (event.nature != 'fire') return false;
+								var tn = event.name;
+								if (tn == 'damageBegin1') return event.nature != 'fire';      // 我造成伤害：可改为火焰
+								if (event.nature != 'fire') return false;                     // 火焰伤害：三选一
 								return player.countCards('he') > 0 || player.hp > 0;
 							},
 							content: function () {
-								// 步骤号连续 0..5，且全部在函数体顶层。
-								// ★ 旧版把第二个 'step 1' 写在了 `if (event.triggername == 'damageBegin1') {`
-								//   块**内部**：parsex 把步骤标签替换成 `break;case N:` 时 break 落在块内，
-								//   生成的代码语法非法 ⇒ 该处替换被跳过、步骤机错位（C1 报
-								//   "Unexpected token 'case'"）。现在改为"顶层判条件 + 用 event.mzMode 分派"。
 								'step 0'
-								if (event.triggername == 'damageBegin1') {
-									// 我造成伤害时：可把这次伤害改为火焰伤害，然后结束。
-									event.mzMode = 'src';
-									player.chooseBool('映炎：是否将此伤害修改为火焰伤害？').set('ai', function () { return true; });
+								if (event.name == 'damageBegin1') {
+									event.mode = 'src';
+									player.chooseBool('映炎：是否将此伤害改为火焰伤害？')
+										.set('ai', function () { return true; });
 									return;
 								}
-								// 场上有人受到火焰伤害时：三选一
-								event.mzMode = 'dmg';
-								event.mzT = trigger.player;
-								event.mzNum = trigger.num;
-								event.mzSrc = trigger.source;
+								event.mode = 'fire';
+								event.victim = trigger.player;
+								event.num = trigger.num;
+								event.src = trigger.source;
 								var controls = [];
 								if (player.countCards('he') > 0) {
-									controls.push('①弃置一张牌，令相邻角色受到等同伤害');
-									controls.push('②弃置一张牌，令此伤害+1');
+									controls.push('①弃一张牌，令相邻角色受到等同伤害');
+									controls.push('②弃一张牌，令此伤害+1');
 								}
 								if (player.hp > 0 && player.countCards('he') >= 2) controls.push('③失去1点体力，执行①和②');
 								if (!controls.length) { event.finish(); return; }
 								player.chooseControl(controls)
-									.set('prompt', '映炎：' + get.translation(event.mzT) + '受到火焰伤害，选择一项执行')
+									.set('prompt', '映炎：' + get.translation(event.victim) + '受到火焰伤害，选择一项')
 									.set('ai', function () { return 0; });
-								return;
 								'step 1'
-								if (event.mzMode == 'src') {
+								if (event.mode == 'src') {
 									if (result.bool) {
 										trigger.nature = 'fire';
-										game.log(player, '将此伤害修改为了火焰伤害');
+										game.log(player, '将此伤害改为火焰伤害');
 									}
 									event.finish(); return;
 								}
 								if (!result.control) { event.finish(); return; }
-								event.mzDo1 = result.control.indexOf('①') == 0 || result.control.indexOf('③') == 0;
-								event.mzDo2 = result.control.indexOf('②') == 0 || result.control.indexOf('③') == 0;
-								if (!event.mzDo1 && !event.mzDo2) { event.finish(); return; }
-								return;
-								'step 2'
-								// ①与②都要"弃置一张牌"，故本步无条件询问
+								event.do1 = result.control.indexOf('①') == 0 || result.control.indexOf('③') == 0;
+								event.do2 = result.control.indexOf('②') == 0 || result.control.indexOf('③') == 0;
+								if (!event.do1 && !event.do2) { event.finish(); return; }
+								if (result.control.indexOf('③') == 0) player.loseHp(1);
 								player.chooseCard('he', true, '映炎：弃置一张牌');
-								return;
-								'step 3'
+								'step 2'
 								if (!result.cards || !result.cards.length) { event.finish(); return; }
 								player.discard(result.cards);
-								if (!event.mzDo1) {
-									// 只选了②：弃牌后直接令此伤害+1
+								if (!event.do1) {
 									trigger.num++;
 									game.log(player, '令此伤害+1');
 									event.finish(); return;
 								}
-								// 选了①（或③）：再令相邻角色受到等同伤害
-								player.chooseTarget(true, '映炎：选择一名与该角色相邻的角色', function (card, player, target) {
-									var d = _status.event.mzT;
+								player.chooseTarget(true, '映炎：选择一名与' + get.translation(event.victim) + '相邻的角色', function (card, player, target) {
+									var d = _status.event.victim;
 									return target != d && target.isIn() && (target == d.next || target == d.previous);
-								}).set('mzT', event.mzT).set('ai', function (target) {
+								}).set('victim', event.victim).set('ai', function (target) {
 									return -get.attitude(_status.event.player, target);
 								});
-								return;
-								'step 4'
+								'step 3'
 								if (result.bool && result.targets && result.targets.length) {
-									result.targets[0].damage(event.mzNum, event.mzSrc, 'fire');
+									result.targets[0].damage(event.num, event.src, 'fire');
 									game.log(player, '令', result.targets[0], '受到了等同的火焰伤害');
 								}
-								if (!event.mzDo2) { event.finish(); return; }
-								// ③ 的第二段：再弃一张牌令此伤害+1
+								if (!event.do2) { event.finish(); return; }
 								player.chooseCard('he', true, '映炎：弃置一张牌');
-								return;
-								'step 5'
+								'step 4'
 								if (result.cards && result.cards.length) {
 									player.discard(result.cards);
 									trigger.num++;
@@ -3307,74 +3186,78 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 							},
 						},
-						mzy_shanmou: {
-							locked: true,
-							forced: true,
-							charlotte: true,
-							popup: false,
-							direct: true,
+						// 善谋（转换技）
+						zy_shanmou: {
+							locked: true, forced: true, charlotte: true, sub: true, popup: false, direct: true,
+							zhuanhuanji: true,
+							zhuanhuanji2: function (skill, player) { return !!player.storage.zy_shanmou; },   // true = 阳
+							mark: true,
+							marktext: '善谋',
+							intro: {
+								name: '善谋',
+								content: function (storage) {
+									return storage
+										? '转换技（当前·阳）：当你发动技能时，你回复1点体力。'
+										: '转换技（当前·阴）：当你发动技能时，你对一名角色造成1点伤害。';
+								},
+							},
 							trigger: { player: 'logSkill' },
-							filter: function (event, player) { return player.isIn(); },
+							init: function (player) {
+								if (typeof player.storage.zy_shanmou != 'boolean') player.storage.zy_shanmou = true;   // 开局阳
+							},
+							filter: function (event, player) {
+								return player.isIn() && event.skill != 'zy_shanmou';
+							},
 							content: function () {
-								// ★ 旧版把 'step 1' 写在了 `else { ... }` 块**内部** ——
-								//   parsex 替换成 `break;case N:` 时 break 落在块内，生成代码非法，
-								//   该处替换被跳过 ⇒ 步骤机错位（C1 报 Unexpected token 'case'）。
-								//   现在：阴面选人放 step 0（顶层），结算伤害放 step 1（顶层）。
 								'step 0'
-								if (!player.storage.mzy_shanmou_yin) {
+								if (player.storage.zy_shanmou) {
 									if (player.hp < player.maxHp) {
 										player.recover(1);
-										game.log(player, '【善谋·阳】：回复了1点体力');
+										game.log(player, '【善谋·阳】：回复1点体力');
 									}
-									player.storage.mzy_shanmou_yin = !player.storage.mzy_shanmou_yin;
+									player.changeZhuanhuanji('zy_shanmou');
 									event.finish(); return;
 								}
-								// 阴面：对一名角色造成1点伤害
 								player.chooseTarget(true, '善谋：对一名角色造成1点伤害', function (card, player, target) {
 									return target.isIn();
 								}).set('ai', function (target) {
 									return -get.attitude(_status.event.player, target);
 								});
-								return;
 								'step 1'
 								if (result.bool && result.targets && result.targets.length) {
 									result.targets[0].damage(1, player);
-									game.log(player, '【善谋·阴】：对', result.targets[0], '造成了1点伤害');
+									game.log(player, '【善谋·阴】：对', result.targets[0], '造成1点伤害');
 								}
-								player.storage.mzy_shanmou_yin = !player.storage.mzy_shanmou_yin;
+								player.changeZhuanhuanji('zy_shanmou');
 							},
 						},
-						mzy_jichu: {
-							audio: 2,
-							enable: 'phaseUse',
+						// 技出（神威技）
+						zy_jichu: {
+							audio: 2, enable: 'phaseUse',
 							forced: true, locked: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'logSkill' },
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
-								if (player.storage.tdgx_sw['mzy_jichu'] == undefined) player.storage.tdgx_sw['mzy_jichu'] = 1;
+								if (player.storage.tdgx_sw['zy_jichu'] == undefined) player.storage.tdgx_sw['zy_jichu'] = 1;
 							},
 							filter: function (event, player) {
-								if (event.triggername == 'logSkill') {
-									return player.hasSkill('mzy_jichu_effect') && player.isIn();
+								var tn = event.name;
+								if (tn == 'logSkill') {
+									return player.hasSkill('zy_jc_buff') && player.isIn() && event.skill != 'zy_jichu';
 								}
-								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['mzy_jichu'] > 0);
+								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['zy_jichu'] > 0);
 							},
 							content: function () {
-								// ★ 旧版把 'step 1' 嵌套在 else 块内（同善谋的毛病）⇒ 替换失败、步骤机错位。
-								//   现在：阴面选人放 step 0，结算伤害放 step 1，两步都在顶层。
 								'step 0'
-								if (event.triggername == 'logSkill') {
-									// 额外触发：结算善谋当前面的效果，不翻转状态（2026-09-13 修正，
-									//   善谋本体在同一次发动上已效果+翻转各一次，技出·承再翻转
-									//   会导致状态原地踏步、阴面强制选人框每次发动都弹出）
-									if (!player.storage.mzy_shanmou_yin) {
+								if (event.name == 'logSkill') {
+									// 额外触发一次善谋效果（不翻转阴阳）
+									if (player.storage.zy_shanmou) {
 										if (player.hp < player.maxHp) {
 											player.recover(1);
-											game.log(player, '【技出】额外触发【善谋·阳】：回复了1点体力');
+											game.log(player, '【技出】额外触发【善谋·阳】：回复1点体力');
 										}
 										event.finish(); return;
 									}
-									// 阴面：对一名角色造成1点伤害
 									player.chooseTarget(true, '技出：善谋——对一名角色造成1点伤害', function (card, player, target) {
 										return target.isIn();
 									}).set('ai', function (target) {
@@ -3382,60 +3265,128 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									});
 									return;
 								}
-								player.storage.tdgx_sw['mzy_jichu']--;
-								player.addTempSkill('mzy_jichu_effect');
-								game.log(player, '发动了神威技', '#g【技出】', '，本回合当你发动技能后，额外触发一次「善谋」的效果');
+								player.storage.tdgx_sw['zy_jichu']--;
+								player.addTempSkill('zy_jc_buff');
+								game.log(player, '发动了神威技', '#g【技出】');
 								event.finish(); return;
 								'step 1'
 								if (result.bool && result.targets && result.targets.length) {
 									result.targets[0].damage(1, player);
-									game.log(player, '【技出】额外触发【善谋·阴】：对', result.targets[0], '造成了1点伤害');
+									game.log(player, '【技出】额外触发【善谋·阴】：对', result.targets[0], '造成1点伤害');
 								}
 							},
-							ai: { order: 8, result: { player: 1 } },
-						},
-						mzy_jichu_effect: {
-							charlotte: true, sub: true,
 						},
 
-						// ============ 名·裴秀 ============
-						mpx_xingtu: {
-							locked: true,
-							forced: true,
-							charlotte: true,
-							popup: false,
-							direct: true,
+						// ────────────── 名·裴秀 ──────────────
+
+						// 爵制·烈：本局游戏使用【杀】的次数上限+X
+						px_jz_buff: {
+							charlotte: true, sub: true,
+							mod: {
+								cardUsable: function (card, player, num) {
+									if (get.name(card) != 'sha') return;
+									if (num === false) return false;
+									if (typeof num != 'number') num = 0;
+									return num + (player.storage.px_sha_bonus || 0);
+								},
+							},
+						},
+						// 爵制·锐：本局游戏你使用的【杀】无法被响应
+						px_jz_rui: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: 'useCardToPlayered' },
+							filter: function (event, player) {
+								return player.storage.px_jz_opt1 && event.card && get.name(event.card) == 'sha';
+							},
+							content: function () {
+								var use = trigger.getParent('useCard');
+								if (use && use.directHit && !use.directHit.contains(trigger.target)) {
+									use.directHit.push(trigger.target);
+								}
+							},
+						},
+						// 爵制·猛：本局游戏你使用【杀】造成的伤害+1
+						px_jz_meng: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { source: 'damageBegin2' },
+							filter: function (event, player) {
+								return !!player.storage.px_jz_opt2 && event.card && get.name(event.card) == 'sha';
+							},
+							content: function () {
+								trigger.num++;
+								game.log(player, '【爵制·猛】：此【杀】伤害+1');
+							},
+						},
+						// 携图·驰：本回合使用牌无次数和距离限制
+						px_xt_burst: {
+							charlotte: true, sub: true,
+							mod: {
+								targetInRange: function () { return true; },
+								cardUsable: function (card, player, num) {
+									if (num === false) return false;
+									if (typeof num != 'number') num = 0;
+									return num + 99;
+								},
+							},
+						},
+						// 图：持有者只能被【杀】造成伤害（纯显示 + 减伤 mod）
+						px_tu: {
+							charlotte: true, sub: true,
+							mark: true, marktext: '图',
+							intro: { name: '图', content: '持有「图」的角色只能被【杀】造成伤害。' },
+							mod: {
+								damageEnabled: function (card, player, target) {
+									// 只允许【杀】对"持有图"的角色造成伤害
+									if (!target.hasMark('px_tu')) return;
+									if (card && get.name(card) == 'sha') return;
+									return false;
+								},
+							},
+						},
+						// 赠图：完图的接收方标记
+						px_zeng: {
+							charlotte: true, sub: true,
+							mark: true, marktext: '赠图',
+							intro: { name: '赠图', content: '裴秀于本回合每摸一张牌后，你摸一张牌。' },
+						},
+						// 行图（锁定技）
+						px_xingtu: {
+							locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: ['useCardAfter', 'respondAfter'] },
-							filter: function (event, player) { return player.isIn(); },
+							init: function (player) { if (typeof player.storage.px_xt_count != 'number') player.storage.px_xt_count = 0; },
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								return player.countCards('h') != player.maxHp;
+							},
 							content: function () {
 								'step 0'
-								player.storage.mpx_xingtu_count = (player.storage.mpx_xingtu_count || 0) + 1;
-								var hs = player.countCards('h');
-								var mx = player.maxHp;
-								if (hs > mx) { event.goto(1); }
-								else if (hs < mx) { event.goto(3); }
-								else {
-									player.storage.mpx_juezhi_extra = (player.storage.mpx_juezhi_extra || 0) + 1;
-									game.log(player, '「爵制」本局游戏的使用次数上限+1');
+								player.storage.px_xt_count = (player.storage.px_xt_count || 0) + 1;
+								game.log(player, '【行图】发动（本局第', player.storage.px_xt_count, '次）');
+								if (player.countCards('h') > player.maxHp) {
+									// 手牌数大于体力上限：可弃一张牌，然后摸一张
+									event.pxMode = 'big';
+									player.chooseToDiscard('he', '行图：你可以弃置一张牌，然后摸一张牌', 1)
+										.set('ai', function (card) { return 1; });
+									return;
+								}
+								if (player.countCards('h') == player.maxHp) {
+									// 手牌数等于体力上限：爵制本局使用次数上限+1
+									player.storage.px_jz_extra = (player.storage.px_jz_extra || 0) + 1;
+									game.log(player, '【行图】：〖爵制〗本局的使用次数上限+1');
 									event.finish(); return;
 								}
-								'step 1'
-								if (player.countCards('he') == 0) { event.finish(); return; }
-								player.chooseToDiscard('he', 1, '行图：是否弃置一张牌并摸一张牌？')
-									.set('ai', function (card) { return 5 - get.value(card); });
-								'step 2'
-								if (result.bool) {
-									player.draw(1);
-									game.log(player, '弃置了一张牌并摸了一张牌');
-								}
-								event.finish(); return;
-								'step 3'
+								// 手牌数小于体力上限：摸一张，或获得其他一名角色区域内的一张牌
+								event.pxMode = 'small';
 								player.chooseControl(['摸一张牌', '获得其他一名角色区域内的一张牌', 'cancel2'])
-									.set('prompt', '行图：选择一项')
+									.set('prompt', '行图：选择一项执行')
 									.set('ai', function () { return 0; });
-								'step 4'
-								if (result.control == 'cancel2' || !result.control) { event.finish(); return; }
-								if (result.control == '摸一张牌') {
+								'step 1'
+								if (event.pxMode == 'big') {
+									if (result.bool) player.draw(1);
+									event.finish(); return;
+								}
+								if (!result.control || result.control == 'cancel2') { event.finish(); return; }
+								if (result.control.indexOf('摸') == 0) {
 									player.draw(1);
 									event.finish(); return;
 								}
@@ -3444,88 +3395,62 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}).set('ai', function (target) {
 									return -get.attitude(_status.event.player, target);
 								});
-								'step 5'
+								'step 2'
 								if (result.bool && result.targets && result.targets.length) {
 									player.gainPlayerCard(result.targets[0], 'hej', true);
 								}
 							},
 						},
-						mpx_juezhi: {
-							audio: 2,
-							enable: 'phaseUse',
-							forced: true, locked: true, charlotte: true, popup: false, direct: true,
-							trigger: { player: 'useCardToPlayered', source: 'damageBegin2' },
+						// 爵制（每局游戏限一次）
+						px_juezhi: {
+							audio: 2, enable: 'phaseUse',
+							// 每局限一次由引擎的 usable + 玩家自己的计数共同保证
 							filter: function (event, player) {
-								// ★ filter 里 triggername 可能是 undefined（实测），name 兜底
-								var jtn = event.triggername;
-								if (jtn == undefined) jtn = event.name;
-								if (jtn == 'useCardToPlayered') return event.card && get.name(event.card) == 'sha' && player.storage.mpx_juezhi_opt1 == true;
-								if (jtn == 'damageBegin2') return event.card && get.name(event.card) == 'sha' && player.storage.mpx_juezhi_opt2 == true;
-								if ((player.storage.mpx_juezhi_usedtimes || 0) >= 1 + (player.storage.mpx_juezhi_extra || 0)) return false;
-								return player.countCards('he') > 0;
+								return player.countCards('he') > 0 && (player.storage.px_jz_usedtimes || 0) < 1 + (player.storage.px_jz_extra || 0);
 							},
 							content: function () {
 								'step 0'
-								if (event.triggername == 'useCardToPlayered') {
-									var use = event.getParent('useCard');
-									if (use && use.directHit && !use.directHit.contains(trigger.target)) {
-										use.directHit.push(trigger.target);
-										game.log(use.card, '不可被', trigger.target, '响应');
-									}
-									event.finish(); return;
-								}
-								if (event.triggername == 'damageBegin2') {
-									trigger.num++;
-									event.finish(); return;
-								}
-								player.storage.mpx_juezhi_usedtimes = (player.storage.mpx_juezhi_usedtimes || 0) + 1;
-								player.chooseToDiscard('he', [1, Infinity], true, '爵制：弃置任意数量的牌并摸等量的牌');
+								player.storage.px_jz_usedtimes = (player.storage.px_jz_usedtimes || 0) + 1;
+								player.chooseToDiscard('he', [1, Infinity], true, '爵制：弃置任意数量的牌')
+									.set('ai', function (card) { return 1; });
 								'step 1'
 								var n = (result.cards && result.cards.length) ? result.cards.length : 0;
 								if (n > 0) player.draw(n);
-								if (!player.storage.mpx_sha_bonus) player.storage.mpx_sha_bonus = 0;
-								player.storage.mpx_sha_bonus++;
-								player.addSkill('mpx_juezhi_mod');
-								game.log(player, '本局游戏使用【杀】的次数上限+1（当前合计+', player.storage.mpx_sha_bonus, '）');
+								player.storage.px_sha_bonus = (player.storage.px_sha_bonus || 0) + 1;
+								player.addSkill('px_jz_buff');
+								game.log(player, '本局使用【杀】的次数上限+1（当前+', player.storage.px_sha_bonus, '）');
 								'step 2'
-								player.chooseControl(['①本局游戏你使用的【杀】无法被响应', '②本局游戏你使用【杀】造成的伤害+1', '③对一名角色造成1点伤害，然后你增加1点体力上限', '④令一名角色减少1点体力上限'])
+								player.chooseControl(['①本局你使用的【杀】无法被响应', '②本局你使用【杀】造成的伤害+1', '③对一名角色造成1点伤害，然后你增加1点体力上限', '④令一名角色减少1点体力上限'])
 									.set('prompt', '爵制：选择一项执行')
 									.set('ai', function () { return 1; });
 								'step 3'
-								// ★ 旧版把 'step 4' / 'step 5' 分别嵌在 else-if / else 块内部 ——
-								//   替换成 `break;case N:` 时 break 落在块内、代码非法，替换被跳过
-								//   ⇒ 步骤机错位（C1 报 Unexpected token 'case'）。
-								//   现在：①②本步结算完就 finish；③④把选人放这里，结算放顶层 step 4 / step 5。
 								var c = result.control;
 								if (c == undefined) { event.finish(); return; }
 								if (c.indexOf('①') == 0) {
-									player.storage.mpx_juezhi_opt1 = true;
-									game.log(player, '获得了', '#g【爵制·锐】', '：本局游戏你使用的【杀】无法被响应');
+									player.storage.px_jz_opt1 = true;
+									player.addSkill('px_jz_rui');
+									game.log(player, '【爵制·锐】：本局你使用的【杀】无法被响应');
 									event.finish(); return;
 								}
 								if (c.indexOf('②') == 0) {
-									player.storage.mpx_juezhi_opt2 = true;
-									game.log(player, '获得了', '#g【爵制·猛】', '：本局游戏你使用【杀】造成的伤害+1');
+									player.storage.px_jz_opt2 = true;
+									player.addSkill('px_jz_meng');
+									game.log(player, '【爵制·猛】：本局你使用【杀】造成的伤害+1');
 									event.finish(); return;
 								}
 								if (c.indexOf('③') == 0) {
-									event.mpxMode = 'hp';
+									event.pxMode = 'gain';
 									player.chooseTarget(true, '爵制：对一名角色造成1点伤害', function (card, player, target) {
 										return target.isIn();
-									}).set('ai', function (target) {
-										return -get.attitude(_status.event.player, target);
-									});
+									}).set('ai', function (target) { return -get.attitude(_status.event.player, target); });
 									return;
 								}
-								event.mpxMode = 'maxhp';
-								player.chooseTarget(true, '爵制：令一名角色减少1点体力上限并失去1点体力', function (card, player, target) {
+								event.pxMode = 'lose';
+								player.chooseTarget(true, '爵制：令一名角色减少1点体力上限', function (card, player, target) {
 									return target.isIn();
-								}).set('ai', function (target) {
-									return -get.attitude(_status.event.player, target);
-								});
+								}).set('ai', function (target) { return -get.attitude(_status.event.player, target); });
 								return;
 								'step 4'
-								// ③：对一名角色造成1点伤害，然后你增加1点体力上限
 								if (result.bool && result.targets && result.targets.length) {
 									result.targets[0].damage(1, player);
 								}
@@ -3533,132 +3458,75 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								game.log(player, '增加了1点体力上限');
 								event.finish(); return;
 								'step 5'
-								// ④：令一名角色减少1点体力上限（体力值高于上限则减至上限）
 								if (result.bool && result.targets && result.targets.length) {
-									result.targets[0].loseMaxHp(1);
-									if (result.targets[0].hp > 0) result.targets[0].loseHp(1);
+									var t = result.targets[0];
+									t.loseMaxHp(1);
+									if (t.hp > t.maxHp) t.hp = t.maxHp;
+									game.log(t, '减少了1点体力上限');
 								}
 								event.finish(); return;
 							},
 						},
-						mpx_juezhi_mod: {
-							charlotte: true, sub: true,
-							mod: {
-								cardUsable: function (card, player, num) {
-									if (get.name(card) != 'sha') return;
-									if (num === false) return false;
-									if (typeof num != 'number') num = 0;
-									return num + (player.storage.mpx_sha_bonus || 0);
-								},
-							},
-						},
-						mpx_xietu: {
-							forced: true, locked: true, charlotte: true, direct: true, popup: false,
-							enable: 'phaseUse',
-							trigger: { player: ['phaseJieshuBegin', 'damageBegin2'] },
-							filter: function (event, player) {
-								// ★ filter 里 triggername 可能是 undefined（实测），name 兜底
-								var xtn = event.triggername;
-								if (xtn == undefined) xtn = event.name;
-								if (xtn == 'phaseJieshuBegin') {
-									// 诊断：结束阶段把行图计数写进战报，避免“满足了条件”各说各话
-									game.log(player, '【携图】判定：行图已发动', (player.storage.mpx_xingtu_count || 0), '次 / 体力上限', player.maxHp);
-									return !player.hasMark('mpx_tu') && player.isIn() && (player.storage.mpx_xingtu_count || 0) > player.maxHp;
-								}
-								if (xtn == 'damageBegin2') return player.hasMark('mpx_tu') && player.isIn();
-								return false;
-							},
+						// 携图（锁定技）
+						px_xietu: {
+							locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							trigger: { player: 'phaseJieshuBegin' },
+							init: function (player) { if (typeof player.storage.px_xt_count != 'number') player.storage.px_xt_count = 0; },
+							filter: function (event, player) { return player.isIn(); },
 							content: function () {
-								'step 0'
-								if (event.triggername == 'phaseJieshuBegin') {
-									player.addMark('mpx_tu', 1);
-									game.log(player, '获得了「图」');
-									event.finish(); return;
-								}
-								if (event.triggername == 'damageBegin2') {
-									if (!event.card || get.name(event.card) != 'sha') {
-										trigger.cancel();
-										game.log(player, '持有「图」，只能被【杀】造成伤害，取消了此伤害');
+								if ((player.storage.px_xt_count || 0) > player.maxHp) {
+									if (!player.hasMark('px_tu')) {
+										player.addMark('px_tu', 1);
+										game.log(player, '【携图】：获得一枚「图」');
 									}
-									event.finish(); return;
 								}
-								player.removeMark('mpx_tu', 1);
-								player.addTempSkill('mpx_tu_burst');
-								game.log(player, '弃置了「图」，本回合使用牌无次数和距离限制');
-							},
-							ai: { order: 9, result: { player: 1 } },
-						},
-						mpx_tu: {
-							charlotte: true, sub: true,
-							intro: { name: '图', content: '持有「图」的角色只能被【杀】造成伤害；出牌阶段可弃置「图」，本回合使用牌无次数和距离限制。' },
-						},
-						mpx_tu_burst: {
-							charlotte: true, sub: true,
-							mod: {
-								targetInRange: function () { return true; },
-								cardUsable: function (card, player, num) {
-									if (num === false) return false;
-									if (typeof num != 'number') num = 0;
-									return num + 99;
-								},
 							},
 						},
-						mpx_wantu: {
-							audio: 2,
-							enable: 'phaseUse',
+						// 完图（神威技）
+						px_wantu: {
+							audio: 2, enable: 'phaseUse',
 							forced: true, locked: true, charlotte: true, popup: false, direct: true,
-							trigger: { player: 'gainAfter' },
+							trigger: { player: ['logSkill', 'gainAfter'] },
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
-								if (player.storage.tdgx_sw['mpx_wantu'] == undefined) player.storage.tdgx_sw['mpx_wantu'] = 1;
+								if (player.storage.tdgx_sw['px_wantu'] == undefined) player.storage.tdgx_sw['px_wantu'] = 1;
 							},
 							filter: function (event, player) {
-								if (event.triggername == 'gainAfter') {
-									if (!event.getParent('draw')) return false;
-									return game.hasPlayer(function (current) {
-										return current != player && current.isIn() && current.hasSkill('mpx_zengtu_flag');
-									});
-								}
-								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['mpx_wantu'] > 0) && game.hasPlayer(function (current) {
-									return current != player && current.isIn();
-								});
+								var tn = event.name;
+								if (tn == 'gainAfter') return !!player.storage.px_wantu_on;
+								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['px_wantu'] > 0);
 							},
 							content: function () {
 								'step 0'
-								if (event.triggername == 'gainAfter') {
+								if (event.name == 'gainAfter') {
 									var n = (trigger.cards && trigger.cards.length) ? trigger.cards.length : 1;
 									for (var i = 0; i < game.players.length; i++) {
 										var cur = game.players[i];
-										if (cur != player && cur.isIn() && cur.hasSkill('mpx_zengtu_flag')) {
-											cur.draw(n);
-										}
+										if (cur != player && cur.isIn() && cur.hasMark('px_zeng')) cur.draw(n);
 									}
-									game.log(player, '触发「完图」，拥有「赠图」的角色各摸了', get.cnNumber(n), '张牌');
+									game.log(player, '【完图】：拥有「赠图」的角色各摸', get.cnNumber(n), '张牌');
 									event.finish(); return;
 								}
-								player.storage.tdgx_sw['mpx_wantu']--;
+								player.storage.tdgx_sw['px_wantu']--;
+								player.storage.px_wantu_on = true;
+								player.addTempSkill('px_wantu_turn');
 								player.chooseTarget([1, 2], true, '完图：令至多两名其他角色获得「赠图」', function (card, player, target) {
 									return target != player && target.isIn();
-								}).set('ai', function (target) {
-									return get.attitude(_status.event.player, target) > 0 ? 1 : 0;
-								});
+								}).set('ai', function (target) { return get.attitude(_status.event.player, target); });
 								'step 1'
 								if (result.bool && result.targets && result.targets.length) {
-									for (var i = 0; i < result.targets.length; i++) {
-										result.targets[i].addMark('mpx_zengtu', 1);
-										result.targets[i].addTempSkill('mpx_zengtu_flag');
+									for (var j = 0; j < result.targets.length; j++) {
+										if (!result.targets[j].hasMark('px_zeng')) result.targets[j].addMark('px_zeng', 1);
+										game.log(result.targets[j], '获得了「赠图」');
 									}
-									game.log(player, '令', result.targets, '获得了「赠图」');
 								}
+								event.finish(); return;
 							},
-							ai: { order: 7, result: { player: 1 } },
 						},
-						mpx_zengtu: {
+						// 完图·启：本回合完图的摸牌联动生效
+						px_wantu_turn: {
 							charlotte: true, sub: true,
-							intro: { name: '赠图', content: '裴秀于本回合每摸一张牌后，你摸一张牌。' },
-						},
-						mpx_zengtu_flag: {
-							charlotte: true, sub: true,
+							onremove: function (player) { player.storage.px_wantu_on = false; },
 						},
 					},
 					// ── 动态技能说明：转换技显示"当前形态" ──
