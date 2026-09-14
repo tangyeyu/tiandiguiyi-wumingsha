@@ -2933,11 +2933,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								lib.skill.zl_xing_tu.addStar(player, event.got);
 								game.log(player, '展示了牌堆顶', get.cnNumber(event.got.length), '张牌，置于武将牌上称为「星」');
 								// ★ 诊断：确认星区实际状态（标记数 vs 列表长度 vs 是否有 UI 容器）
+								// ★★ 必须走 game.bzDiag2：content 由 new Function 编译（严格模式），
+								//    `require` 在里面不是自由变量 ⇒ 直接写会抛异常并被 catch 吞掉
+								//    （这就是"日志文件不存在"的原因）。
 								try {
-									require('fs').appendFileSync('C:/bz-diag.log',
-										new Date().toLocaleTimeString() + '  七星完成 取到=' + event.got.length +
+									(lib.bzDiag2 || game.bzDiag2)('七星完成 取到=' + event.got.length +
 										' 标记=' + player.countMark('zl_xing') +
-										' 列表=' + (player.storage.zl_xing_list || []).length + '\n');
+										' 列表=' + (player.storage.zl_xing_list || []).length);
 								} catch (e) { }
 								'step 2'
 							},
@@ -2947,14 +2949,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'useCardToTargeted' },
 							filter: function (event, player) {
-								// ★ 诊断：把每次判定实况落盘（本机确认可写盘），定位"空城不触发"是哪条不成立
+								// ★ 诊断：每次判定实况落盘（走 game.bzDiag2，原因同上：content 里 require 不可达）
 								var _h = player.countCards('h');
 								var _m = player.countMark('zl_xing');
 								var _l = (player.storage.zl_xing_list || []).length;
 								try {
-									require('fs').appendFileSync('C:/bz-diag.log',
-										new Date().toLocaleTimeString() + '  空城判定 手牌=' + _h +
-										' 标记=' + _m + ' 列表=' + _l + ' 在场=' + player.isIn() + '\n');
+									(lib.bzDiag2 || game.bzDiag2)('空城判定 手牌=' + _h +
+										' 标记=' + _m + ' 列表=' + _l + ' 在场=' + player.isIn());
 								} catch (e) { }
 								if (!player.isIn()) return false;
 								if (_h > 0) return false;                  // 必须没有手牌
