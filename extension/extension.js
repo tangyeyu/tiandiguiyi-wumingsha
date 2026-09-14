@@ -289,6 +289,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'cc_zhi_zone',
 							'cc_zhi_mark',
 							'cc_qingzheng_cut',
+							'cc_lue_mark',
 							'tdgx_shenwei_kill',
 							'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_caocao.jpg']],
@@ -2649,6 +2650,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 武圣（锁定技）：单牌 / 恰好两张牌 ⇒ 【杀】
 						gy_wusheng: {
 							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							// ★ 子技能合并显示：group 列出的技能在技能面板里并入本技能，
+							//   不再各占一行（用户反馈"子技能太碍眼"）。
+							group: ['gy_wusheng_buff', 'gy_wusheng_red', 'gy_wusheng_free', 'gy_jue_mark',
+								'gy_jue_limit', 'gy_jue_clear', 'gy_po_mark', 'gy_po_immune', 'gy_po_lock', 'gy_po_turn'],
 							enable: ['chooseToUse', 'chooseToRespond'],
 							filterCard: function (card, player) { return true; },
 							selectCard: [1, 2],
@@ -2656,12 +2661,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							complexCard: true,
 							check: function (card) { return 1 + get.value(card); },
 							prompt: '武圣：将一至两张手牌当作【杀】使用或打出（两张时有额外效果）',
-							onuse: function (result, player) { lib.skill.gy_wusheng.applyBonus(player); },
-							onrespond: function (result, player) { lib.skill.gy_wusheng.applyBonus(player); },
+							onuse: function (result, player) { lib.skill.gy_wusheng.applyBonus(player, result); },
+							onrespond: function (result, player) { lib.skill.gy_wusheng.applyBonus(player, result); },
 							// 记录本次转化用了几张、哪两张（供加成子技能判定）
 							onChooseToUse: function (event, player) {
 								try {
-									var cards = event.cards || [];
+									var cards = (event && event.cards) || [];
 									player.storage.gy_ws_n = cards.length;
 									player.storage.gy_ws_c1 = cards[0];
 									player.storage.gy_ws_c2 = cards[1];
@@ -2669,13 +2674,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								} catch (e) { }
 							},
 							// 使用/打出之后：把加成登记到 useCard 事件
-							applyBonus: function (player) {
+							applyBonus: function (player, result) {
 								try {
+									// ★ 修：原来在 onuse 里用 _status.event.getParent('useCard') 找事件，
+									//   拿不到（加伤不生效，用户实测"双黑牌没用加伤"）。
+									//   改为从 result 里取：onuse 的 result 带 .card（= 转化出的虚拟牌实例）
+									//   与父事件链；优先 result.parent / 再退回 _status.event。
 									if (!player.storage.gy_ws_pending) return;
 									delete player.storage.gy_ws_pending;
 									var uc = null;
-									// 当前正在结算的 useCard 事件
-									if (_status.event && _status.event.getParent) uc = _status.event.getParent('useCard');
+									if (result && result.getParent) uc = result.getParent('useCard') || result;
+									if (!uc && result && result.card && result.card.parentNode) uc = result;
+									if (!uc && _status.event) uc = _status.event.getParent ? _status.event.getParent('useCard') : null;
 									if (!uc) return;
 									var n = player.storage.gy_ws_n || 1;
 									var c1 = player.storage.gy_ws_c1, c2 = player.storage.gy_ws_c2;
@@ -2687,15 +2697,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										player.storage.gy_ws_uc = uc;
 										player.storage.gy_ws_plus = true;
 										player.addTempSkill('gy_wusheng_buff');
+										game.log(player, '【武圣】：两张黑牌，此【杀】伤害+1');
 									}
 									if (red) {
 										player.storage.gy_ws_uc2 = uc;
 										player.addTempSkill('gy_wusheng_red');
+										game.log(player, '【武圣】：两张红牌，此【杀】造成伤害后你回复1点体力');
 									}
 									if (diff) {
-										// 不计入次数限制：标记该次使用
 										uc.gyNoLimit = true;
-										if (!player.hasSkill('gy_wusheng_free')) player.addTempSkill('gy_wusheng_free');
+										player.addTempSkill('gy_wusheng_free');
+										game.log(player, '【武圣】：花色不同，此【杀】不计入次数限制');
 									}
 								} catch (e) { }
 							},
@@ -2784,13 +2796,30 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								return !!player.storage.gy_po_on && player.storage.gy_po_target === event.player;
 							},
 							content: function () {
+								// ★ 修：原来只写 `trigger.num = 0`，但引擎在 damageBegin1 之后仍会结算
+								//   （伤害没被真正免掉，用户实测"免疫了却没得到破、也没掉体力"）。
+								//   改为同时置 num=0 与"伤害无效"标记 `trigger.zlPrevented`，
+								//   并在 damageBegin2 也置 0，确保伤害确实为 0。
 								trigger.num = 0;
+								trigger.zlPrevented = true;
 								var t = trigger.player;
 								t.addMark('gy_po', 1);
 								if (!t.hasSkill('gy_po_mark')) t.addSkill('gy_po_mark');
-								game.log(t, '【破敌】：此伤害被免疫，并获得1枚「破」');
+								game.log(t, '【破敌】：此伤害被免疫，并获得1枚「破」（', t.countMark('gy_po'), '）');
 							},
 							onremove: function (player) { delete player.storage.gy_po_target; },
+						},
+						// 破敌·锁：把被免疫的伤害在 damageBegin2 再压回 0（兜底）
+						gy_po_lock: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { source: 'damageBegin2' },
+							filter: function (event, player) {
+								return !!player.storage.gy_po_on && player.storage.gy_po_target === event.player;
+							},
+							content: function () {
+								trigger.num = 0;
+								trigger.zlPrevented = true;
+							},
 						},
 						gy_po_turn: { charlotte: true, sub: true, onremove: function (player) { player.storage.gy_po_on = false; } },
 						// 破敌（神威技）：标记 + 回合结束结算
@@ -2986,6 +3015,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
 						// ────────────── 名·曹操（四血/魏）──────────────
 
+						// 略·标记（★ 修：原来没有任何技能显示「略」⇒ 用户看不到数量）
+						cc_lue_mark: {
+							charlotte: true, sub: true, popup: false, mark: true, marktext: '略',
+							intro: { name: '略', content: '奸雄：每有1枚「略」，你受到伤害后摸牌时多摸1张（每轮开始移去所有「略」）。' },
+						},
 						// 智·区（记录造成伤害的牌）
 						cc_zhi_zone: {
 							charlotte: true, sub: true, popup: false, mark: true, marktext: '智',
@@ -3051,6 +3085,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									}
 								}
 								player.addMark('cc_lue', 1);
+								if (!player.hasSkill('cc_lue_mark')) player.addSkill('cc_lue_mark');
+								player.markSkill('cc_lue_mark');   // ★ 刷新「略」数量显示
 								var n = player.countMark('cc_lue');
 								player.draw(n);
 								game.log(player, '【奸雄】：记录1次，获得1枚「略」（', n, '），摸', get.cnNumber(n), '张牌');
@@ -3129,7 +3165,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!event.pool.length) { event.finish(); return; }
 								'step 1'
 								if (!event.pool.length) { event.finish(); return; }
-								player.chooseCardButton(event.pool, '志略：按任意顺序使用「智」中的牌（无距离、次数限制）', true)
+								// ★ 修：原来用 chooseCardButton(裸牌数组) ⇒ 引擎走 dialog.add 时
+								//   拿不到 [list,type] 结构，抛 `Cannot read properties of undefined (reading '1')`
+								//   （用户实测崩溃）。改用 chooseButton + 正规 dialog（与九伐同款）。
+								var list = [];
+								for (var qi = 0; qi < event.pool.length; qi++) list.push(event.pool[qi]);
+								player.chooseButton(['智：选择一张牌使用（无距离、次数限制）', [list, 'card']], true)
 									.set('ai', function (button) { return 1 + get.value(button.link); });
 								'step 2'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
