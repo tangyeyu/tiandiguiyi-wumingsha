@@ -2932,6 +2932,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!player.hasSkill('zl_xing_tu')) player.addSkill('zl_xing_tu');
 								lib.skill.zl_xing_tu.addStar(player, event.got);
 								game.log(player, '展示了牌堆顶', get.cnNumber(event.got.length), '张牌，置于武将牌上称为「星」');
+								// ★ 诊断：确认星区实际状态（标记数 vs 列表长度 vs 是否有 UI 容器）
+								try {
+									require('fs').appendFileSync('C:/bz-diag.log',
+										new Date().toLocaleTimeString() + '  七星完成 取到=' + event.got.length +
+										' 标记=' + player.countMark('zl_xing') +
+										' 列表=' + (player.storage.zl_xing_list || []).length + '\n');
+								} catch (e) { }
 								'step 2'
 							},
 						},
@@ -2940,16 +2947,28 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'useCardToTargeted' },
 							filter: function (event, player) {
+								// ★ 诊断：把每次判定实况落盘（本机确认可写盘），定位"空城不触发"是哪条不成立
+								var _h = player.countCards('h');
+								var _m = player.countMark('zl_xing');
+								var _l = (player.storage.zl_xing_list || []).length;
+								try {
+									require('fs').appendFileSync('C:/bz-diag.log',
+										new Date().toLocaleTimeString() + '  空城判定 手牌=' + _h +
+										' 标记=' + _m + ' 列表=' + _l + ' 在场=' + player.isIn() + '\n');
+								} catch (e) { }
 								if (!player.isIn()) return false;
-								if (player.countCards('h') > 0) return false;
-								return lib.skill.zl_xing_tu.getStars(player).length > 0;
+								if (_h > 0) return false;                  // 必须没有手牌
+								return (_m > 0 || _l > 0);                 // 标记或列表任一有星即可
 							},
 							content: function () {
-								var stars = lib.skill.zl_xing_tu.getStars(player);
-								if (!stars.length) return;
-								var use = stars[0];
-								lib.skill.zl_xing_tu.removeStar(player, [use]);
-								player.lose([use], ui.discardPile);
+								// 星的取用：优先取列表里的实体牌，退化到只减标记
+								var stars = (player.storage.zl_xing_list || []).slice(0);
+								if (stars.length) {
+									lib.skill.zl_xing_tu.removeStar(player, [stars[0]]);
+									try { player.lose([stars[0]], ui.discardPile); } catch (e) { }
+								} else {
+									player.removeMark('zl_xing', 1);
+								}
 								// 令此牌整体无效（按裁定），且不可被【无懈可击】响应
 								trigger.cancelled = true;
 								if (!trigger.triggered) trigger.triggered = {};
