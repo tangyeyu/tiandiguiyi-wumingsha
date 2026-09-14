@@ -286,6 +286,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'gy_wusheng_free',
 							'gy_po_mark',
 							'gy_po_immune',
+							'gy_po_lock',
 							'gy_po_turn',
 							'tdgx_shenwei_kill',
 							'tdgx_turn_reset'
