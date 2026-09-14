@@ -257,6 +257,41 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// ==== 2026-09-13 新增三将（定稿见 docs/新将文本定稿-20260913.md）====
 						// 兵·诸葛亮：兵权多段锁定技分装 4 个子技能（全部列进数组以便触发；
 						// **不列进数组**（列了开局就有），由 addSkill 获得。
+						tdgx_guanyu: ['male', 'shu', 5, [
+							'gy_wusheng',
+							'gy_yijue',
+							'gy_po_di',
+							'gy_jue_mark',
+							'gy_jue_clear',
+							'gy_jue_limit',
+							'gy_wusheng_buff',
+							'gy_wusheng_red',
+							'gy_wusheng_free',
+							'gy_po_mark',
+							'gy_po_immune',
+							'gy_po_turn',
+							'tdgx_shenwei_kill',
+							'tdgx_turn_reset'
+						], ['ext:天地归一/tdgx_guanyu.jpg']],
+						tdgx_zhugeliang: ['male', 'shu', 4, [
+							'zl_qixing',
+							'zl_kongcheng',
+							'zl_huoji',
+							'zl_xing_tu',
+							'zl_kc_collect',
+							'tdgx_shenwei_kill',
+							'tdgx_turn_reset'
+						], ['ext:天地归一/tdgx_zhugeliang.jpg']],
+						tdgx_caocao: ['male', 'wei', 4, [
+							'cc_jianxiong',
+							'cc_qingzheng',
+							'cc_zhilue',
+							'cc_zhi_zone',
+							'cc_zhi_mark',
+							'cc_qingzheng_cut',
+							'tdgx_shenwei_kill',
+							'tdgx_turn_reset'
+						], ['ext:天地归一/tdgx_caocao.jpg']],
 					},
 					characterIntro: {
 						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你可以选择一名其他角色令其获得「策」（放弃发动则本技能本局不再生效），你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你可以摸X+1张牌（X为「策」的效果数，至多4）；若场上没有「策」，你摸一张牌。',
@@ -267,6 +302,55 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						tdgx_lukang: '名·陆抗。<br>毁堰：出牌阶段废除自己的一个区域换对应效果（武器/防具/进攻马/防御马/判定区/手牌区，六选一，各有一次性效果）。<br>抗晋：被体力不低于你的角色伤害时可弃牌判定免伤；造成伤害后可让一名角色的区域状态本轮与你相同，并恢复自己一个装备栏（每回合限两次）。<br>背水（神威技）：恢复所有已废除的区域。'
 					},
 					translate: {
+						'tdgx_guanyu': '名·关羽',
+						'tdgx_zhugeliang': '名·诸葛亮',
+						'tdgx_caocao': '名·曹操',
+						'gy_wusheng': '武圣',
+						'gy_wusheng_info': '锁定技，你可以将一至两张手牌当作【杀】使用或打出。若你将恰好两张手牌转化，且这两张牌均为红色，此【杀】造成伤害后你回复1点体力；若均为黑色，此【杀】造成的伤害+1；若两张花色不同，此【杀】不计入次数限制（以上效果可叠加）。若你只转化一张手牌，此【杀】造成的伤害的属性由你指定。',
+						'gy_wusheng_buff': '武圣·黑',
+						'gy_wusheng_buff_info': '此【杀】造成的伤害+1。',
+						'gy_wusheng_red': '武圣·红',
+						'gy_wusheng_red_info': '此【杀】造成伤害后，你回复1点体力。',
+						'gy_wusheng_free': '武圣·势',
+						'gy_wusheng_free_info': '此【杀】不计入次数限制。',
+						'gy_yijue': '义绝',
+						'gy_yijue_info': '回合开始时，你可以令其他角色按座位顺序依次选择是否交给你一张手牌（背面朝上，由交牌者选择）。若其没有交给你手牌（含无手牌可交），其获得1枚「绝」。拥有「绝」的角色于其结束阶段失去所有「绝」。拥有「绝」的角色成为你使用牌的目标时，你对其使用牌无次数限制。',
+						'gy_jue_mark': '绝',
+						'gy_jue_mark_info': '你成为〖义绝〗拥有者使用牌的目标时，其对你使用牌无次数限制；你的结束阶段失去所有「绝」。',
+						'gy_jue_limit': '绝·限',
+						'gy_jue_limit_info': '拥有「绝」的角色成为你使用牌的目标时，你对其使用牌无次数限制。',
+						'gy_jue_clear': '绝·清',
+						'gy_jue_clear_info': '结束阶段，你失去所有「绝」。',
+						'gy_po_di': '破敌',
+						'gy_po_di_info': '神威技，每局游戏限一次。回合内，你可以令一名其他角色获得「破」。本回合你每次对其造成伤害时，令其免疫之，然后其获得1枚「破」（可叠加）。你的回合结束时，拥有「破」的角色失去X点体力（X为其拥有的「破」数量），然后移去其所有「破」。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
+						'gy_po_mark': '破',
+						'gy_po_mark_info': '〖破敌〗的回合结束时，你将失去X点体力（X为你拥有的「破」数量）。',
+						'gy_po_immune': '破敌·免',
+						'gy_po_immune_info': '本回合〖破敌〗拥有者对你造成的伤害被免疫，你获得1枚「破」。',
+						'gy_po_turn': '破敌·续',
+						'gy_po_turn_info': '本回合〖破敌〗的免疫与标记累积生效。',
+						'zl_qixing': '七星',
+						'zl_qixing_info': '每轮开始时，你将你武将牌上的所有「星」置入弃牌堆，然后展示牌堆顶的7张牌并置于你的武将牌上，称为「星」。你武将牌上的「星」视为你的手牌（可被指定，但不计入你的手牌数）。你可以像手牌一样使用或打出「星」；你使用或打出「星」时无距离与次数限制；你使用或打出一张「星」后，选择一张牌弃置。',
+						'zl_xing_tu': '星',
+						'zl_xing_tu_info': '你武将牌上的「星」视为你的手牌（可被指定，但不计入你的手牌数），使用或打出时无距离与次数限制。',
+						'zl_kongcheng': '空城',
+						'zl_kongcheng_info': '锁定技。当你没有手牌时，如果你成为了牌的目标，你可以弃置1张「星」，令此牌整体无效（此无效化不可被【无懈可击】响应）；此牌结算结束后若仍在弃牌堆，你将其置为「星」。每张牌限一次。',
+						'zl_kc_collect': '空城·收',
+						'zl_kc_collect_info': '被〖空城〗无效的牌结算结束后若仍在弃牌堆，将其置为「星」。',
+						'zl_huoji': '火计',
+						'zl_huoji_info': '神威技，每局游戏限一次。你可以弃置所有的「星」，选择一名角色，使其受到X点火焰伤害（X为你发动此技能时的体力值）。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
+						'cc_jianxiong': '奸雄',
+						'cc_jianxiong_info': '每轮开始时，你移去你所有的「略」。当你受到伤害后，每1点伤害你在「智」中记录一次造成此伤害的牌（将其置于你的武将牌上，称为「智」），你获得1枚「略」，然后摸X张牌（X为你获得此「略」后拥有的「略」数量）。',
+						'cc_zhi_zone': '智',
+						'cc_zhi_zone_info': '你受到伤害后置于武将牌上的牌，可供〖志略〗使用。',
+						'cc_qingzheng': '清正',
+						'cc_qingzheng_info': '每回合限一次，你可以令一名角色获得「治」（每名角色至多拥有1枚）。拥有「治」的角色回合开始时，你选择一项：令其摸X张牌，或令其弃置X张牌（若其手牌不足X张，则弃置其所有手牌）；然后其移去「治」。（X为你的体力值）',
+						'cc_zhi_mark': '治',
+						'cc_zhi_mark_info': '你回合开始时，〖清正〗拥有者选择令你摸X张牌或弃置X张牌，然后移去「治」。',
+						'cc_qingzheng_cut': '清正·裁',
+						'cc_qingzheng_cut_info': '拥有「治」的角色回合开始时，〖清正〗拥有者选择令其摸X张牌或弃置X张牌。',
+						'cc_zhilue': '志略',
+						'cc_zhilue_info': '神威技，每局游戏限一次。你可以按任意顺序使用「智」中记录的牌（无距离、次数限制）；已被移走的牌不再可选。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
 
 						'mouguojia_soul': '谋郭嘉·魂',
 						'mgj_dingce': '定策',
@@ -2505,6 +2589,559 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// event.triggername 分支；九伐兼并杀见闻追踪（独立静默子技能）。
 						// 「发动技能」探针 = logSkill 时机（game.js:27175，静默内部技能不算）。
 						// ============================================================
+						// ============================================================
+						// 名·关羽 / 名·诸葛亮 / 名·曹操（2026-09-13 定稿实现）
+						// 设计前提见 docs/引擎踩坑清单-20260913.md。
+						// ★ 区（星/智）与加成登记：辅助方法**直接挂在技能对象上**
+						//   （包级变量在 new Function 编译后的 content 里不可达 —— 实测踩过）。
+						// ============================================================
+
+						// ────────────── 名·关羽（五血/蜀）──────────────
+
+						// 绝·标记
+						gy_jue_mark: {
+							charlotte: true, sub: true, popup: false, mark: true, marktext: '绝',
+							intro: { name: '绝', content: '你成为〖义绝〗拥有者使用牌的目标时，其对你使用牌无次数限制。' },
+						},
+						// 绝·限：义绝拥有者使用牌时放开次数（由 gy_jue_limit 判定目标身上有「绝」）
+						gy_jue_limit: {
+							charlotte: true, sub: true, popup: false,
+							mod: {
+								cardUsable: function (card, player, num) {
+									if (!player || !player.hasSkill('gy_yijue')) return;
+									if (!player.storage.gy_jue_any) return;
+									if (num === false) return false;
+									if (typeof num != 'number') num = 0;
+									return num + 99;
+								},
+							},
+						},
+						// 武圣·黑：本次【杀】伤害+1
+						gy_wusheng_buff: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { source: 'damageBegin2' },
+							filter: function (event, player) {
+								var uc = event.getParent ? event.getParent('useCard') : null;
+								return !!(uc && player.storage.gy_ws_uc === uc && player.storage.gy_ws_plus);
+							},
+							content: function () {
+								trigger.num++;
+								game.log(player, '【武圣·黑】：此【杀】伤害+1');
+							},
+							onremove: function (player) { delete player.storage.gy_ws_uc; delete player.storage.gy_ws_plus; },
+						},
+						// 武圣·红：造成伤害后回复1点体力
+						gy_wusheng_red: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { source: 'damageAfter' },
+							filter: function (event, player) {
+								var uc = event.getParent ? event.getParent('useCard') : null;
+								return !!(uc && player.storage.gy_ws_uc2 === uc);
+							},
+							content: function () {
+								if (player.hp < player.maxHp) {
+									player.recover(1);
+									game.log(player, '【武圣·红】：回复1点体力');
+								}
+							},
+							onremove: function (player) { delete player.storage.gy_ws_uc2; },
+						},
+						// 武圣（锁定技）：单牌 / 恰好两张牌 ⇒ 【杀】
+						gy_wusheng: {
+							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							enable: ['chooseToUse', 'chooseToRespond'],
+							filterCard: function (card, player) { return true; },
+							selectCard: [1, 2],
+							viewAs: { name: 'sha' },
+							complexCard: true,
+							check: function (card) { return 1 + get.value(card); },
+							prompt: '武圣：将一至两张手牌当作【杀】使用或打出（两张时有额外效果）',
+							onuse: function (result, player) { lib.skill.gy_wusheng.applyBonus(player); },
+							onrespond: function (result, player) { lib.skill.gy_wusheng.applyBonus(player); },
+							// 记录本次转化用了几张、哪两张（供加成子技能判定）
+							onChooseToUse: function (event, player) {
+								try {
+									var cards = event.cards || [];
+									player.storage.gy_ws_n = cards.length;
+									player.storage.gy_ws_c1 = cards[0];
+									player.storage.gy_ws_c2 = cards[1];
+									player.storage.gy_ws_pending = true;
+								} catch (e) { }
+							},
+							// 使用/打出之后：把加成登记到 useCard 事件
+							applyBonus: function (player) {
+								try {
+									if (!player.storage.gy_ws_pending) return;
+									delete player.storage.gy_ws_pending;
+									var uc = null;
+									// 当前正在结算的 useCard 事件
+									if (_status.event && _status.event.getParent) uc = _status.event.getParent('useCard');
+									if (!uc) return;
+									var n = player.storage.gy_ws_n || 1;
+									var c1 = player.storage.gy_ws_c1, c2 = player.storage.gy_ws_c2;
+									if (n < 2 || !c1 || !c2) return;
+									var black = get.color(c1) == 'black' && get.color(c2) == 'black';
+									var red = get.color(c1) == 'red' && get.color(c2) == 'red';
+									var diff = get.suit(c1) != get.suit(c2);
+									if (black) {
+										player.storage.gy_ws_uc = uc;
+										player.storage.gy_ws_plus = true;
+										player.addTempSkill('gy_wusheng_buff');
+									}
+									if (red) {
+										player.storage.gy_ws_uc2 = uc;
+										player.addTempSkill('gy_wusheng_red');
+									}
+									if (diff) {
+										// 不计入次数限制：标记该次使用
+										uc.gyNoLimit = true;
+										if (!player.hasSkill('gy_wusheng_free')) player.addTempSkill('gy_wusheng_free');
+									}
+								} catch (e) { }
+							},
+						},
+						// 武圣·无次数：花色不同时本次【杀】不计入次数
+						gy_wusheng_free: {
+							charlotte: true, sub: true,
+							mod: {
+								cardUsable: function (card, player, num) {
+									// ★ 转化牌的 .name 仍是实物牌名，必须用 get.name() 取虚拟牌名
+									//   （lint C9 抓到：写 card.name == 'sha' 恒为 false ⇒ 技能静默失效）
+									if (card && get.name(card) == 'sha') {
+										if (num === false) return false;
+										if (typeof num != 'number') num = 0;
+										return num + 1;
+									}
+								},
+							},
+						},
+						// 义绝（回合开始时）：按座位顺序问，未交牌者得「绝」
+						gy_yijue: {
+							audio: 2,
+							trigger: { player: 'phaseBegin' },
+							filter: function (event, player) {
+								return player.isIn() && game.hasPlayer(function (c) { return c != player && c.isIn(); });
+							},
+							content: function () {
+								'step 0'
+								event.list = [];
+								for (var i = 0; i < game.players.length; i++) {
+									var c = game.players[i];
+									if (c != player && c.isIn()) event.list.push(c);
+								}
+								event.seat = 0;
+								if (!player.hasSkill('gy_jue_limit')) player.addSkill('gy_jue_limit');
+								'step 1'
+								if (event.seat >= event.list.length) { event.finish(); return; }
+								event.cur = event.list[event.seat];
+								if (!event.cur.countCards('h')) {
+									// 无手牌者也受罚（按裁定）
+									event.cur.addMark('gy_jue', 1);
+									if (!event.cur.hasSkill('gy_jue_mark')) event.cur.addSkill('gy_jue_mark');
+									game.log(event.cur, '没有手牌可交，获得1枚「绝」');
+									player.storage.gy_jue_any = true;
+									event.seat++;
+									event.redo(); return;
+								}
+								event.cur.chooseCard('h', true, '义绝：是否交给' + get.translation(player) + '一张手牌？')
+									.set('ai', function (card) { return 1; });
+								'step 2'
+								if (result.bool && result.cards && result.cards.length) {
+									player.gain(result.cards, event.cur, 'give');
+									game.log(event.cur, '交给了', player, '一张手牌');
+								} else {
+									event.cur.addMark('gy_jue', 1);
+									if (!event.cur.hasSkill('gy_jue_mark')) event.cur.addSkill('gy_jue_mark');
+									game.log(event.cur, '没有交出手牌，获得1枚「绝」');
+									player.storage.gy_jue_any = true;
+								}
+								event.seat++;
+								event.goto(1);
+							},
+						},
+						// 绝·清：持有者自己的结束阶段失去所有「绝」
+						gy_jue_clear: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: 'phaseEnd' },
+							filter: function (event, player) { return player.countMark('gy_jue') > 0; },
+							content: function () {
+								var n = player.countMark('gy_jue');
+								player.removeMark('gy_jue', n);
+								if (player.hasSkill('gy_jue_mark')) player.removeSkill('gy_jue_mark');
+								game.log(player, '结束阶段，失去了所有「绝」');
+							},
+						},
+						// 破·标记
+						gy_po_mark: {
+							charlotte: true, sub: true, popup: false, mark: true, marktext: '破',
+							intro: { name: '破', content: '回合结束时，你将失去X点体力（X为你拥有的「破」数量）。' },
+						},
+						// 破敌·免：本回合关羽对被标记者的伤害⇒令其免疫并获得1枚「破」（可累积）
+						gy_po_immune: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { source: 'damageBegin1' },
+							filter: function (event, player) {
+								return !!player.storage.gy_po_on && player.storage.gy_po_target === event.player;
+							},
+							content: function () {
+								trigger.num = 0;
+								var t = trigger.player;
+								t.addMark('gy_po', 1);
+								if (!t.hasSkill('gy_po_mark')) t.addSkill('gy_po_mark');
+								game.log(t, '【破敌】：此伤害被免疫，并获得1枚「破」');
+							},
+							onremove: function (player) { delete player.storage.gy_po_target; },
+						},
+						gy_po_turn: { charlotte: true, sub: true, onremove: function (player) { player.storage.gy_po_on = false; } },
+						// 破敌（神威技）：标记 + 回合结束结算
+						gy_po_di: {
+							audio: 2, enable: 'phaseUse',
+							trigger: { player: 'phaseJieshuBegin' },
+							init: function (player) {
+								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
+								if (player.storage.tdgx_sw['gy_po_di'] == undefined) player.storage.tdgx_sw['gy_po_di'] = 1;
+							},
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								if (event.name == 'phaseJieshuBegin') return !!player.storage.gy_po_on;
+								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['gy_po_di'] > 0);
+							},
+							content: function () {
+								'step 0'
+								if (event.name == 'phaseJieshuBegin') {
+									for (var i = 0; i < game.players.length; i++) {
+										var c = game.players[i];
+										var n = c.countMark('gy_po');
+										if (n > 0) {
+											c.loseHp(n);
+											c.removeMark('gy_po', n);
+											if (c.hasSkill('gy_po_mark')) c.removeSkill('gy_po_mark');
+											game.log(c, '【破敌】：失去', get.cnNumber(n), '点体力（移去所有「破」）');
+										}
+									}
+									player.storage.gy_po_on = false;
+									event.finish(); return;
+								}
+								player.storage.tdgx_sw['gy_po_di']--;
+								player.storage.gy_po_on = true;
+								player.addTempSkill('gy_po_turn');
+								player.chooseTarget(true, '破敌：令一名其他角色获得「破」', function (card, player, target) {
+									return target != player && target.isIn();
+								}).set('ai', function (target) { return -get.attitude(_status.event.player, target); });
+								'step 1'
+								if (result.bool && result.targets && result.targets.length) {
+									event.cur = result.targets[0];
+									event.cur.addMark('gy_po', 1);
+									if (!event.cur.hasSkill('gy_po_mark')) event.cur.addSkill('gy_po_mark');
+									game.log(event.cur, '获得了「破」');
+									player.storage.gy_po_target = event.cur;
+									player.addTempSkill('gy_po_immune');
+								}
+								event.finish(); return;
+							},
+						},
+
+						// ────────────── 名·诸葛亮（四血/蜀）──────────────
+
+						// 星·区（武将牌上的「星」）
+						zl_xing_tu: {
+							charlotte: true, sub: true, popup: false, mark: true, marktext: '星',
+							intro: { name: '星', content: '你武将牌上的「星」视为你的手牌（可被指定，但不计入你的手牌数）。' },
+							// ── 区操作（挂在技能对象上，content 里经 lib.skill 调用）──
+							addStar: function (player, cards) {
+								try {
+									if (!player.storage.zl_xing_list) player.storage.zl_xing_list = [];
+									for (var i = 0; i < cards.length; i++) {
+										var c = cards[i];
+										if (player.storage.zl_xing_list.indexOf(c) < 0) player.storage.zl_xing_list.push(c);
+										c.zlFromStar = true;
+									}
+									player.addMark('zl_xing', cards.length);
+									player.markSkill('zl_xing_tu');
+								} catch (e) { }
+							},
+							getStars: function (player) {
+								try { return (player.storage.zl_xing_list || []).slice(0); } catch (e) { return []; }
+							},
+							removeStar: function (player, cards) {
+								try {
+									var l = player.storage.zl_xing_list || [];
+									for (var i = 0; i < cards.length; i++) {
+										var k = l.indexOf(cards[i]);
+										if (k >= 0) { l.splice(k, 1); cards[i].zlFromStar = false; }
+									}
+									player.removeMark('zl_xing', cards.length);
+								} catch (e) { }
+							},
+							mod: {
+								cardUsable: function (card, player, num) {
+									if (card && card.zlFromStar) {
+										if (num === false) return false;
+										return (typeof num == 'number' ? num : 0) + 99;
+									}
+								},
+								targetInRange: function (card) { if (card && card.zlFromStar) return true; },
+							},
+						},
+						// 七星（每轮开始时）
+						zl_qixing: {
+							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							trigger: { player: 'roundStart' },
+							filter: function (event, player) { return player.isIn(); },
+							content: function () {
+								'step 0'
+								var old = lib.skill.zl_xing_tu.getStars(player);
+								if (old.length) {
+									lib.skill.zl_xing_tu.removeStar(player, old);
+									player.lose(old, ui.discardPile);
+									game.log(player, '将', get.cnNumber(old.length), '张「星」置入弃牌堆');
+								}
+								event.got = get.cards(7, true) || [];
+								game.log(player, '发动了', '#g【七星】');
+								'step 1'
+								if (!event.got.length) { event.finish(); return; }
+								if (!player.hasSkill('zl_xing_tu')) player.addSkill('zl_xing_tu');
+								lib.skill.zl_xing_tu.addStar(player, event.got);
+								game.log(player, '展示了牌堆顶', get.cnNumber(event.got.length), '张牌，置于武将牌上称为「星」');
+								'step 2'
+							},
+						},
+						// 空城（锁定技）：无手牌 + 成为目标 ⇒ 弃1星令此牌无效
+						zl_kongcheng: {
+							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							trigger: { player: 'useCardToTargeted' },
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								if (player.countCards('h') > 0) return false;
+								return lib.skill.zl_xing_tu.getStars(player).length > 0;
+							},
+							content: function () {
+								var stars = lib.skill.zl_xing_tu.getStars(player);
+								if (!stars.length) return;
+								var use = stars[0];
+								lib.skill.zl_xing_tu.removeStar(player, [use]);
+								player.lose([use], ui.discardPile);
+								// 令此牌整体无效（按裁定），且不可被【无懈可击】响应
+								trigger.cancelled = true;
+								if (!trigger.triggered) trigger.triggered = {};
+								trigger.triggered.zl_kongcheng = true;
+								player.storage.zl_kc_pending = trigger.card;
+								game.log(player, '【空城】：弃置1枚「星」，令', get.translation(trigger.card), '整体无效');
+							},
+						},
+						// 空城·收：结算结束后若该牌在弃牌堆，置为「星」
+						zl_kc_collect: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { global: 'useCardAfter' },
+							filter: function (event, player) {
+								return !!(player.storage.zl_kc_pending && event.card === player.storage.zl_kc_pending);
+							},
+							content: function () {
+								var card = player.storage.zl_kc_pending;
+								delete player.storage.zl_kc_pending;
+								try {
+									var pile = ui.discardPile;
+									var inPile = false;
+									if (pile && pile.childNodes) {
+										for (var i = 0; i < pile.childNodes.length; i++) {
+											if (pile.childNodes[i] === card) { inPile = true; break; }
+										}
+									}
+									if (inPile) {
+										lib.skill.zl_xing_tu.addStar(player, [card]);
+										game.log(player, '将无效的', get.translation(card), '置为「星」');
+									}
+								} catch (e) { }
+							},
+						},
+						// 火计（神威技）：弃所有星 ⇒ 造成 X 点火焰伤害（星为 0 也能发动）
+						zl_huoji: {
+							audio: 2, enable: 'phaseUse',
+							init: function (player) {
+								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
+								if (player.storage.tdgx_sw['zl_huoji'] == undefined) player.storage.tdgx_sw['zl_huoji'] = 1;
+							},
+							filter: function (event, player) {
+								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['zl_huoji'] > 0) && player.isIn();
+							},
+							content: function () {
+								'step 0'
+								player.storage.tdgx_sw['zl_huoji']--;
+								var stars = lib.skill.zl_xing_tu.getStars(player);
+								if (stars.length) {
+									lib.skill.zl_xing_tu.removeStar(player, stars);
+									player.lose(stars, ui.discardPile);
+								}
+								event.x = player.hp;   // X = 发动此技能时的体力值
+								player.chooseTarget(true, '火计：选择一名角色', function (card, player, target) {
+									return target.isIn();
+								}).set('ai', function (target) { return -get.attitude(_status.event.player, target); });
+								'step 1'
+								if (result.bool && result.targets && result.targets.length) {
+									result.targets[0].damage(event.x, 'fire', player);
+									game.log(player, '发动了神威技', '#g【火计】', '，对', result.targets[0], '造成', get.cnNumber(event.x), '点火焰伤害');
+								}
+							},
+						},
+
+						// ────────────── 名·曹操（四血/魏）──────────────
+
+						// 智·区（记录造成伤害的牌）
+						cc_zhi_zone: {
+							charlotte: true, sub: true, popup: false, mark: true, marktext: '智',
+							intro: { name: '智', content: '你受到伤害后置于武将牌上的牌，可供〖志略〗使用。' },
+							addZhi: function (player, cards) {
+								try {
+									if (!player.storage.cc_zhi_list) player.storage.cc_zhi_list = [];
+									for (var i = 0; i < cards.length; i++) {
+										var c = cards[i];
+										if (player.storage.cc_zhi_list.indexOf(c) < 0) player.storage.cc_zhi_list.push(c);
+									}
+									player.addMark('cc_zhi', cards.length);
+									player.markSkill('cc_zhi_zone');
+								} catch (e) { }
+							},
+							getZhi: function (player) {
+								try { return (player.storage.cc_zhi_list || []).slice(0); } catch (e) { return []; }
+							},
+							removeZhi: function (player, cards) {
+								try {
+									var l = player.storage.cc_zhi_list || [];
+									for (var i = 0; i < cards.length; i++) {
+										var k = l.indexOf(cards[i]);
+										if (k >= 0) l.splice(k, 1);
+									}
+									player.removeMark('cc_zhi', cards.length);
+								} catch (e) { }
+							},
+						},
+						// 治·标记
+						cc_zhi_mark: {
+							charlotte: true, sub: true, popup: false, mark: true, marktext: '治',
+							intro: { name: '治', content: '你回合开始时，〖清正〗拥有者选择：令你摸X张牌或弃置X张牌，然后移去「治」。' },
+						},
+						// 奸雄（每轮开始移去略 / 受到伤害后记录并摸牌）
+						cc_jianxiong: {
+							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							trigger: { player: ['roundStart', 'damageAfter'] },
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								if (event.name == 'roundStart') return player.countMark('cc_lue') > 0;
+								return (event.num || 0) > 0;
+							},
+							content: function () {
+								'step 0'
+								if (event.name == 'roundStart') {
+									var n0 = player.countMark('cc_lue');
+									player.removeMark('cc_lue', n0);
+									game.log(player, '【奸雄】：移去了所有的「略」');
+									event.finish(); return;
+								}
+								event.times = trigger.num || 1;
+								event.i = 0;
+								'step 1'
+								if (event.i >= event.times) { event.finish(); return; }
+								event.i++;
+								var src = trigger.card;
+								if (src) {
+									if (!player.storage.cc_zhi_list) player.storage.cc_zhi_list = [];
+									if (player.storage.cc_zhi_list.indexOf(src) < 0) {
+										lib.skill.cc_zhi_zone.addZhi(player, [src]);
+										if (!player.hasSkill('cc_zhi_zone')) player.addSkill('cc_zhi_zone');
+									}
+								}
+								player.addMark('cc_lue', 1);
+								var n = player.countMark('cc_lue');
+								player.draw(n);
+								game.log(player, '【奸雄】：记录1次，获得1枚「略」（', n, '），摸', get.cnNumber(n), '张牌');
+								event.goto(1);
+								'step 2'
+							},
+						},
+						// 清正（每回合限一次）：令一名角色获得「治」
+						cc_qingzheng: {
+							audio: 2, enable: 'phaseUse', usable: 1,
+							filter: function (event, player) {
+								return game.hasPlayer(function (c) { return c.isIn() && !c.hasMark('cc_zhi'); });
+							},
+							content: function () {
+								'step 0'
+								player.chooseTarget(true, '清正：令一名角色获得「治」', function (card, player, target) {
+									return target.isIn() && !target.hasMark('cc_zhi');
+								}).set('ai', function (target) { return get.attitude(_status.event.player, target); });
+								'step 1'
+								if (!result.bool || !result.targets || !result.targets.length) { event.finish(); return; }
+								event.cur = result.targets[0];
+								event.cur.addMark('cc_zhi', 1);
+								if (!event.cur.hasSkill('cc_zhi_mark')) event.cur.addSkill('cc_zhi_mark');
+								game.log(player, '【清正】：令', event.cur, '获得「治」');
+								event.finish(); return;
+							},
+						},
+						// 清正·裁：拥有「治」者回合开始时，曹操选择摸或弃（X = 曹操体力值）
+						cc_qingzheng_cut: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { global: 'phaseBegin' },
+							filter: function (event, player) {
+								return player.isIn() && event.player !== player && event.player.countMark('cc_zhi') > 0;
+							},
+							content: function () {
+								'step 0'
+								event.cur = trigger.player;
+								event.x = player.hp;
+								player.chooseControl(['令其摸' + event.x + '张牌', '令其弃置' + event.x + '张牌', 'cancel2'])
+									.set('prompt', '清正：对' + get.translation(event.cur) + '执行一项（X=' + event.x + '）')
+									.set('ai', function () { return 0; });
+								'step 1'
+								if (event.cur.countMark('cc_zhi') > 0) {
+									event.cur.removeMark('cc_zhi', event.cur.countMark('cc_zhi'));
+									if (event.cur.hasSkill('cc_zhi_mark')) event.cur.removeSkill('cc_zhi_mark');
+								}
+								if (!result.control || result.control == 'cancel2') { event.finish(); return; }
+								if (result.control.indexOf('摸') >= 0) {
+									event.cur.draw(event.x);
+									game.log(player, '【清正】：令', event.cur, '摸了', get.cnNumber(event.x), '张牌');
+								} else {
+									var hs = event.cur.getCards('h');
+									if (hs.length) {
+										event.cur.discard(hs.slice(0, event.x));
+										game.log(player, '【清正】：令', event.cur, '弃置了', get.cnNumber(Math.min(hs.length, event.x)), '张牌');
+									}
+								}
+								event.finish(); return;
+							},
+						},
+						// 志略（神威技）：使用「智」中的实体牌（无距离、次数限制）
+						cc_zhilue: {
+							audio: 2, enable: 'phaseUse',
+							init: function (player) {
+								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
+								if (player.storage.tdgx_sw['cc_zhilue'] == undefined) player.storage.tdgx_sw['cc_zhilue'] = 1;
+							},
+							filter: function (event, player) {
+								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['cc_zhilue'] > 0) && player.isIn();
+							},
+							content: function () {
+								'step 0'
+								player.storage.tdgx_sw['cc_zhilue']--;
+								event.pool = lib.skill.cc_zhi_zone.getZhi(player);
+								game.log(player, '发动了神威技', '#g【志略】');
+								if (!event.pool.length) { event.finish(); return; }
+								'step 1'
+								if (!event.pool.length) { event.finish(); return; }
+								player.chooseCardButton(event.pool, '志略：按任意顺序使用「智」中的牌（无距离、次数限制）', true)
+									.set('ai', function (button) { return 1 + get.value(button.link); });
+								'step 2'
+								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
+								var card = result.links[0];
+								event.pool.remove(card);
+								lib.skill.cc_zhi_zone.removeZhi(player, [card]);
+								card.ccFromZhi = true;
+								player.chooseUseTarget(card, '志略：是否使用' + get.translation(card) + '？（无距离、次数限制）');
+								'step 3'
+								event.goto(1);
+							},
+						},
 					},
 					// ── 动态技能说明：转换技显示"当前形态" ──
 					// 引擎在 game.js:62155 的 get.skillInfoTranslation 里查这里：
