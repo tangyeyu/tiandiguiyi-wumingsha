@@ -3100,14 +3100,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								return _s > 0;                            // 必须有「星」
 							},
 							content: function () {
-								// ★ 弃 1 张「星」（从 's' 区取，绝不动手牌 —— 之前用 lose() 误伤过手牌）
+								// ★ 弃 1 张「星」（从星容器取，绝不动手牌 —— 之前用 lose() 误伤过手牌）
 								var stars = lib.skill.zl_xing_use.stars(player);
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 content进入 星=' + stars.length);
+								} catch (eD2) { }
 								if (!stars.length) return;
-								player.lose([stars[0]], ui.discardPile);
-								// 令此牌整体无效（按裁定），且不可被【无懈可击】响应
-								trigger.cancelled = true;
-								if (!trigger.triggered) trigger.triggered = {};
-								trigger.triggered.zl_kongcheng = true;
+								try { player.lose([stars[0]], ui.discardPile); } catch (eL) { }
+								// ★★ 令此牌**整体无效** —— 照抄原版 谋诸葛亮「看破」（sb.js:3087-3091）★★
+								//     player.unmarkAuto('sbkanpo',[trigger.card.name]);
+								//     trigger.targets.length = 0;
+								//     trigger.all_excluded = true;
+								//   ★ 此前我写的 `trigger.cancelled = true` 是**自己猜的字段**
+								//     （引擎里没有）⇒ 无效化从未生效（用户实测"空城没有用"）。
+								try {
+									if (trigger.targets && trigger.targets.length) trigger.targets.length = 0;
+									trigger.all_excluded = true;
+								} catch (eC) { }
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 已置 all_excluded');
+								} catch (eD3) { }
 								player.storage.zl_kc_pending = trigger.card;
 								game.log(player, '【空城】：弃置1枚「星」，令', get.translation(trigger.card), '整体无效');
 							},
