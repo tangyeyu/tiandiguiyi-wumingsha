@@ -631,7 +631,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
 						// ============ 铸策 ============
 						mgj_zhuce: {
-							audio: 'jsrgdingce',
+							audio: 'yiji',
 							trigger: { player: 'phaseBegin' },
 							filter: function (event, player) {
 								return findCeTarget() != null;
@@ -882,7 +882,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 故原 `forced:true` 是错的（那会连"你可以"一起吃掉）；
 						// 正确写法 = 去掉 forced + 显式 locked:true。
 						mgj_lixue: {
-							audio: 'jsrgdingce',
+							audio: 'tiandu',
 							locked: true,
 							// ── 触发时机：只用 changeHp ─────────────────────────────
 							// 卡面写的是「体力值发生变动时」，而引擎里**唯一**忠于这句话的事件
@@ -1249,7 +1249,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   ui.cardPile.appendChild(card)                            → 牌堆底（最后摸到）
 						// 故「牌堆底的牌」= ui.cardPile.lastChild
 						cm_taozei: {
-							audio: 'xinjuejing',
+							audio: 'jianxiong',
 							locked: true,
 							forced: true,
 							trigger: { global: 'roundStart' },
@@ -1534,7 +1534,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   storage.lx_cy_used 对照 game.roundNumber 手工实现；
 						//   计数在回合开始由 tdgx_turn_reset 清零。
 						lx_chiyang: {
-							audio: 'lianying',
+							audio: 'scschiyan',
 							enable: 'phaseUse',
 							filter: function (event, player) {
 								if (player.countCards('he') < player.hp) return false;
@@ -2235,7 +2235,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// · 判定区/手牌区走 storage.lkang_zone 状态位 + lkang_hy_mod 查询期干预
 						// · storage.lkang_zone：{e1,e2,e3,e4,judge,hand}，true = 已废除
 						lkang_huiyan: {
-							audio: 'beishui',
+							audio: 'rejizhi_lukang',
+							// ※ 陆抗「辉焰」在游戏内**没有**同名语音资源，
+							//   而陆抗系全部语音只有 rejizhi_lukang（集智·陆抗版）**一个文件**，
+							//   故本技能与「抗晋」共用同一语音 —— 属资源限制，非疏漏。
 							enable: 'phaseUse',
 							filter: function (event, player) {
 								var z = player.storage.lkang_zone;
@@ -2419,7 +2422,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 抗晋①：受到体力值不低于你的角色的伤害 → 弃一张牌判定，红色免伤
 						lkang_kangjin: {
-							audio: 'beishui',
+							audio: 'rejizhi_lukang',
 							locked: true,
 							trigger: { player: 'damageBegin' },
 							filter: function (event, player) {
@@ -2897,7 +2900,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   引擎视作同一技能 ⇒ 回合结束时会走"发动"那条路
 						//   （用户实测"回合结束自动触发了破敌"）。
 						gy_po_di: {
-							audio: 'sbwusheng', enable: 'phaseUse',
+							audio: 'wusheng_jsp_guanyu', enable: 'phaseUse',
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
 								if (player.storage.tdgx_sw['gy_po_di'] == undefined) player.storage.tdgx_sw['gy_po_di'] = 1;
@@ -3011,7 +3014,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						zl_xing_use: {
-							audio: 'guanxing_re_zhugeliang',   // 台词：观星系（同名技能优先）
+							audio: 'qixing',   // 台词：观星系（同名技能优先）
 							charlotte: true, sub: true, popup: false, direct: true,
 							enable: 'phaseUse',
 							filter: function (event, player) {
