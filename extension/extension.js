@@ -3094,6 +3094,31 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 2, charlotte: true, popup: true,
 							trigger: { player: 'useCardToTargeted' },
 							filter: function (event, player) {
+								// ★★★ 无条件诊断（放在最前面，任何 return 之前）★★★
+								//   目的：只要这个 filter 被"评估"过就留痕 —— 不看条件、不做判断。
+								//   这样能区分两件事：
+								//     · 有记录 ⇒ filter 被调用了（问题在条件或询问框）
+								//     · 无记录 ⇒ filter 在那条路径上**根本没被调用**（问题在触发时机）
+								//   同时记录 event.triggername（判定"filter 里能否拿到时机名"）。
+								try {
+									var _dTs = '';
+									try {
+										var _t0 = event.targets;
+										if (_t0 && _t0.length) {
+											for (var _i0 = 0; _i0 < _t0.length; _i0++) {
+												_dTs += (_t0[_i0] === player ? '[我]' : _t0[_i0].name || '?') + ' ';
+											}
+										}
+									} catch (eTT) { _dTs = '(读取异常)'; }
+									(game.bzDiag2 || lib.bzDiag2)('空城·入口 事件名=' + event.name +
+										'｜triggername=' + event.triggername +
+										'｜step=' + event.step +
+										'｜手牌=' + player.countCards('h') +
+										'｜星=' + lib.skill.zl_xing_use.stars(player).length +
+										'｜目标=[' + _dTs + ']' +
+										'｜牌=' + (event.card ? get.translation(event.card) : '-') +
+										'｜使用者=' + (event.player ? event.player.name : '-'));
+								} catch (eD0) { }
 								var _h = player.countCards('h');
 								var _s = lib.skill.zl_xing_use.stars(player).length;
 								var _in = player.isIn();
