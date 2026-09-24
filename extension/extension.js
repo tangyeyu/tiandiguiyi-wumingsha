@@ -3137,39 +3137,41 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							intro: { name: '略', content: '奸雄：每有1枚「略」，你受到伤害后摸牌时多摸1张（每轮开始移去所有「略」）。' },
 						},
 						// 智·区（记录造成伤害的牌）
-						// ★★ 用引擎标准做法：loseToSpecial(牌,'cc_zhi') + getCards('s', hasGaintag)
-						//   —— 照抄原版 sbguanxing（sb.js:3109/3117）。
-						//   原来自制 storage 列表存牌引用是错的：那些牌**没进任何区域**，
-						//   既不可见、也拿不到有效的牌对象 ⇒ 志略面板构造时崩
-						//   `item.cloneNode is not a function`（用户实测）。
+						// ★★ 存放到**独立容器** player.node.expansions，不用 's' 区 ★★
+						//   实测原因：'s' 区（loseToSpecial → directgains）在
+						//   game.js:25965-25993 里是 `node.handcards1` + 'glows' 类，
+						//   也就是"**放在手牌容器里的牌**" ⇒ 引擎把手牌区的牌都当可用
+						//   ⇒ 用户实测「智」显示在手牌区且可直接用。
+						//   player.node.expansions 是独立的武将牌容器：
+						//   既看得见（引擎自带渲染）、又不在手牌区 ⇒ 不会进通用出牌池。
+						//   按用户裁定 **B**：UI 上可点看牌，但"使用"只走〖志略〗。
 						cc_zhi_zone: {
 							charlotte: true, sub: true, popup: false,
-							// ★ 显示三件套（照抄 sbguanxing 的 intro）：marktext + mark + markcount
-							//   缺 marktext/mark 就会出现"看不到记录的牌"（用户实测）。
+							// 显示三件套（照抄 sbguanxing 的 intro 结构，但读 x 区）
 							marktext: '智',
 							intro: {
 								mark: function (dialog, storage, player) {
-									var cards = player.getCards('s', function (card) {
+									var cards = player.getCards('x', function (card) {
 										return card.hasGaintag && card.hasGaintag('cc_zhi');
 									});
 									if (!cards || !cards.length) return;
 									dialog.addAuto(cards);
 								},
 								markcount: function (storage, player) {
-									return player.countCards('s', function (card) {
+									return player.countCards('x', function (card) {
 										return card.hasGaintag && card.hasGaintag('cc_zhi');
 									});
 								},
 								onunmark: function (storage, player) {
-									var cards = player.getCards('s', function (card) {
+									var cards = player.getCards('x', function (card) {
 										return card.hasGaintag && card.hasGaintag('cc_zhi');
 									});
 									if (cards.length) player.loseToDiscardpile(cards);
 								},
 							},
-							// 读区（与 sbguanxing 完全一致）
+							// 读区：从 expansions 容器取（x 区）
 							getZhi: function (player) {
-								return player.getCards('s', function (card) {
+								return player.getCards('x', function (card) {
 									return card.hasGaintag && card.hasGaintag('cc_zhi');
 								});
 							},
@@ -3218,7 +3220,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								if (src) {
 									if (!player.hasSkill('cc_zhi_zone')) player.addSkill('cc_zhi_zone');
-									player.loseToSpecial([src], 'cc_zhi').visible = true;
+									// ★ 记录到 **expansions 容器**（武将牌上的牌区），不用 's' 区：
+									//   's' 区是"手牌容器里的牌"（directgains 会 append 到 handcards1）
+									//   ⇒ 会被当可用牌。addToExpansion 放进独立容器，只可查看不可直接使用。
+									player.addToExpansion([src], player, 'cc_zhi').gaintag.add('cc_zhi');
+									if (!player.storage.cc_zhi_markcount) player.storage.cc_zhi_markcount = 0;
+									player.storage.cc_zhi_markcount++;
 									player.markSkill('cc_zhi_zone');
 								}
 								// 没有实体牌（虚拟伤害）时只记次数、不给「智」添牌，避免崩溃
