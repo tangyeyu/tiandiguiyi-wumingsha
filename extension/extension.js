@@ -2911,31 +2911,34 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// ────────────── 名·诸葛亮（四血/蜀）──────────────
 
 						// 星·区（武将牌上的「星」）
+						// ★★ 完全照抄原版 谋诸葛亮「观星」sbguanxing（sb.js:3095-3193）★★
+						//   收牌：player.loseToSpecial(cards,'zl_xing').visible = true;
+						//   读区：player.getCards('s', card => card.hasGaintag('zl_xing'))
+						//   显示：marktext + intro.mark + intro.markcount（三件套缺一不可 ——
+						//         用户实测"点的时候没有名字"就是缺这套）
+						//   ★ 此前混用过 storage 列表（牌没进区域）与 addToExpansion（另一套 API），
+						//     都导致"星不可见/不可用"。现在统一到 's' 区这一条路线。
 						zl_xing_tu: {
-							charlotte: true, sub: true, popup: false, mark: true, marktext: '星',
-							// ★★ 用引擎的 expansion（武将牌上的牌区）实现 ── 照原版 神诸葛亮「七星」
-							//   （extra.js:10112）的范式：
-							//     player.addToExpansion(cards,'draw').gaintag.add('zl_xing')
-							//     player.getExpansions('zl_xing')     // = getCards('x', c=>c.hasGaintag(tag))
-							//     intro: { markcount:'expansion', ... }
-							//   ★ 之前我用 storage 存引用 + lose() 移牌是**错的**：
-							//     牌没进任何区域 ⇒ 不可见（没有 player.node.expansions 容器）
-							//     ⇒ 也就不可用。用户实测"看不到星、用不了星"。
+							charlotte: true, sub: true, popup: false,
+							marktext: '星',
 							intro: {
-								markcount: 'expansion',
-								mark: function (dialog, content, player) {
-									var cs = player.getExpansions('zl_xing');
-									if (cs && cs.length) {
-										if (player == game.me || player.isUnderControl()) dialog.addAuto(cs);
-										else return '共有' + get.cnNumber(cs.length) + '张星';
-									}
+								mark: function (dialog, storage, player) {
+									var cards = player.getCards('s', function (card) {
+										return card.hasGaintag && card.hasGaintag('zl_xing');
+									});
+									if (!cards || !cards.length) return;
+									dialog.addAuto(cards);
 								},
-								content: function () {
-									var cs = player.getExpansions('zl_xing');
-									if (cs && cs.length) {
-										if (player == game.me || player.isUnderControl()) return get.translation(cs);
-										return '共有' + get.cnNumber(cs.length) + '张星';
-									}
+								markcount: function (storage, player) {
+									return player.countCards('s', function (card) {
+										return card.hasGaintag && card.hasGaintag('zl_xing');
+									});
+								},
+								onunmark: function (storage, player) {
+									var cards = player.getCards('s', function (card) {
+										return card.hasGaintag && card.hasGaintag('zl_xing');
+									});
+									if (cards.length) player.loseToDiscardpile(cards);
 								},
 							},
 						},
@@ -2988,21 +2991,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) { return player.isIn(); },
 							content: function () {
 								'step 0'
-								// 旧的星置入弃牌堆（用 expansion 机制：先移出区，再 lose 到弃牌堆）
-								var old = player.getExpansions('zl_xing');
+								// 旧的星置入弃牌堆（照抄 sbguanxing：loseToDiscardpile）
+								var old = player.getCards('s', function (card) {
+									return card.hasGaintag && card.hasGaintag('zl_xing');
+								});
 								if (old.length) {
-									player.lose(old, ui.discardPile);
+									player.loseToDiscardpile(old);
 									game.log(player, '将', get.cnNumber(old.length), '张「星」置入弃牌堆');
 								}
 								game.log(player, '发动了', '#g【七星】');
-								// ★ 引擎原生：把牌堆顶 7 张**真正放进**武将牌上的牌区
-								//   （'draw' = 从牌堆获得；gaintag 用于 getExpansions 检索）
+								// ★ 照抄 sbguanxing：把牌堆顶 7 张**真正放进** 's' 区
 								if (!player.hasSkill('zl_xing_tu')) player.addSkill('zl_xing_tu');
-								player.addToExpansion(get.cards(7), 'draw').gaintag.add('zl_xing');
+								var got = get.cards(7);
+								player.$gain2(got, false);
+								player.loseToSpecial(got, 'zl_xing').visible = true;
+								player.markSkill('zl_xing_tu');
 								'step 1'
-								var cs = player.getExpansions('zl_xing');
+								var cs = player.getCards('s', function (card) {
+									return card.hasGaintag && card.hasGaintag('zl_xing');
+								});
 								game.log(player, '展示了牌堆顶', get.cnNumber(cs.length), '张牌，置于武将牌上称为「星」');
-								(player.markSkill ? player.markSkill('zl_xing_tu') : null);
 							},
 						},
 						// 空城（锁定技）：无手牌 + 成为目标 ⇒ 弃1星令此牌无效
@@ -3012,11 +3020,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
 								if (player.countCards('h') > 0) return false;                 // 必须没有手牌
-								return player.getExpansions('zl_xing').length > 0;            // 必须有「星」
+								return (player.getCards('s', function (card) { return card.hasGaintag && card.hasGaintag('zl_xing'); })).length > 0;            // 必须有「星」
 							},
 							content: function () {
 								// ★ 弃 1 张「星」（从 expansion 区取，绝不动手牌 —— 之前用 lose() 误伤过手牌）
-								var stars = player.getExpansions('zl_xing');
+								var stars = (player.getCards('s', function (card) { return card.hasGaintag && card.hasGaintag('zl_xing'); }));
 								if (!stars.length) return;
 								player.lose([stars[0]], ui.discardPile);
 								// 令此牌整体无效（按裁定），且不可被【无懈可击】响应
@@ -3038,11 +3046,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								var card = player.storage.zl_kc_pending;
 								delete player.storage.zl_kc_pending;
 								try {
-									// 该牌结算结束后若仍在弃牌堆 ⇒ 置为「星」（engine expansion 区）
+									// 该牌结算结束后若仍在弃牌堆 ⇒ 置为「星」（统一走 's' 区）
 									var inPile = !!(card && card.parentNode === ui.discardPile);
 									if (inPile) {
 										if (!player.hasSkill('zl_xing_tu')) player.addSkill('zl_xing_tu');
-										player.addToExpansion([card], player, 'giveAuto').gaintag.add('zl_xing');
+										player.loseToSpecial([card], 'zl_xing').visible = true;
 										player.markSkill('zl_xing_tu');
 										game.log(player, '将无效的', get.translation(card), '置为「星」');
 									}
@@ -3064,7 +3072,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.storage.tdgx_sw['zl_huoji']--;
 								// ★ 只弃「星」（expansion 区），**绝不动手牌** ——
 								//   之前用 storage 列表 + lose() 会把手牌一起卷走（用户实测"回合开始摸到的手牌会消失"）
-								var stars = player.getExpansions('zl_xing');
+								var stars = (player.getCards('s', function (card) { return card.hasGaintag && card.hasGaintag('zl_xing'); }));
 								if (stars.length) {
 									player.lose(stars, ui.discardPile);
 									game.log(player, '弃置了所有的「星」（', get.cnNumber(stars.length), '张）');
