@@ -2709,42 +2709,35 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						// 武圣·效：黑牌加伤 / 红牌回血（独立子技能 —— 出口技能不能带 filter）
+						// ★★ 实测结论（诊断日志）★★
+						//   伤害时机里 filter 收到的 `event.name` 是 **`damage`**，
+						//   不是 `damageBegin2`（引擎确实会 trigger('damageBegin2')，
+						//   见 game.js:20761，但**事件名**仍是 damage）
+						//   ⇒ 原来那句 `if (tn != 'damageBegin2' && tn != 'damageAfter') return false;`
+						//     **恒为真**，加伤代码从来没执行过
+						//     —— 这就是用户实测「两张黑牌没加伤」的真正原因。
+						//   ⇒ 去掉名字判断：只按转化牌上的属性决定做什么
+						//     （gyBlack / gyRed 由 viewAs 写入，互不干扰，无需区分阶段）。
 						gy_wusheng_dmg: {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { source: ['damageBegin2', 'damageAfter'] },
+							trigger: { source: 'damage' },
 							filter: function (event, player) {
-								// 诊断（临时）：记录伤害触发时能否拿到 useCard 及其牌属性
-								var tn = event.name;
 								var uc = event.getParent ? event.getParent('useCard') : null;
 								var c = uc && uc.card;
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('武圣dmg tn=' + tn +
-										' 有useCard=' + (uc ? 1 : 0) +
-										' 牌名=' + (c ? get.name(c) : '-') +
-										' gyBlack=' + (c ? c.gyBlack : '-') +
-										' gyRed=' + (c ? c.gyRed : '-') +
-										' gyTag=' + (c ? c.gyTag : '-'));
-								} catch (eD) { }
-								if (tn != 'damageBegin2' && tn != 'damageAfter') return false;
 								return !!(c && (c.gyBlack || c.gyRed));
 							},
 							content: function () {
-								var tn = event.name;
 								var uc = trigger.getParent ? trigger.getParent('useCard') : null;
 								var c = uc && uc.card;
-								if (!c) { event.finish(); return; }
-								if (tn == 'damageBegin2') {
-									if (c.gyBlack) {
-										trigger.num++;
-										game.log(player, '【武圣·黑】：两张黑牌，此【杀】伤害+1');
-									}
-									event.finish(); return;
+								if (!c) return;
+								if (c.gyBlack) {
+									trigger.num++;
+									game.log(player, '【武圣·黑】：两张黑牌，此【杀】伤害+1');
 								}
 								if (c.gyRed && player.hp < player.maxHp) {
 									player.recover(1);
 									game.log(player, '【武圣·红】：两张红牌，回复1点体力');
 								}
-								event.finish(); return;
 							},
 						},
 						// 武圣·无次数：花色不同时本次【杀】不计入次数
