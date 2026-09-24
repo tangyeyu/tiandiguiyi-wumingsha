@@ -2883,17 +2883,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
-								// ★ 战报诊断（用户直接可见）：打出每次判定的实况
+								// ★ 诊断：**同时**写战报与文件
+								//   （只写战报 ⇒ 作者读不到；只写文件 ⇒ 用户看不到。两边都写。）
 								try {
 									var marks = [];
 									for (var pi = 0; pi < game.players.length; pi++) {
 										var m = game.players[pi].countMark('gy_po');
 										if (m > 0) marks.push(game.players[pi].name + '=' + m);
 									}
-									game.log(player, '【破敌·诊断】事件=', event.name, '｜on=', !!player.storage.gy_po_on,
-										'｜目标=', (player.storage.gy_po_target ? player.storage.gy_po_target.name : '无'),
-										'｜场上破：', marks.join(' ') || '无',
-										'｜额度=', (player.storage.tdgx_sw ? player.storage.tdgx_sw['gy_po_di'] : '?'));
+									var _line = '事件=' + event.name + '｜on=' + !!player.storage.gy_po_on +
+										'｜目标=' + (player.storage.gy_po_target ? player.storage.gy_po_target.name : '无') +
+										'｜场上破：' + (marks.join(' ') || '无') +
+										'｜额度=' + (player.storage.tdgx_sw ? player.storage.tdgx_sw['gy_po_di'] : '?');
+									game.log(player, '【破敌·诊断】', _line);
+									(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 ' + _line);
 								} catch (eD) { }
 								// ★★ 修：原来写 `event.name == 'phaseJieshuBegin'` —— 恒为假 ★★
 								//   `phaseJieshuBegin` 是**触发键**，而 event.name 是
