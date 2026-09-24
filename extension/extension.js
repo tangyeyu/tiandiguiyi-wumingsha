@@ -3354,7 +3354,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (player.storage.tdgx_sw['cc_zhilue'] == undefined) player.storage.tdgx_sw['cc_zhilue'] = 1;
 							},
 							filter: function (event, player) {
-								// ★ 战报诊断（用户可直接看到，不必读日志文件）
+								// ★ 诊断：同时写**战报**（用户可见）与**文件**（作者可读）
+								//   教训：只写战报 ⇒ 作者读不到；只写文件 ⇒ 用户看不到。
 								try {
 									var all = player.getCards('x');
 									var tagged = player.getCards('x', function (c) { return c.hasGaintag && c.hasGaintag('cc_zhi'); });
@@ -3363,9 +3364,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										desc.push(get.translation(all[i]) + '(' + get.position(all[i]) + ',' +
 											(all[i].hasGaintag && all[i].hasGaintag('cc_zhi') ? '有智' : '无智') + ')');
 									}
-									game.log(player, '【志略·诊断】x区', all.length, '张：', desc.join(' ') || '（空）',
-										'｜带智标记', tagged.length, '张｜额度',
-										(player.storage.tdgx_sw ? player.storage.tdgx_sw['cc_zhilue'] : '?'));
+									var _zl = 'x区' + all.length + '张：' + (desc.join(' ') || '（空）') +
+										'｜带智标记' + tagged.length + '张｜额度' +
+										(player.storage.tdgx_sw ? player.storage.tdgx_sw['cc_zhilue'] : '?');
+									game.log(player, '【志略·诊断】', _zl);
+									(game.bzDiag2 || lib.bzDiag2)('志略·诊断 ' + _zl);
 								} catch (eD) { }
 								if (!(player.storage.tdgx_sw && player.storage.tdgx_sw['cc_zhilue'] > 0)) return false;
 								if (!player.isIn()) return false;
