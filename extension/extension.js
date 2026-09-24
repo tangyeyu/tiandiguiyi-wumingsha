@@ -3679,8 +3679,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 卡面一个技能名「武翊」，实现上按触发类型内部分装（用户已确认允许）。
 
 						// 武翊·杀：一张【闪】当【杀】使用或打出（借鉴龙胆 standard.js:1275）
+						// ★ 武翊的**名字与描述挂在本技能上**（数组里第一个技能）。
+						//   面板显示条件（引擎 game.js:59100-59114）：
+						//     ① 该技能没有 nopop 字段 —— 有则被 continue 跳过
+						//     ② 有 lib.translate[id] 与 [id+'_info']
+						//   ⇒ 这里**不能**加 nopop，否则武翊不显示（实测踩过）。
+						//   子技能不进面板靠"不给译名"实现（另有 sub 标记双保险）。
 						zyyi_sha: {
-							sub: true, charlotte: true, nopop: true,   // ★ 不进技能面板
+							sub: true, charlotte: true,
 							audio: 'longdan_sha',
 							enable: ['chooseToUse', 'chooseToRespond'],
 							filterCard: { name: 'shan' },
