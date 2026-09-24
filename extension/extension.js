@@ -2713,9 +2713,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { source: ['damageBegin2', 'damageAfter'] },
 							filter: function (event, player) {
+								// 诊断（临时）：记录伤害触发时能否拿到 useCard 及其牌属性
 								var tn = event.name;
 								var uc = event.getParent ? event.getParent('useCard') : null;
 								var c = uc && uc.card;
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('武圣dmg tn=' + tn +
+										' 有useCard=' + (uc ? 1 : 0) +
+										' 牌名=' + (c ? get.name(c) : '-') +
+										' gyBlack=' + (c ? c.gyBlack : '-') +
+										' gyRed=' + (c ? c.gyRed : '-') +
+										' gyTag=' + (c ? c.gyTag : '-'));
+								} catch (eD) { }
 								if (tn != 'damageBegin2' && tn != 'damageAfter') return false;
 								return !!(c && (c.gyBlack || c.gyRed));
 							},
@@ -2934,19 +2943,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// ★ 机制：武将牌上的牌在 's' 区（ui.special），引擎的"使用手牌"默认只看手牌区，
 						//   所以必须提供一个出口技能让「星」进入出牌选择框。
 						//   读区照抄 sbguanxing：getCards('s') + hasGaintag。
+						// 星·用：**通过〖七星〗**使用「星」（不是把星变成普通手牌）
+						// ★ 用户要求：① 恢复"用星后弃一张牌"的代价
+						//             ② 修掉"星可以被当普通牌直接使用"这个 bug
+						//   ⇒ 出口只挂 phaseUse（本人出牌阶段主动发动），不再挂
+						//     chooseToUse / chooseToRespond（那两个会让星像手牌一样随时可用）。
 						zl_xing_use: {
 							charlotte: true, sub: true, popup: false, direct: true,
-							enable: ['chooseToUse', 'chooseToRespond'],
+							enable: 'phaseUse',
 							filterCard: function (card, player) {
 								return !!(card && card.hasGaintag && card.hasGaintag('zl_xing'));
 							},
 							selectCard: [1, 1],
 							check: function (card) { return 1 + get.value(card); },
 							viewAs: function (cards) {
-								// 直接返回该牌本身 ⇒ 像手牌一样使用它
 								return cards[0];
 							},
-							prompt: '七星：使用一张「星」（无距离与次数限制）',
+							prompt: '七星：使用一张「星」（无距离与次数限制；用后弃置一张牌）',
 							// 无距离与次数限制
 							mod: {
 								cardUsable: function (card, player, num) {
@@ -2959,7 +2972,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (card && card.hasGaintag && card.hasGaintag('zl_xing')) return true;
 								},
 							},
-							// ★ 按用户要求去掉"用后弃一张牌"的代价（原来是 chooseToDiscard）
+							// ★ 恢复定稿口径：使用/打出一张「星」后，弃置一张牌
+							onuse: function (result, player) {
+								try {
+									player.chooseToDiscard('he', '七星：使用「星」后，弃置一张牌', 1)
+										.set('ai', function (card) { return 1; });
+								} catch (e) { }
+							},
 						},
 						// 七星（每轮开始时）
 						zl_qixing: {
