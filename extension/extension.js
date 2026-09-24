@@ -338,6 +338,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'zl_xing_tu_info': '你武将牌上的「星」视为你的手牌（可被指定，但不计入你的手牌数），使用或打出时无距离与次数限制。',
 						// ★ 标记名译名：引擎显示 gaintag 名（'zl_xing'）时若查不到译名就直接显示英文
 						//   （用户实测"七星牌标签显示为 zl_xing"）⇒ 必须补这一条
+						'zl_xing_use': '星·用',
+						'zl_xing_use_info': '出牌阶段，你可以弃置一张牌，视为使用一张「星」（无距离与次数限制）；使用后你弃置一张牌。',
+						'gy_wusheng_dmg': '武圣·效',
+						'gy_wusheng_dmg_info': '两张黑牌：【杀】伤害+1；两张红牌：造成伤害后回复1点体力。',
+						'gy_po_lock': '破敌·锁',
+						'gy_po_lock_info': '【破敌】的免疫在伤害结算的第二阶段兜底生效。',
+						'cc_lue_mark': '略',
+						'cc_lue_mark_info': '〖奸雄〗的计数标记：每有1枚「略」，你受到伤害后摸牌时多摸1张；每轮开始时移去所有「略」。',
 						'zl_xing': '星',
 						'cc_zhi': '智',
 						'zl_kongcheng': '空城',
@@ -2743,9 +2751,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!c) return;
 								if (c.gyBlack) {
 									var before = trigger.num;
-									trigger.num++;
+									// ★ 决定性实验：临时改成 +9（明显到不可能看错）
+									//   若伤害显示 10 ⇒ 机制通，之前的 +1 被别的减伤吃了
+									//   若仍是 1   ⇒ 我改的 num 不是最终生效的那个
+									trigger.num += 9;
 									try {
-										(game.bzDiag2 || lib.bzDiag2)('武圣·黑 加伤 num ' + before + ' → ' + trigger.num);
+										(game.bzDiag2 || lib.bzDiag2)('武圣·黑 加伤(实验+9) num ' + before + ' → ' + trigger.num +
+											' 事件名=' + trigger.name + ' 目标=' + (trigger.player ? trigger.player.name : '-'));
 									} catch (eD2) { }
 									game.log(player, '【武圣·黑】：两张黑牌，此【杀】伤害+1');
 								}
@@ -2965,7 +2977,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						zl_xing_use: {
 							charlotte: true, sub: true, popup: false, direct: true,
 							enable: 'phaseUse',
-							usable: 1,
 							filter: function (event, player) {
 								// 有星才能发动
 								return player.getCards('s', function (card) {
@@ -2974,20 +2985,25 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								// 由技能自己弹「星」列表选牌（只列星，不混入手牌）
-								event.stars = player.getCards('s', function (card) {
+								var stars = player.getCards('s', function (card) {
 									return card.hasGaintag && card.hasGaintag('zl_xing');
 								});
-								if (!event.stars.length) { event.finish(); return; }
-								player.chooseToUse('七星：选择一张「星」使用（无距离、次数限制；用后弃一张牌）')
-									.set('filterCard', function (card) {
-										return !!(card && card.hasGaintag && card.hasGaintag('zl_xing'));
-									})
-									.set('selectCard', [1, 1])
-									.set('viewAs', function (cards) { return cards[0]; })
-									.set('ai', function () { return 1; });
+								if (!stars.length) { event.finish(); return; }
+								// 用 chooseCard 列出手牌；玩家点取消时 result.bool 为 false
+								// ★ 修：原来用 chooseToUse，取消后 result 无 .cards，
+								//   而 step 1 无条件弹弃牌 ⇒ 取消却要弃牌、且技能被锁
+								//   （用户实测"点了取消会有弃牌提醒，再取消技能就用不了了"）
+								player.chooseCard('he', true, '七星：选择一张牌，视为使用一张「星」', 1)
+									.set('ai', function (card) { return 1 + get.value(card); });
 								'step 1'
-								// 用后弃一张牌（定稿口径的代价）
+								if (!result.bool || !result.cards || !result.cards.length) { event.finish(); return; }
+								var use = result.cards[0];
+								// 该牌视为使用一张「星」（用星本身作为使用的牌）
+								if (stars.length) {
+									player.useCard(stars[0], [use], false, false);
+									game.log(player, '【七星】：弃置', get.translation(use), '，使用了1张「星」');
+								}
+								// 用后弃一张牌（定稿口径的代价）—— 只在真的用了星之后才收
 								if (player.countCards('he') > 0) {
 									player.chooseToDiscard('he', '七星：使用「星」后，弃置一张牌', 1)
 										.set('ai', function (card) { return 1; });
