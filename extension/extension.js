@@ -2883,12 +2883,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
-								if (event.name == 'phaseJieshuBegin') return !!player.storage.gy_po_on;
+								// ★★ 修：原来写 `event.name == 'phaseJieshuBegin'` —— 恒为假 ★★
+								//   `phaseJieshuBegin` 是**触发键**，而 event.name 是
+								//   **阶段事件名 `phaseJieshu`**（game.js:24594）
+								//   ⇒ 回合结束的结算分支永远不进
+								//   ⇒ 用户实测"对方得到了标记，我的回合结束后却没有掉血"。
+								//   这与伤害阶段（event.name 恒为 damage、阶段靠 event.step）是同一类陷阱。
+								if (event.name == 'phaseJieshu') return !!player.storage.gy_po_on;
+								// 非阶段事件 ⇒ 视为"发动破敌"这条路径
 								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['gy_po_di'] > 0);
 							},
 							content: function () {
 								'step 0'
-								if (event.name == 'phaseJieshuBegin') {
+								if (event.name == 'phaseJieshu') {
 									for (var i = 0; i < game.players.length; i++) {
 										var c = game.players[i];
 										var n = c.countMark('gy_po');
