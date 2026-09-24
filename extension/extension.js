@@ -246,6 +246,114 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 					}
 				})();
 
+				// ==================== 实战 bug 检测器（三层捕获） ====================
+				// 目的：你实战一局，所有报错与关键异常都落到 C:/bz-battle.log，作者直接读。
+				// 原则：**任何一层失败都不能影响游戏**（全部局部 try/catch，异常原样抛出）。
+				(function () {
+					try {
+						if (!game || game.bzErrHooked === 1) return;
+						var fsx = null;
+						try { fsx = require('fs'); } catch (eFs) { return; }
+						var LOGF = 'C:/bz-battle.log';
+						var bzWrite = function (s) {
+							try { fsx.appendFileSync(LOGF, s + '\n'); } catch (e) { }
+						};
+						var bzTs = function () { try { return new Date().toLocaleTimeString(); } catch (e) { return ''; } };
+						// 安全取值（防循环引用 / 防 getter 抛错）
+						var bzVal = function (v, depth) {
+							try {
+								depth = depth || 0;
+								if (depth > 2) return '…';
+								if (v === null) return 'null';
+								if (v === undefined) return 'undefined';
+								var t = typeof v;
+								if (t === 'string') return v.length > 80 ? v.slice(0, 80) + '…' : v;
+								if (t === 'number' || t === 'boolean') return String(v);
+								if (t === 'function') return 'fn';
+								if (v.name && v.isIn) return '玩家:' + v.name;                 // player
+								if (v.nodeType) return '牌:' + (function () { try { return get.translation(v); } catch (e) { return '?' } })();
+								if (Array.isArray(v)) return '[' + v.slice(0, 4).map(function (x) { return bzVal(x, depth + 1); }).join(',') + (v.length > 4 ? ',…' : '') + ']';
+								return '{' + Object.keys(v).slice(0, 6).join(',') + '}';
+							} catch (e) { return '?' }
+						};
+						// 精简堆栈：只留含本包/引擎名函数的前几帧
+						var bzStack = function (e) {
+							try {
+								var st = (e && e.stack) ? String(e.stack).split('\n') : [];
+								var out = [];
+								for (var i = 0; i < st.length && out.length < 6; i++) {
+									var l = st[i].trim();
+									if (/extension\.js|game\.js|at Object|at eval/.test(l)) out.push(l.replace(/file:\/\/\/[^ )]*\//, '').slice(0, 140));
+								}
+								return out;
+							} catch (e2) { return [] }
+						};
+
+						// ---- 第 1 层：全局未捕获异常 ----
+						try {
+							if (typeof window !== 'undefined' && !window.bzOnError) {
+								window.bzOnError = true;
+								var oldErr = window.onerror;
+								window.onerror = function (msg, url, line, col, err) {
+									bzWrite('【‼JS异常】' + bzTs() + ' ' + msg + '  @' + (url || '') + ':' + line + ':' + col);
+									bzStack(err).forEach(function (s) { bzWrite('    \u21b3 ' + s) });
+									try { if (typeof oldErr == 'function') return oldErr.apply(this, arguments); } catch (e) { }
+									return false;
+								};
+							}
+						} catch (e1) { }
+						// ---- 第 2 层：console.error（部分引擎分支走这里）----
+						try {
+							if (typeof console !== 'undefined' && !console.bzHooked) {
+								console.bzHooked = true;
+								var oldCE = console.error;
+								console.error = function () {
+									try {
+										var parts = [];
+										for (var i = 0; i < arguments.length; i++) parts.push(bzVal(arguments[i]));
+										bzWrite('【‼console.error】' + bzTs() + ' ' + parts.join(' | '));
+									} catch (e) { }
+									try { return oldCE.apply(console, arguments); } catch (e) { }
+								};
+							}
+						} catch (e2) { }
+						// ---- 第 3 层：包住 event.content 调用（技能 content 抛错的现场）----
+						try {
+							var E = (typeof lib !== 'undefined' && lib.element) ? lib.element : null;
+							var loopContent = E && E.content && E.content.loop;
+							if (typeof loopContent == 'function' && !loopContent.bzWrapped) {
+								var wrap = function (ev) {
+									try {
+										var ctx = '事件=' + (ev && ev.name) + '｜step=' + (ev && ev.step) +
+											'｜skill=' + (ev && ev.skill) + '｜player=' + (ev && ev.player && ev.player.name);
+										return ctx;
+									} catch (e) { return '事件=?' }
+								};
+								var wrapped = function () {
+									try {
+										return loopContent.apply(this, arguments);
+									} catch (err) {
+										try {
+											bzWrite('【‼技能content异常】' + bzTs() + ' ' + wrap(this) + '  ' + (err && err.message));
+											bzStack(err).forEach(function (s) { bzWrite('    \u21b3 ' + s) });
+										} catch (e) { }
+										throw err;   // 原样抛出，游戏行为不变
+									}
+								};
+								wrapped.bzWrapped = true;
+								E.content.loop = wrapped;
+								bzWrite('===== 技能content监控已安装 ' + new Date().toLocaleString() + ' =====');
+							} else {
+								bzWrite('===== 技能content监控未安装（loop 不可用）' + new Date().toLocaleString() + ' =====');
+							}
+						} catch (e3) {
+							try { bzWrite('技能content监控安装失败: ' + e3.message); } catch (e) { }
+						}
+						game.bzErrHooked = 1;
+						bzWrite('\n===== 实战 bug 检测器已安装（三层捕获）' + new Date().toLocaleString() + ' =====');
+					} catch (eTop) { }
+				})();
+
 				pkg = {
 					name: 'tiandiguiyi',
 					character: {
