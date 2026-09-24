@@ -1379,16 +1379,22 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							direct: true,
 							// source 侧挂 dieAfter：event.source 即击杀者（先例 refresh.js:14226 等）
 							trigger: { source: 'dieAfter' },
+							// ★★ 神威技 id 列表必须与"当前实际存在的神威技"一致 ★★
+							//   实测事故：列表里留着**已删除武将**的旧 id（mzy_jichu / mpx_wantu 等，
+							//   周瑜·技出 / 裴秀·完图在重写后已删除），而本轮三将的新神威技
+							//   （关羽·破敌 / 诸葛亮·火计 / 曹操·志略）根本没进列表
+							//   ⇒ hasSkill 恒为 false ⇒ 击杀后次数永不 +1（用户实测）。
+							//   ⇒ 以后新增/删除神威技时，**必须同步这里**。
 							filter: function (event, player) {
 								if (event.source != player) return false;
-								var list = ['lx_zhangcai', 'mlb_zhangwu', 'dy_miewu', 'lkang_beishui', 'mzy_jichu', 'mpx_wantu'];
+								var list = ['gy_po_di', 'zl_huoji', 'cc_zhilue'];
 								for (var i = 0; i < list.length; i++) {
 									if (player.hasSkill(list[i]) && !(player.storage.tdgx_sw_bonus && player.storage.tdgx_sw_bonus[list[i]])) return true;
 								}
 								return false;
 							},
 							content: function () {
-								var list = ['lx_zhangcai', 'mlb_zhangwu', 'dy_miewu', 'lkang_beishui', 'mzy_jichu', 'mpx_wantu'];
+								var list = ['gy_po_di', 'zl_huoji', 'cc_zhilue'];
 								for (var i = 0; i < list.length; i++) {
 									var s = list[i];
 									if (player.hasSkill(s) && !(player.storage.tdgx_sw_bonus && player.storage.tdgx_sw_bonus[s])) {
