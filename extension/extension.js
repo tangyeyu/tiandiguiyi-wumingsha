@@ -2724,14 +2724,29 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								var uc = event.getParent ? event.getParent('useCard') : null;
 								var c = uc && uc.card;
-								return !!(c && (c.gyBlack || c.gyRed));
+								var hit = !!(c && (c.gyBlack || c.gyRed));
+								// 诊断（保留至用户确认）：记录每次伤害判定
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('武圣dmg tn=' + event.name +
+										' 有useCard=' + (uc ? 1 : 0) +
+										' 牌名=' + (c ? get.name(c) : '-') +
+										' gyBlack=' + (c ? c.gyBlack : '-') +
+										' gyRed=' + (c ? c.gyRed : '-') +
+										' 放行=' + (hit ? 1 : 0) +
+										' num=' + event.num);
+								} catch (eD) { }
+								return hit;
 							},
 							content: function () {
 								var uc = trigger.getParent ? trigger.getParent('useCard') : null;
 								var c = uc && uc.card;
 								if (!c) return;
 								if (c.gyBlack) {
+									var before = trigger.num;
 									trigger.num++;
+									try {
+										(game.bzDiag2 || lib.bzDiag2)('武圣·黑 加伤 num ' + before + ' → ' + trigger.num);
+									} catch (eD2) { }
 									game.log(player, '【武圣·黑】：两张黑牌，此【杀】伤害+1');
 								}
 								if (c.gyRed && player.hp < player.maxHp) {
@@ -2741,16 +2756,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						// 武圣·无次数：花色不同时本次【杀】不计入次数
+						// ★★ 实测陷阱 ★★
+						//   这个 mod 原来挂在独立技能 gy_wusheng_free 上，而它**不在武将数组里**
+						//   （我为减少面板条目把它删了）⇒ 技能不在身上 ⇒ **mod 永不生效**
+						//   ⇒ 用户实测"杀不计入上限也没有"。
+						//   ⇒ mod 一律并进**始终存在**的 gy_wusheng（见该技能的 mod.cardUsable）；
+						//     这里保留技能体只为兼容旧引用，不再依赖它生效。
 						gy_wusheng_free: {
 							charlotte: true, sub: true,
 							mod: {
 								cardUsable: function (card, player, num) {
-									// ★ 转化牌的 .name 仍是实物牌名，必须用 get.name() 取虚拟牌名
-									//   （lint C9 抓到：写 card.name == 'sha' 恒为 false ⇒ 技能静默失效）
-									if (card && get.name(card) == 'sha') {
+									if (card && card.gyDiff) {
 										if (num === false) return false;
-										if (typeof num != 'number') num = 0;
-										return num + 1;
+										return (typeof num == 'number' ? num : 0) + 99;
 									}
 								},
 							},
