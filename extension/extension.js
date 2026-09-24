@@ -3440,15 +3440,24 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						cc_jianxiong: {
 							audio: 'rejianxiong', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: ['phaseBefore', 'damageAfter'] },
+							// ★ 分派依据（实测）：`phaseBefore` 是**真实事件名**，可用 event.name 判；
+							//   `damageAfter` 是**触发键**（伤害事件名恒为 `damage`）⇒ 只能靠"不是 phaseBefore"区分。
+							//   两分支语义：phaseBefore=每轮开始移去「略」；damageAfter=受伤后记录并摸牌。
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
-								if (player.storage.cc_jianxiong_round !== game.roundNumber) return player.countMark('cc_lue') > 0;
+								if (event.name == 'phaseBefore') {
+									// 每轮只判一次：当前轮号还没处理过
+									return player.storage.cc_jianxiong_round !== game.roundNumber;
+								}
 								return (event.num || 0) > 0;
 							},
 							content: function () {
 								'step 0'
-								if (player.storage.cc_jianxiong_round !== game.roundNumber) player.storage.cc_jianxiong_round = game.roundNumber;
-								if (player.storage.cc_jianxiong_round !== game.roundNumber) {
+								// ★ 修：先取"本轮是否已处理"，**再**落闸。
+								//   原来先落闸、又用同一条件做分支 ⇒ 恒为 false ⇒ 移去「略」永不执行。
+								var isNewRound = (player.storage.cc_jianxiong_round !== game.roundNumber);
+								if (isNewRound) {
+									player.storage.cc_jianxiong_round = game.roundNumber;
 									var n0 = player.countMark('cc_lue');
 									player.removeMark('cc_lue', n0);
 									game.log(player, '【奸雄】：移去了所有的「略」');
