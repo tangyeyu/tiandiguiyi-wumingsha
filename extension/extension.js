@@ -296,6 +296,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'zl_kongcheng',
 							'zl_huoji',
 							'zl_xing_tu',
+							'zl_xing_use',
 							'zl_kc_collect',
 							'tdgx_shenwei_kill',
 							'tdgx_turn_reset'
@@ -2893,41 +2894,76 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 星·区（武将牌上的「星」）
 						zl_xing_tu: {
 							charlotte: true, sub: true, popup: false, mark: true, marktext: '星',
-							intro: { name: '星', content: '你武将牌上的「星」视为你的手牌（可被指定，但不计入你的手牌数）。' },
-							// ── 区操作（挂在技能对象上，content 里经 lib.skill 调用）──
-							addStar: function (player, cards) {
-								try {
-									if (!player.storage.zl_xing_list) player.storage.zl_xing_list = [];
-									for (var i = 0; i < cards.length; i++) {
-										var c = cards[i];
-										if (player.storage.zl_xing_list.indexOf(c) < 0) player.storage.zl_xing_list.push(c);
-										c.zlFromStar = true;
+							// ★★ 用引擎的 expansion（武将牌上的牌区）实现 ── 照原版 神诸葛亮「七星」
+							//   （extra.js:10112）的范式：
+							//     player.addToExpansion(cards,'draw').gaintag.add('zl_xing')
+							//     player.getExpansions('zl_xing')     // = getCards('x', c=>c.hasGaintag(tag))
+							//     intro: { markcount:'expansion', ... }
+							//   ★ 之前我用 storage 存引用 + lose() 移牌是**错的**：
+							//     牌没进任何区域 ⇒ 不可见（没有 player.node.expansions 容器）
+							//     ⇒ 也就不可用。用户实测"看不到星、用不了星"。
+							intro: {
+								markcount: 'expansion',
+								mark: function (dialog, content, player) {
+									var cs = player.getExpansions('zl_xing');
+									if (cs && cs.length) {
+										if (player == game.me || player.isUnderControl()) dialog.addAuto(cs);
+										else return '共有' + get.cnNumber(cs.length) + '张星';
 									}
-									player.addMark('zl_xing', cards.length);
-									player.markSkill('zl_xing_tu');
-								} catch (e) { }
-							},
-							getStars: function (player) {
-								try { return (player.storage.zl_xing_list || []).slice(0); } catch (e) { return []; }
-							},
-							removeStar: function (player, cards) {
-								try {
-									var l = player.storage.zl_xing_list || [];
-									for (var i = 0; i < cards.length; i++) {
-										var k = l.indexOf(cards[i]);
-										if (k >= 0) { l.splice(k, 1); cards[i].zlFromStar = false; }
+								},
+								content: function () {
+									var cs = player.getExpansions('zl_xing');
+									if (cs && cs.length) {
+										if (player == game.me || player.isUnderControl()) return get.translation(cs);
+										return '共有' + get.cnNumber(cs.length) + '张星';
 									}
-									player.removeMark('zl_xing', cards.length);
-								} catch (e) { }
+								},
 							},
+						},
+						// 星·用：把「星」当作手牌使用/打出
+						// ★ 机制：武将牌上的牌在 ui.special 区（getCards('x')），引擎的"使用手牌"
+						//   默认只看手牌区，所以必须自己提供出口：
+						//     content 里直接把「星」加入本次可选的牌 ⇒ 引擎会照常走 useCard 流程
+						//   （原版 神诸葛亮「七星」只做交换、不做使用，故无先例可抄；
+						//     这里是最小可用实现：让「星」出现在出牌选择框里。）
+						zl_xing_use: {
+							charlotte: true, sub: true, popup: false, direct: true,
+							enable: ['chooseToUse', 'chooseToRespond'],
+							// 无距离与次数限制：星牌在 useCard 时带 gaintag，用 mod 放开限制
 							mod: {
 								cardUsable: function (card, player, num) {
-									if (card && card.zlFromStar) {
+									if (card && card.hasGaintag && card.hasGaintag('zl_xing')) {
 										if (num === false) return false;
 										return (typeof num == 'number' ? num : 0) + 99;
 									}
 								},
-								targetInRange: function (card) { if (card && card.zlFromStar) return true; },
+								targetInRange: function (card) {
+									if (card && card.hasGaintag && card.hasGaintag('zl_xing')) return true;
+								},
+							},
+							filter: function (event, player) {
+								return player.getExpansions('zl_xing').length > 0;
+							},
+							selectCard: function () {
+								var n = ui.selected.cards.length;
+								return [Math.max(1, n), 1];
+							},
+							filterCard: function (card, player) {
+								if (!card.hasGaintag || !card.hasGaintag('zl_xing')) return false;
+								// 用过之后要弃一张牌（定稿里的代价）
+								return true;
+							},
+							check: function (card) { return 1 + get.value(card); },
+							prompt: '七星：将一张「星」当作手牌使用或打出（用后需弃置一张牌）',
+							content: function () {
+								'step 0'
+								var evt = _status.event.getParent('chooseToUse') || _status.event.getParent('chooseToRespond');
+								var used = (evt && evt.cards && evt.cards.length) ? evt.cards.slice(0) : [];
+								if (!used.length) { event.finish(); return; }
+								// 用后弃一张牌（定稿口径）
+								player.chooseToDiscard('he', '七星：使用「星」后弃置一张牌', 1)
+									.set('ai', function (card) { return 1; });
+								'step 1'
 							},
 						},
 						// 七星（每轮开始时）
@@ -2937,29 +2973,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) { return player.isIn(); },
 							content: function () {
 								'step 0'
-								var old = lib.skill.zl_xing_tu.getStars(player);
+								// 旧的星置入弃牌堆（用 expansion 机制：先移出区，再 lose 到弃牌堆）
+								var old = player.getExpansions('zl_xing');
 								if (old.length) {
-									lib.skill.zl_xing_tu.removeStar(player, old);
 									player.lose(old, ui.discardPile);
 									game.log(player, '将', get.cnNumber(old.length), '张「星」置入弃牌堆');
 								}
-								event.got = get.cards(7, true) || [];
 								game.log(player, '发动了', '#g【七星】');
-								'step 1'
-								if (!event.got.length) { event.finish(); return; }
+								// ★ 引擎原生：把牌堆顶 7 张**真正放进**武将牌上的牌区
+								//   （'draw' = 从牌堆获得；gaintag 用于 getExpansions 检索）
 								if (!player.hasSkill('zl_xing_tu')) player.addSkill('zl_xing_tu');
-								lib.skill.zl_xing_tu.addStar(player, event.got);
-								game.log(player, '展示了牌堆顶', get.cnNumber(event.got.length), '张牌，置于武将牌上称为「星」');
-								// ★ 诊断：确认星区实际状态（标记数 vs 列表长度 vs 是否有 UI 容器）
-								// ★★ 必须走 game.bzDiag2：content 由 new Function 编译（严格模式），
-								//    `require` 在里面不是自由变量 ⇒ 直接写会抛异常并被 catch 吞掉
-								//    （这就是"日志文件不存在"的原因）。
-								try {
-									(lib.bzDiag2 || game.bzDiag2)('七星完成 取到=' + event.got.length +
-										' 标记=' + player.countMark('zl_xing') +
-										' 列表=' + (player.storage.zl_xing_list || []).length);
-								} catch (e) { }
-								'step 2'
+								player.addToExpansion(get.cards(7), 'draw').gaintag.add('zl_xing');
+								'step 1'
+								var cs = player.getExpansions('zl_xing');
+								game.log(player, '展示了牌堆顶', get.cnNumber(cs.length), '张牌，置于武将牌上称为「星」');
+								(player.markSkill ? player.markSkill('zl_xing_tu') : null);
 							},
 						},
 						// 空城（锁定技）：无手牌 + 成为目标 ⇒ 弃1星令此牌无效
@@ -2967,27 +2995,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'useCardToTargeted' },
 							filter: function (event, player) {
-								// ★ 诊断：每次判定实况落盘（走 game.bzDiag2，原因同上：content 里 require 不可达）
-								var _h = player.countCards('h');
-								var _m = player.countMark('zl_xing');
-								var _l = (player.storage.zl_xing_list || []).length;
-								try {
-									(lib.bzDiag2 || game.bzDiag2)('空城判定 手牌=' + _h +
-										' 标记=' + _m + ' 列表=' + _l + ' 在场=' + player.isIn());
-								} catch (e) { }
 								if (!player.isIn()) return false;
-								if (_h > 0) return false;                  // 必须没有手牌
-								return (_m > 0 || _l > 0);                 // 标记或列表任一有星即可
+								if (player.countCards('h') > 0) return false;                 // 必须没有手牌
+								return player.getExpansions('zl_xing').length > 0;            // 必须有「星」
 							},
 							content: function () {
-								// 星的取用：优先取列表里的实体牌，退化到只减标记
-								var stars = (player.storage.zl_xing_list || []).slice(0);
-								if (stars.length) {
-									lib.skill.zl_xing_tu.removeStar(player, [stars[0]]);
-									try { player.lose([stars[0]], ui.discardPile); } catch (e) { }
-								} else {
-									player.removeMark('zl_xing', 1);
-								}
+								// ★ 弃 1 张「星」（从 expansion 区取，绝不动手牌 —— 之前用 lose() 误伤过手牌）
+								var stars = player.getExpansions('zl_xing');
+								if (!stars.length) return;
+								player.lose([stars[0]], ui.discardPile);
 								// 令此牌整体无效（按裁定），且不可被【无懈可击】响应
 								trigger.cancelled = true;
 								if (!trigger.triggered) trigger.triggered = {};
@@ -3007,15 +3023,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								var card = player.storage.zl_kc_pending;
 								delete player.storage.zl_kc_pending;
 								try {
-									var pile = ui.discardPile;
-									var inPile = false;
-									if (pile && pile.childNodes) {
-										for (var i = 0; i < pile.childNodes.length; i++) {
-											if (pile.childNodes[i] === card) { inPile = true; break; }
-										}
-									}
+									// 该牌结算结束后若仍在弃牌堆 ⇒ 置为「星」（engine expansion 区）
+									var inPile = !!(card && card.parentNode === ui.discardPile);
 									if (inPile) {
-										lib.skill.zl_xing_tu.addStar(player, [card]);
+										if (!player.hasSkill('zl_xing_tu')) player.addSkill('zl_xing_tu');
+										player.addToExpansion([card], player, 'giveAuto').gaintag.add('zl_xing');
+										player.markSkill('zl_xing_tu');
 										game.log(player, '将无效的', get.translation(card), '置为「星」');
 									}
 								} catch (e) { }
@@ -3034,10 +3047,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							content: function () {
 								'step 0'
 								player.storage.tdgx_sw['zl_huoji']--;
-								var stars = lib.skill.zl_xing_tu.getStars(player);
+								// ★ 只弃「星」（expansion 区），**绝不动手牌** ——
+								//   之前用 storage 列表 + lose() 会把手牌一起卷走（用户实测"回合开始摸到的手牌会消失"）
+								var stars = player.getExpansions('zl_xing');
 								if (stars.length) {
-									lib.skill.zl_xing_tu.removeStar(player, stars);
 									player.lose(stars, ui.discardPile);
+									game.log(player, '弃置了所有的「星」（', get.cnNumber(stars.length), '张）');
 								}
 								event.x = player.hp;   // X = 发动此技能时的体力值
 								player.chooseTarget(true, '火计：选择一名角色', function (card, player, target) {
