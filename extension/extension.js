@@ -353,6 +353,32 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						}
 						game.bzErrHooked = 1;
 						bzWrite('\n===== 实战 bug 检测器已安装（三层捕获）' + new Date().toLocaleString() + ' =====');
+						// ---- 音频相关配置自检（技能语音无声的排查用）----
+						// 引擎 game.js:59041：技能语音只在 lib.config.background_speak 为真时播放！
+						try {
+							var _ac = 'background_speak=' + lib.config.background_speak +
+								'｜volumn_audio=' + lib.config.volumn_audio +
+								'｜repeat_audio=' + lib.config.repeat_audio +
+								'｜equip_audio=' + lib.config.equip_audio +
+								'｜background_audio=' + lib.config.background_audio +
+								'｜assetURL=' + lib.assetURL;
+							bzWrite('【音频配置】' + _ac);
+						} catch (eAc) { }
+						// ---- 语音文件可达性自检（逐个探测能否加载）----
+						try {
+							var _probe = function (url, tag) {
+								try {
+									var a = document.createElement('audio');
+									a.oncanplay = function () { try { bzWrite('【语音探测】OK ' + tag + '  ' + url); } catch (e) { } };
+									a.onerror = function () { try { bzWrite('【语音探测】失败 ' + tag + '  ' + url); } catch (e) { } };
+									a.src = url;
+								} catch (e) { }
+							};
+							var _base = lib.assetURL + 'audio/skill/';
+							_probe(_base + 'wuyi_sha2.mp3', '武翊·杀');
+							_probe(_base + 'cuifeng_duel2.mp3', '摧锋·决');
+							_probe(lib.assetURL + 'audio/die/tdgx_zhaoyun.mp3', '阵亡');
+						} catch (eP) { }
 					} catch (eTop) { }
 				})();
 
@@ -4001,7 +4027,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								game.log(player, '【武翊·诊断】', _a);
 								(game.bzDiag2 || lib.bzDiag2)('武翊·甲入口 ' + _a);
 								} catch (eD) { }
-								if (event.zyyi_cancelled) return false;   // 与武翊5 是同一机制，不能叠加   // 与武翊6 是同一机制，不能叠加
+								if (event.zyyi_cancelled) return false;   // 与武翊6 是同一机制，不能叠加
+								// ★ 必须是"我受到伤害"：player 侧只说明我参与了该事件，
+								//   我**造成**伤害时也会进这里（同类问题已在防马处实测到）。
+								if (event.source == player) return false;   // 我是造成方 ⇒ 不是"受到伤害"
 								return (_e2 + _h2) > 0;
 							},
 							content: function () {
@@ -4048,6 +4077,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								(game.bzDiag2 || lib.bzDiag2)('武翊·攻马入口 ' + _a2);
 								} catch (eD2) { }
 								if (event.zyyi_cancelled) return false;
+								if (event.player == player) return false;   // 我是承受方 ⇒ 不是"造成伤害"
 								if (!player.getEquip(4)) return false;      // 4 号栏 = -1马 = 进攻马
 								return !player.storage.zyyi_atk_used;
 							},
@@ -4097,6 +4127,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								game.log(player, '【武翊·诊断】', _a3);
 								(game.bzDiag2 || lib.bzDiag2)('武翊·防马入口 ' + _a3);
 								} catch (eD3) { }
+								// ★ 必须是"我**受到**伤害"：player 侧只说明我参与了该事件，
+								//   我**造成**伤害时也会进这里。
+								//   战报实证：12:43:13"名赵云对神关羽使用了杀"后立刻打出
+								//   "【武翊】：防御马在场，免疫此伤害" —— 我的攻击被自己免疫了。
+								if (event.source == player) return false;   // 我是造成方 ⇒ 不是"受到伤害"
 								if (!player.getEquip(3)) return false;      // 3 号栏 = +1马 = 防御马
 								return !player.storage.zyyi_def_used;
 							},
