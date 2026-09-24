@@ -2728,37 +2728,28 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//     （gyBlack / gyRed 由 viewAs 写入，互不干扰，无需区分阶段）。
 						gy_wusheng_dmg: {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { source: 'damage' },
+							// ★★ 实测结论（阶段探测日志，2026-09-24）★★
+							//   伤害事件里 `event.name` **永远**是 `damage`，
+							//   阶段靠 **`event.step`** 区分：
+							//     step1=damageBegin1 / step2=damageBegin2 /
+							//     step3=damageBegin3 / step4=damageBegin4 / step5=结算
+							//   ⇒ ① 按事件名分派一律无效（"加伤没生效"的真正原因）
+							//     ② 挂多个时机又会重复叠加
+							//        （探测时挂了 5 个时机 ⇒ num 从 1 一路涨到 46）
+							//   ⇒ 只挂 **damageBegin4**（= step 4，最终结算前最后一步），
+							//     在那里 +1 才会被 changeHp 采用。
+							trigger: { source: 'damageBegin4' },
 							filter: function (event, player) {
 								var uc = event.getParent ? event.getParent('useCard') : null;
 								var c = uc && uc.card;
-								var hit = !!(c && (c.gyBlack || c.gyRed));
-								// 诊断（保留至用户确认）：记录每次伤害判定
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('武圣dmg tn=' + event.name +
-										' 有useCard=' + (uc ? 1 : 0) +
-										' 牌名=' + (c ? get.name(c) : '-') +
-										' gyBlack=' + (c ? c.gyBlack : '-') +
-										' gyRed=' + (c ? c.gyRed : '-') +
-										' 放行=' + (hit ? 1 : 0) +
-										' num=' + event.num);
-								} catch (eD) { }
-								return hit;
+								return !!(c && (c.gyBlack || c.gyRed));
 							},
 							content: function () {
 								var uc = trigger.getParent ? trigger.getParent('useCard') : null;
 								var c = uc && uc.card;
 								if (!c) return;
 								if (c.gyBlack) {
-									var before = trigger.num;
-									// ★ 决定性实验：临时改成 +9（明显到不可能看错）
-									//   若伤害显示 10 ⇒ 机制通，之前的 +1 被别的减伤吃了
-									//   若仍是 1   ⇒ 我改的 num 不是最终生效的那个
-									trigger.num += 9;
-									try {
-										(game.bzDiag2 || lib.bzDiag2)('武圣·黑 加伤(实验+9) num ' + before + ' → ' + trigger.num +
-											' 事件名=' + trigger.name + ' 目标=' + (trigger.player ? trigger.player.name : '-'));
-									} catch (eD2) { }
+									trigger.num++;
 									game.log(player, '【武圣·黑】：两张黑牌，此【杀】伤害+1');
 								}
 								if (c.gyRed && player.hp < player.maxHp) {
