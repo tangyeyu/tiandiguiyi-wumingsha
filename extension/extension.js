@@ -430,6 +430,36 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'zyyi_info': '①你可以将一张【杀】当【闪】、【闪】当【杀】使用或打出。②回合开始时，你从"进攻马/防御马/武器/防具"中选择一项，先从牌堆、再弃牌堆检索并获得该装备（两处都没有则不获得）。③你的手牌上限+X（X为你装备区内已装备的栏位数）。④你造成伤害时，可弃置一张武器牌（装备区或手牌），令此伤害+1（同一回合限一次）。⑤你受到伤害时，可弃置一张防具牌（装备区或手牌），完全抵消此伤害。⑥当你装备区内有进攻马时，每局第一次你受到伤害免疫之；进攻马离开装备区时你摸两张牌（同栏位重装或被夺走则刷新）。⑦当你装备区内有防御马时，每局第一次你造成的伤害+1；防御马离开装备区时你摸两张牌（同上刷新）。⑧你使用或打出过的基本牌牌名数（火杀/雷杀不计为独立牌名）本局累计达到1/2/3时，依次获得：基本牌无次数限制/无距离限制/获得或失去装备时摸一张牌。',
 						'zycf': '摧锋',
 						'zycf_info': '①每轮限一次，每回合结束时，你可以摸一张牌并执行一个额外的回合（该额外回合结束时不能再发动本项）。②每回合结束时，你可以弃置一张装备牌，然后视为对当前回合角色使用一张【决斗】，此【决斗】造成的伤害+X（X为本回合所有角色使用或打出【杀】的次数，至多为3）；该【决斗】不能以你自己为目标，且至少造成1点伤害（若被【无懈可击】取消则保底不成立）。',
+						// ★ 每个技能都必须有自己的译名，否则：界面空白、主动技按钮无字
+						//   （引擎用 lib.translate[skillId] 取技能名、lib.translate[skillId+'_info'] 取说明）
+						'zyyi_sha': '武翊·杀',
+						'zyyi_sha_info': '你可以将一张【闪】当【杀】使用或打出。',
+						'zyyi_shan': '武翊·闪',
+						'zyyi_shan_info': '你可以将一张【杀】当【闪】使用或打出。',
+						'zyyi_equip': '武翊·装',
+						'zyyi_equip_info': '回合开始时，你从"进攻马/防御马/武器/防具"中选择一项，先从牌堆、再弃牌堆检索并获得该装备（两处都没有则不获得）。',
+						'zyyi_limit': '武翊·限',
+						'zyyi_limit_info': '你的手牌上限+X（X为你装备区内已装备的栏位数）。',
+						'zyyi_weapon': '武翊·兵',
+						'zyyi_weapon_info': '你造成伤害时，可弃置一张武器牌（装备区或手牌），令此伤害+1（同一回合限一次）。',
+						'zyyi_armor': '武翊·甲',
+						'zyyi_armor_info': '你受到伤害时，可弃置一张防具牌（装备区或手牌），完全抵消此伤害（此伤害不发生）。',
+						'zyyi_horse_atk': '武翊·攻马',
+						'zyyi_horse_atk_info': '当你装备区内有进攻马（-1马）时，每局第一次你受到伤害免疫之，然后你可选择弃置该马；进攻马离开装备区时你摸两张牌（同栏位重装或被夺走则刷新）。',
+						'zyyi_horse_def': '武翊·防马',
+						'zyyi_horse_def_info': '当你装备区内有防御马（+1马）时，每局第一次你造成的伤害+1，然后你可选择弃置该马；防御马离开装备区时你摸两张牌（同栏位重装或被夺走则刷新）。',
+						'zyyi_ready': '武翊·记',
+						'zyyi_ready_info': '记录你使用或打出过的基本牌牌名（火杀/雷杀不计为独立牌名，本局累计）。',
+						'zyyi_unlock': '武翊·解',
+						'zyyi_unlock_info': '牌名数≥1：你使用基本牌无次数限制；≥2：你使用基本牌无距离限制。',
+						'zyyi_equip_draw': '武翊·成器',
+						'zyyi_equip_draw_info': '牌名数≥3时，当你获得或失去装备，你摸一张牌。',
+						'zycf_extra': '摧锋·锐',
+						'zycf_extra_info': '每轮限一次，每回合结束时，你可以摸一张牌并执行一个额外的回合（该额外回合结束时不能再发动本项）。',
+						'zycf_duel': '摧锋·决',
+						'zycf_duel_info': '每回合结束时，你可以弃置一张装备牌，然后视为对你使用一张【决斗】的当前回合角色……（见卡面）',
+						'zycf_duel_buff': '摧锋·势',
+						'zycf_duel_buff_info': '此【决斗】造成的伤害+X（X为本回合【杀】的使用/打出次数，至多为3），且至少造成1点伤害。',
 						'cc_jianxiong_info': '每轮开始时，你清除你身上的「略」。当你受到1点伤害后，你记录此牌X次于「智」中（X为本轮受到的伤害；同一张实体牌无法重复记录时，从牌堆补一张同名牌），并获得一个「略」，然后摸X张牌（X为「略」标记的数量）。',
 						'cc_zhi_zone': '智',
 						'cc_zhi_zone_info': '你受到伤害后置于武将牌上的牌，可供〖志略〗使用。',
@@ -3714,11 +3744,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.names = ['进攻马（-1马）', '防御马（+1马）', '武器', '防具'];
 								var controls = [];
 								for (var i = 0; i < event.names.length; i++) controls.push(event.names[i]);
+								controls.push('cancel2');   // ★ 提供"取消"按钮（原设计缺取消）
 								player.chooseControl(controls)
 									.set('prompt', '武翊：选择一项，从牌堆（无则弃牌堆）获得该装备')
 									.set('ai', function () { return 0; });
 								'step 1'
-								if (!result || !result.control) { event.finish(); return; }
+								if (!result || !result.control || result.control == 'cancel2') {
+									game.log(player, '【武翊】：取消了获得装备');
+									event.finish(); return;
+								}
 								var idx = event.names.indexOf(result.control);
 								if (idx < 0) { event.finish(); return; }
 								var sub = event.subs[idx];
@@ -3779,7 +3813,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								'step 0'
 								var list = player.getCards('e', { subtype: 'equip1' }).concat(player.getCards('h', { subtype: 'equip1' }));
 								if (!list.length) { event.finish(); return; }
-								player.chooseButton(['武翊：弃置一张武器牌，令此伤害+1', [list, 'vcard']], true)
+								player.chooseButton(['武翊：弃置一张武器牌，令此伤害+1（可取消）', [list, 'vcard']])
 									.set('ai', function (button) { return 1; });
 								'step 1'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
@@ -3805,7 +3839,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								'step 0'
 								var list = player.getCards('e', { subtype: 'equip2' }).concat(player.getCards('h', { subtype: 'equip2' }));
 								if (!list.length) { event.finish(); return; }
-								player.chooseButton(['武翊：弃置一张防具牌，完全抵消此伤害', [list, 'vcard']], true)
+								player.chooseButton(['武翊：弃置一张防具牌，完全抵消此伤害（可取消）', [list, 'vcard']])
 									.set('ai', function (button) { return 1; });
 								'step 1'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
@@ -4016,7 +4050,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (get.type(hs[i]) == 'equip') list.push(hs[i]);
 								}
 								if (!list.length) { event.finish(); return; }
-								player.chooseButton(['摧锋：弃置一张装备牌，视为对当前回合角色使用【决斗】', [list, 'vcard']], true)
+								player.chooseButton(['摧锋：弃置一张装备牌，视为对当前回合角色使用【决斗】（可取消）', [list, 'vcard']])
 									.set('ai', function (button) { return 1; });
 								'step 1'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
@@ -4045,12 +4079,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								} catch (e) { }
 								if (x > 3) x = 3;
 								event.x = x;
-								// 目标 = 当前回合角色（不能是自己）
+								player.storage.zycf_last_x = x;   // ★ 供 zycf_duel_buff 读取（原来从未赋值）
+								// ★ 修：目标**只认当前回合角色**（trigger.player）。
+								//   原来有个"兜底"——若 trigger.player 无效就取 game.players 里第一个其他角色
+								//   ⇒ 那正是"下家" ⇒ 出现"对下一个角色发动决斗"的现象。
+								//   决斗以"对当前回合角色"为口径；若当前回合角色就是自己（额外回合），
+								//   按裁定"不能以自己为目标" ⇒ 本次不发动，而不是随便换人。
 								var tgt = trigger.player;
-								if (!tgt || tgt == player || !tgt.isIn()) {
-									for (var m = 0; m < game.players.length; m++) {
-										if (game.players[m] != player && game.players[m].isIn()) { tgt = game.players[m]; break; }
-									}
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('摧锋·诊断 目标=' + (tgt ? tgt.name : 'null') +
+										'｜是我=' + (tgt === player) + '｜在场=' + (tgt ? tgt.isIn() : '-') +
+										'｜X=' + event.x);
+								} catch (eD) { }
+								if (!tgt || tgt === player || !tgt.isIn()) {
+									game.log(player, '【摧锋】：当前回合角色不可为目标，未发动决斗');
+									event.finish(); return;
 								}
 								event.tgt = tgt;
 								'step 2'
