@@ -3095,16 +3095,29 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								var _s = lib.skill.zl_xing_use.stars(player).length;
 								var _in = player.isIn();
 								// ※ 按用户要求**不做**"每张牌限一次"
-								//   （同一张牌的每次结算都可触发）
-								// ★ 双通道诊断：把各条件都打出来（定位空城为何不触发）
+								// ★★ 必须**自己是被指定的目标** ★★
+								//   useCardToTargeted 是"逐目标"派发的时机：多目标牌会为**每个目标**
+								//   各派发一次（含牌的主人自己那一份）⇒ 只判"无手牌+有星"会导致
+								//   **对别人出牌也触发空城**（用户实测"我对别人用兵粮寸断怎么触发空城"）。
+								var _isT = false;
+								try {
+									var ts = event.targets;
+									if (ts && ts.length) {
+										for (var ti = 0; ti < ts.length; ti++) {
+											if (ts[ti] === player) { _isT = true; break; }
+										}
+									}
+								} catch (eT) { }
+								// ★ 双通道诊断：把各条件都打出来
 								try {
 									var _kc = '事件=' + event.name + '｜在场=' + _in + '｜手牌=' + _h +
-										'｜星=' + _s +
+										'｜星=' + _s + '｜是目标=' + (_isT ? 1 : 0) +
 										'｜牌=' + (event.card ? get.translation(event.card) : '-');
 									game.log(player, '【空城·诊断】', _kc);
 									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 ' + _kc);
 								} catch (eD) { }
 								if (!_in) return false;
+								if (!_isT) return false;                  // 必须自己是目标
 								if (_h > 0) return false;                 // 必须没有手牌
 								return _s > 0;                            // 必须有「星」
 							},
