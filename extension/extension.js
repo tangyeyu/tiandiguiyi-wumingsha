@@ -3093,7 +3093,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//     玩家可以拒绝 ⇒ 不会强制弃星）
 						zl_kongcheng: {
 							audio: 2, charlotte: true, popup: true,
-							trigger: { player: 'useCardToTargeted' },
+							// ★ 触发声明加上 **global** 分支：既监听"我是目标"也监听全局，
+							//   然后用 filter 自己判定"我是不是被指定的目标"。
+							//   原因：只写 {player:'useCardToTargeted'} 时，实测**别人对我出牌**
+							//   不给我派发（只有我自己使用牌时才派发）⇒ 空城在"被别人指定"
+							//   这个最主要的场景下不触发（用户实测"只有我手牌1→0时才触发"）。
+							//   改为 global 之后由 filter 精确判定目标，覆盖两条路径。
+							trigger: { player: 'useCardToTargeted', global: 'useCardToTargeted' },
 							filter: function (event, player) {
 								// ★★★ 无条件诊断（放在最前面，任何 return 之前）★★★
 								//   目的：只要这个 filter 被"评估"过就留痕 —— 不看条件、不做判断。
