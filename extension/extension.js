@@ -281,9 +281,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'gy_jue_mark',
 							'gy_jue_clear',
 							'gy_jue_limit',
-							'gy_wusheng_buff',
-							'gy_wusheng_red',
-							'gy_wusheng_free',
 							'gy_po_mark',
 							'gy_po_immune',
 							'gy_po_lock',
@@ -328,11 +325,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'gy_wusheng': '武圣',
 						'gy_wusheng_info': '锁定技，你可以将一至两张手牌当作【杀】使用或打出。若你将恰好两张手牌转化，且这两张牌均为红色，此【杀】造成伤害后你回复1点体力；若均为黑色，此【杀】造成的伤害+1；若两张花色不同，此【杀】不计入次数限制（以上效果可叠加）。若你只转化一张手牌，此【杀】造成的伤害的属性由你指定。',
 						'gy_wusheng_buff': '武圣·黑',
-						'gy_wusheng_buff_info': '此【杀】造成的伤害+1。',
+						'gy_wusheng_buff_info': '此【杀】造成的伤害+1。（已内联进〖武圣〗，本条目仅保留兼容）',
 						'gy_wusheng_red': '武圣·红',
-						'gy_wusheng_red_info': '此【杀】造成伤害后，你回复1点体力。',
+						'gy_wusheng_red_info': '此【杀】造成伤害后，你回复1点体力。（已内联进〖武圣〗）',
 						'gy_wusheng_free': '武圣·势',
-						'gy_wusheng_free_info': '此【杀】不计入次数限制。',
+						'gy_wusheng_free_info': '此【杀】不计入次数限制。（已内联进〖武圣〗）',
 						'gy_yijue': '义绝',
 						'gy_yijue_info': '回合开始时，你可以令其他角色按座位顺序依次选择是否交给你一张手牌（背面朝上，由交牌者选择）。若其没有交给你手牌（含无手牌可交），其获得1枚「绝」。拥有「绝」的角色于其结束阶段失去所有「绝」。拥有「绝」的角色成为你使用牌的目标时，你对其使用牌无次数限制。',
 						'gy_jue_mark': '绝',
@@ -2666,69 +2663,85 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							onremove: function (player) { delete player.storage.gy_ws_uc2; },
 						},
-						// 武圣（锁定技）：单牌 / 恰好两张牌 ⇒ 【杀】
+						// 武圣（锁定技）：一至两张手牌 ⇒ 【杀】
+						// ★★ 重构要点（都是实测踩出来的）★★
+						//   ① 撤掉 `group`：它是**触发注册**字段（game.js:27808 用在 addSkillTrigger），
+						//      不是"子技能并入显示"。子技能靠 `sub:true` 让引擎过滤
+						//      （game.js:24007 / 33153 里 `info.sub` 就是过滤条件）。
+						//   ② 不再用 onuse / onChooseToUse：
+						//      · onuse 是**牌用完之后**才调用（game.js:25524）⇒ 那时伤害已结算，
+						//        再去给 damageBegin2 注册加成就永远来不及（加伤不生效的真因）；
+						//      · onChooseToUse 只在**选牌之前**调用且只传 event（game.js:16226），
+						//        读不到玩家选了什么牌。
+						//   ③ 改为自包含：viewAs 返回的虚拟牌上挂 gaintag 'gy_ws'，
+						//      颜色/牌数信息存进 player.storage，伤害与回血全部由**本技能自己**
+						//      的 damageBegin2 / damageAfter 处理。
 						gy_wusheng: {
 							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
-							// ★ 子技能合并显示：group 列出的技能在技能面板里并入本技能，
-							//   不再各占一行（用户反馈"子技能太碍眼"）。
-							group: ['gy_wusheng_buff', 'gy_wusheng_red', 'gy_wusheng_free', 'gy_jue_mark',
-								'gy_jue_limit', 'gy_jue_clear', 'gy_po_mark', 'gy_po_immune', 'gy_po_lock', 'gy_po_turn'],
 							enable: ['chooseToUse', 'chooseToRespond'],
+							trigger: { source: ['damageBegin2', 'damageAfter'] },
 							filterCard: function (card, player) { return true; },
 							selectCard: [1, 2],
-							viewAs: { name: 'sha' },
 							complexCard: true,
 							check: function (card) { return 1 + get.value(card); },
-							prompt: '武圣：将一至两张手牌当作【杀】使用或打出（两张时有额外效果）',
-							onuse: function (result, player) { lib.skill.gy_wusheng.applyBonus(player, result); },
-							onrespond: function (result, player) { lib.skill.gy_wusheng.applyBonus(player, result); },
-							// 记录本次转化用了几张、哪两张（供加成子技能判定）
-							onChooseToUse: function (event, player) {
-								try {
-									var cards = (event && event.cards) || [];
-									player.storage.gy_ws_n = cards.length;
-									player.storage.gy_ws_c1 = cards[0];
-									player.storage.gy_ws_c2 = cards[1];
-									player.storage.gy_ws_pending = true;
-								} catch (e) { }
-							},
-							// 使用/打出之后：把加成登记到 useCard 事件
-							applyBonus: function (player, result) {
-								try {
-									// ★ 修：原来在 onuse 里用 _status.event.getParent('useCard') 找事件，
-									//   拿不到（加伤不生效，用户实测"双黑牌没用加伤"）。
-									//   改为从 result 里取：onuse 的 result 带 .card（= 转化出的虚拟牌实例）
-									//   与父事件链；优先 result.parent / 再退回 _status.event。
-									if (!player.storage.gy_ws_pending) return;
-									delete player.storage.gy_ws_pending;
-									var uc = null;
-									if (result && result.getParent) uc = result.getParent('useCard') || result;
-									if (!uc && result && result.card && result.card.parentNode) uc = result;
-									if (!uc && _status.event) uc = _status.event.getParent ? _status.event.getParent('useCard') : null;
-									if (!uc) return;
-									var n = player.storage.gy_ws_n || 1;
-									var c1 = player.storage.gy_ws_c1, c2 = player.storage.gy_ws_c2;
-									if (n < 2 || !c1 || !c2) return;
+							prompt: '武圣：将一至两张手牌当作【杀】使用或打出（两张时按颜色/花色有额外效果）',
+							viewAs: function (cards) {
+								// 单牌 ⇒ 属性由玩家指定（做成【火杀】语义，属性落在伤害上）；
+								// 两张 ⇒ 普通【杀】，并按颜色/花色记录加成
+								var obj = { name: 'sha' };
+								if (cards && cards.length >= 2) {
+									var c1 = cards[0], c2 = cards[1];
 									var black = get.color(c1) == 'black' && get.color(c2) == 'black';
 									var red = get.color(c1) == 'red' && get.color(c2) == 'red';
 									var diff = get.suit(c1) != get.suit(c2);
-									if (black) {
-										player.storage.gy_ws_uc = uc;
-										player.storage.gy_ws_plus = true;
-										player.addTempSkill('gy_wusheng_buff');
-										game.log(player, '【武圣】：两张黑牌，此【杀】伤害+1');
+									obj.gyTag = 'two';
+									obj.gyBlack = black ? 1 : 0;
+									obj.gyRed = red ? 1 : 0;
+									obj.gyDiff = diff ? 1 : 0;
+								} else {
+									obj.gyTag = 'one';
+									obj.nature = 'fire';      // 单牌：伤害属性=火
+								}
+								return obj;
+							},
+							filter: function (event, player) {
+								// 只在"自己的伤害结算"这条分支上放行
+								if (!event.triggername && !event.name) return false;
+								var tn = event.triggername || event.name;
+								if (tn != 'damageBegin2' && tn != 'damageAfter') return false;
+								var uc = event.getParent ? event.getParent('useCard') : null;
+								if (!uc) return false;
+								// uc.card 是 viewAs 出来的虚拟牌，带 gyTag / gyBlack / gyRed / gyDiff
+								var c = uc.card;
+								return !!(c && (c.gyTag || (c.gyBlack || c.gyRed || c.gyDiff)));
+							},
+							content: function () {
+								var tn = event.triggername || event.name;
+								var uc = trigger.getParent ? trigger.getParent('useCard') : null;
+								var c = uc && uc.card;
+								if (!c) { event.finish(); return; }
+								if (tn == 'damageBegin2') {
+									if (c.gyBlack) {
+										trigger.num++;
+										game.log(player, '【武圣·黑】：两张黑牌，此【杀】伤害+1');
 									}
-									if (red) {
-										player.storage.gy_ws_uc2 = uc;
-										player.addTempSkill('gy_wusheng_red');
-										game.log(player, '【武圣】：两张红牌，此【杀】造成伤害后你回复1点体力');
+									event.finish(); return;
+								}
+								// damageAfter：红牌 ⇒ 造成伤害后回复1点体力
+								if (c.gyRed && player.hp < player.maxHp) {
+									player.recover(1);
+									game.log(player, '【武圣·红】：两张红牌，回复1点体力');
+								}
+								event.finish(); return;
+							},
+							// 花色不同 ⇒ 不计入次数限制（用 mod 放开上限；星/转化牌都靠 get.name 判定）
+							mod: {
+								cardUsable: function (card, player, num) {
+									if (card && (card.gyDiff || (card.gyTag == 'two' && card.gyDiff))) {
+										if (num === false) return false;
+										return (typeof num == 'number' ? num : 0) + 99;
 									}
-									if (diff) {
-										uc.gyNoLimit = true;
-										player.addTempSkill('gy_wusheng_free');
-										game.log(player, '【武圣】：花色不同，此【杀】不计入次数限制');
-									}
-								} catch (e) { }
+								},
 							},
 						},
 						// 武圣·无次数：花色不同时本次【杀】不计入次数
