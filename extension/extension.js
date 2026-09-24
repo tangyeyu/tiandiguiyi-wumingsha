@@ -186,6 +186,47 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				if (lib && !lib.bzDiag2) lib.bzDiag2 = bzDiag;
 				if (game && !game.bzDiag2) game.bzDiag2 = bzDiag;
 
+				// ==== 把引擎的「战报」（game.log）镜像到文件 ====
+				// ★ 为什么需要：`game.log` 只把内容塞进侧栏 DOM，**不落盘**
+				//   （引擎目录 Home/logs 是空的；战报不进任何文件）。
+				//   而战报是排查技能行为最常用的观测面 —— 为了"我自己能读"，
+				//   这里把 game.log 用**透传包装**镜像一份到 C:/bz-battle.log。
+				//   · 包装是透传的（原函数照常执行），不影响游戏行为
+				//   · 每一行都带时间戳；只在包加载时包装一次
+				//   · 写盘失败静默（不影响游戏）
+				//   · 想关掉：把 BZ_MIRROR_BATTLE 改成 false，或删掉这段
+				(function () {
+					try {
+						if (!game || !game.log || game.bzLogHooked) return;
+						var orig = game.log;
+						var fmt = function (args) {
+							var out = [];
+							for (var i = 0; i < args.length; i++) {
+								var a = args[i];
+								try {
+									if (typeof a == 'string') out.push(a);
+									else if (a == null) out.push(String(a));
+									else if (a && a.name) out.push(a.name);          // 玩家对象
+									else if (a && a.nodeType) out.push(get.translation(a)); // 牌
+									else out.push(String(a));
+								} catch (e) { out.push('?'); }
+							}
+							return out.join('');
+						};
+						game.log = function () {
+							try {
+								orig.apply(game, arguments);
+							} catch (e) { }
+							try {
+								var text = fmt(Array.prototype.slice.call(arguments));
+								require('fs').appendFileSync('C:/bz-battle.log',
+									new Date().toLocaleTimeString() + '  ' + text + '\n');
+							} catch (e) { }
+						};
+						game.bzLogHooked = true;
+					} catch (eHook) { }
+				})();
+
 				pkg = {
 					name: 'tiandiguiyi',
 					character: {
