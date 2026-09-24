@@ -631,7 +631,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
 						// ============ 铸策 ============
 						mgj_zhuce: {
-							audio: 'yiji',
+							audio: 'reyiji',
 							trigger: { player: 'phaseBegin' },
 							filter: function (event, player) {
 								return findCeTarget() != null;
@@ -1448,7 +1448,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   弃置 / 被获得 / 被弃 / 顶装等全部计入 —— 与卡面语义一致。
 						// ★ trigger 是 lose 事件（技能自身事件是 event），判 trigger.type。
 						lx_lianying: {
-							audio: 'lianying',
+							audio: 'relianying',
 							locked: true,
 							forced: true,
 							charlotte: true,
@@ -1617,7 +1617,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 谦逊：三分支（< 判定摸牌 / > 可弃谦减伤 / = 免疫），锁定自动结算
 						lx_qianxun: {
-							audio: 'qianxun',
+							audio: 'reqianxun',
 							locked: true,
 							forced: true,
 							popup: false,
@@ -1707,7 +1707,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 时机三选一 + storage 闸门，同 mgj_dingce（gameStart 不保证派发、
 						// enterGame 只在 addFellow/restorePlayer 创建，gameDrawAfter 兜底）
 						mlb_rende: {
-							audio: 'rende',
+							audio: 'rerende',
 							locked: true,
 							forced: true,
 							popup: false,
@@ -1864,7 +1864,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 章武（神威技）：回合开始额外出牌阶段 + 本回合使用牌无次数限制
 						// 插队姿势与 mgj_extra_phase 同款（trigger.next.push，判据见心得 §4.6）
 						mlb_zhangwu: {
-							audio: 'zhangwu',
+							audio: 'sbzhangwu',
 							skillAnimation: true,
 							animationColor: 'orange',
 							trigger: { player: 'phaseBegin' },
@@ -3239,7 +3239,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 火计（神威技）：弃所有星 ⇒ 造成 X 点火焰伤害（星为 0 也能发动）
 						zl_huoji: {
-							audio: 'huoji', enable: 'phaseUse',
+							audio: 'rehuoji', enable: 'phaseUse',
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
 								if (player.storage.tdgx_sw['zl_huoji'] == undefined) player.storage.tdgx_sw['zl_huoji'] = 1;
@@ -3323,7 +3323,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 奸雄（每轮开始移去略 / 受到伤害后记录并摸牌）
 						cc_jianxiong: {
-							audio: 'jianxiong', locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							audio: 'rejianxiong', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: ['roundStart', 'damageAfter'] },
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
