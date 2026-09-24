@@ -3089,32 +3089,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							intro: { name: '略', content: '奸雄：每有1枚「略」，你受到伤害后摸牌时多摸1张（每轮开始移去所有「略」）。' },
 						},
 						// 智·区（记录造成伤害的牌）
+						// ★★ 用引擎标准做法：loseToSpecial(牌,'cc_zhi') + getCards('s', hasGaintag)
+						//   —— 照抄原版 sbguanxing（sb.js:3109/3117）。
+						//   原来自制 storage 列表存牌引用是错的：那些牌**没进任何区域**，
+						//   既不可见、也拿不到有效的牌对象 ⇒ 志略面板构造时崩
+						//   `item.cloneNode is not a function`（用户实测）。
 						cc_zhi_zone: {
 							charlotte: true, sub: true, popup: false, mark: true, marktext: '智',
-							intro: { name: '智', content: '你受到伤害后置于武将牌上的牌，可供〖志略〗使用。' },
-							addZhi: function (player, cards) {
-								try {
-									if (!player.storage.cc_zhi_list) player.storage.cc_zhi_list = [];
-									for (var i = 0; i < cards.length; i++) {
-										var c = cards[i];
-										if (player.storage.cc_zhi_list.indexOf(c) < 0) player.storage.cc_zhi_list.push(c);
-									}
-									player.addMark('cc_zhi', cards.length);
-									player.markSkill('cc_zhi_zone');
-								} catch (e) { }
+							intro: {
+								markcount: 'expansion',
+								content: function () {
+									var cs = player.getCards('s', function (card) { return card.hasGaintag && card.hasGaintag('cc_zhi'); });
+									if (cs && cs.length) return get.translation(cs);
+									return '暂无记录';
+								},
 							},
+							// 读区（与 sbguanxing 完全一致）
 							getZhi: function (player) {
-								try { return (player.storage.cc_zhi_list || []).slice(0); } catch (e) { return []; }
-							},
-							removeZhi: function (player, cards) {
-								try {
-									var l = player.storage.cc_zhi_list || [];
-									for (var i = 0; i < cards.length; i++) {
-										var k = l.indexOf(cards[i]);
-										if (k >= 0) l.splice(k, 1);
-									}
-									player.removeMark('cc_zhi', cards.length);
-								} catch (e) { }
+								return player.getCards('s', function (card) {
+									return card.hasGaintag && card.hasGaintag('cc_zhi');
+								});
 							},
 						},
 						// 治·标记
@@ -3146,11 +3140,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.i++;
 								var src = trigger.card;
 								if (src) {
-									if (!player.storage.cc_zhi_list) player.storage.cc_zhi_list = [];
-									if (player.storage.cc_zhi_list.indexOf(src) < 0) {
-										lib.skill.cc_zhi_zone.addZhi(player, [src]);
-										if (!player.hasSkill('cc_zhi_zone')) player.addSkill('cc_zhi_zone');
-									}
+									// ★ 用 loseToSpecial 把牌真正放进「智」区（照抄 sbguanxing）
+									if (!player.hasSkill('cc_zhi_zone')) player.addSkill('cc_zhi_zone');
+									player.loseToSpecial([src], 'cc_zhi').visible = true;
+									player.markSkill('cc_zhi_zone');
 								}
 								player.addMark('cc_lue', 1);
 								if (!player.hasSkill('cc_lue_mark')) player.addSkill('cc_lue_mark');
@@ -3233,20 +3226,40 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!event.pool.length) { event.finish(); return; }
 								'step 1'
 								if (!event.pool.length) { event.finish(); return; }
-								// ★ 修：原来用 chooseCardButton(裸牌数组) ⇒ 引擎走 dialog.add 时
-								//   拿不到 [list,type] 结构，抛 `Cannot read properties of undefined (reading '1')`
-								//   （用户实测崩溃）。改用 chooseButton + 正规 dialog（与九伐同款）。
-								var list = [];
-								for (var qi = 0; qi < event.pool.length; qi++) list.push(event.pool[qi]);
-								player.chooseButton(['智：选择一张牌使用（无距离、次数限制）', [list, 'card']], true)
+								// ★ 用 [list,'vcard'] 而不是 [list,'card']：
+								//   本包能正常工作的 dy_wuku（破竹）就是 'vcard'
+								//   （L2055：chooseButton(['…', [names,'vcard']], true)）。
+								//   用 'card' 时按钮渲染器拿到的不是牌对象 ⇒
+								//   `item.cloneNode is not a function`（用户实测崩溃）。
+								//   另用 get.cardsInfo 转成展示对象，避免直接塞裸牌 DOM。
+								var list = get.cardsInfo(event.pool.slice(0));
+								player.chooseButton(['智：选择一张牌使用（无距离、次数限制）', [list, 'vcard']], true)
 									.set('ai', function (button) { return 1 + get.value(button.link); });
 								'step 2'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
-								var card = result.links[0];
+								// result.links 可能是展示对象或牌本身，两种都兼容
+								var pick = result.links[0];
+								var card = (pick && pick.link) ? pick.link : pick;
+								if (!card || !card.name) {
+									// 退化：按展示对象的牌名在「智」里找对应实体
+									if (pick && pick.name) {
+										for (var zz = 0; zz < event.pool.length; zz++) {
+											if (get.name(event.pool[zz]) == pick.name) { card = event.pool[zz]; break; }
+										}
+									}
+								}
+								if (!card) { event.finish(); return; }
 								event.pool.remove(card);
-								lib.skill.cc_zhi_zone.removeZhi(player, [card]);
 								card.ccFromZhi = true;
-								player.chooseUseTarget(card, '志略：是否使用' + get.translation(card) + '？（无距离、次数限制）');
+								// ★ 用 player.useCard 直接使用（不再 chooseUseTarget）：
+								//   「智」里的牌在 ui.special 区，chooseUseTarget 的合法性判定
+								//   不认这个区的牌；直接 useCard 才能走出来（无距离、次数限制由下列参数放开）。
+								try {
+									player.useCard(card, [card], false, false);
+									game.log(player, '【志略】：使用了', get.translation(card));
+								} catch (eZ) {
+									try { game.log(player, '【志略】：', get.translation(card), '无法使用'); } catch (eZ2) { }
+								}
 								'step 3'
 								event.goto(1);
 							},
