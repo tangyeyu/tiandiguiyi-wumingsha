@@ -3015,7 +3015,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   ⇒ 三元素 + 'hidden' 类型，按钮直接由牌节点渲染（显示**卡牌**）。
 								//   我此前传 [list,'vcard'] ⇒ 引擎按"牌名列表"渲染（显示成牌名）；
 								//   传 [list,'card'] ⇒ 渲染器拿不到牌节点 ⇒ item.cloneNode 崩。
-								player.chooseCardButton(event.zs.slice(0), '七星：选择一张「星」使用', true)
+								//   ※ 不传 forced ⇒ 可以取消（引擎只在显式传 boolean 时才设置 forced）
+								player.chooseCardButton(event.zs.slice(0), '七星：选择一张「星」使用')
 									.set('ai', function (button) { return 1 + get.value(button.link); });
 								'step 1'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
@@ -3158,8 +3159,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 content进入 星=' + stars.length);
 								} catch (eD2) { }
 								if (!stars.length) { event.finish(); return; }
-								// ★ 同上：选实体牌用 chooseCardButton
-								player.chooseCardButton(stars.slice(0), '空城：选择一张「星」弃置', true)
+								// ★ 同上：选实体牌用 chooseCardButton（不传 forced ⇒ 可取消）
+								player.chooseCardButton(stars.slice(0), '空城：选择一张「星」弃置')
 									.set('ai', function (button) { return 1 + get.value(button.link); });
 								'step 1'
 								var pick = (result && result.links && result.links.length) ? result.links[0] : null;
