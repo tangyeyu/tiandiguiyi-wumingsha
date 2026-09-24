@@ -281,6 +281,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'gy_jue_mark',
 							'gy_jue_clear',
 							'gy_jue_limit',
+							'gy_wusheng_dmg',
 							'gy_po_mark',
 							'gy_po_immune',
 							'gy_po_lock',
@@ -2678,8 +2679,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//      的 damageBegin2 / damageAfter 处理。
 						gy_wusheng: {
 							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							// ★★ 出口技能**不能带 filter** ★★
+							//   实测：enable+viewAs 的技能若挂一个只匹配伤害事件的 filter，
+							//   引擎会拿它当"能否选用此技能"的判定 ⇒ 非伤害场景恒 false
+							//   ⇒ 技能从出牌列表里消失（用户实测"武圣直接用不了了"）。
+							//   加成逻辑已移到独立子技能 gy_wusheng_dmg。
 							enable: ['chooseToUse', 'chooseToRespond'],
-							trigger: { source: ['damageBegin2', 'damageAfter'] },
 							filterCard: function (card, player) { return true; },
 							selectCard: [1, 2],
 							complexCard: true,
@@ -2704,19 +2709,30 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								return obj;
 							},
+
+							// 花色不同 ⇒ 不计入次数限制（用 mod 放开上限）
+							mod: {
+								cardUsable: function (card, player, num) {
+									if (card && card.gyDiff) {
+										if (num === false) return false;
+										return (typeof num == 'number' ? num : 0) + 99;
+									}
+								},
+							},
+						},
+						// 武圣·效：黑牌加伤 / 红牌回血（独立子技能 —— 出口技能不能带 filter）
+						gy_wusheng_dmg: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { source: ['damageBegin2', 'damageAfter'] },
 							filter: function (event, player) {
-								// 只在"自己的伤害结算"这条分支上放行
-								if (!event.triggername && !event.name) return false;
-								var tn = event.triggername || event.name;
+								var tn = event.name;
 								if (tn != 'damageBegin2' && tn != 'damageAfter') return false;
 								var uc = event.getParent ? event.getParent('useCard') : null;
-								if (!uc) return false;
-								// uc.card 是 viewAs 出来的虚拟牌，带 gyTag / gyBlack / gyRed / gyDiff
-								var c = uc.card;
-								return !!(c && (c.gyTag || (c.gyBlack || c.gyRed || c.gyDiff)));
+								var c = uc && uc.card;
+								return !!(c && (c.gyBlack || c.gyRed));
 							},
 							content: function () {
-								var tn = event.triggername || event.name;
+								var tn = event.name;
 								var uc = trigger.getParent ? trigger.getParent('useCard') : null;
 								var c = uc && uc.card;
 								if (!c) { event.finish(); return; }
@@ -2727,21 +2743,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									}
 									event.finish(); return;
 								}
-								// damageAfter：红牌 ⇒ 造成伤害后回复1点体力
 								if (c.gyRed && player.hp < player.maxHp) {
 									player.recover(1);
 									game.log(player, '【武圣·红】：两张红牌，回复1点体力');
 								}
 								event.finish(); return;
-							},
-							// 花色不同 ⇒ 不计入次数限制（用 mod 放开上限；星/转化牌都靠 get.name 判定）
-							mod: {
-								cardUsable: function (card, player, num) {
-									if (card && (card.gyDiff || (card.gyTag == 'two' && card.gyDiff))) {
-										if (num === false) return false;
-										return (typeof num == 'number' ? num : 0) + 99;
-									}
-								},
 							},
 						},
 						// 武圣·无次数：花色不同时本次【杀】不计入次数
@@ -2942,7 +2948,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						zl_xing_use: {
 							charlotte: true, sub: true, popup: false, direct: true,
 							enable: ['chooseToUse', 'chooseToRespond'],
-							// 无距离与次数限制：星牌在 useCard 时带 gaintag，用 mod 放开限制
+							// ★ 照抄原版 sbguanxing 的读区范式：getCards('s') + hasGaintag
+							//   （原来用 getExpansions('zl_xing') 需要 cardUsable/targetInRange 等一堆 mod 配合，
+							//     且挂在子技能上，引擎没能把它接进出牌链路 ⇒ 用户实测"星还是用不了"）
+							filterCard: function (card, player) {
+								return !!(card && card.hasGaintag && card.hasGaintag('zl_xing'));
+							},
+							selectCard: [1, 1],
+							check: function (card) { return 1 + get.value(card); },
+							viewAs: function (cards) {
+								// 直接返回该牌本身 ⇒ 玩家可以像手牌一样使用它
+								return cards[0];
+							},
+							prompt: '七星：将一张「星」当作手牌使用或打出（用后需弃置一张牌）',
+							// 无距离与次数限制
 							mod: {
 								cardUsable: function (card, player, num) {
 									if (card && card.hasGaintag && card.hasGaintag('zl_xing')) {
@@ -2954,29 +2973,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (card && card.hasGaintag && card.hasGaintag('zl_xing')) return true;
 								},
 							},
-							filter: function (event, player) {
-								return player.getExpansions('zl_xing').length > 0;
-							},
-							selectCard: function () {
-								var n = ui.selected.cards.length;
-								return [Math.max(1, n), 1];
-							},
-							filterCard: function (card, player) {
-								if (!card.hasGaintag || !card.hasGaintag('zl_xing')) return false;
-								// 用过之后要弃一张牌（定稿里的代价）
-								return true;
-							},
-							check: function (card) { return 1 + get.value(card); },
-							prompt: '七星：将一张「星」当作手牌使用或打出（用后需弃置一张牌）',
-							content: function () {
-								'step 0'
-								var evt = _status.event.getParent('chooseToUse') || _status.event.getParent('chooseToRespond');
-								var used = (evt && evt.cards && evt.cards.length) ? evt.cards.slice(0) : [];
-								if (!used.length) { event.finish(); return; }
-								// 用后弃一张牌（定稿口径）
-								player.chooseToDiscard('he', '七星：使用「星」后弃置一张牌', 1)
-									.set('ai', function (card) { return 1; });
-								'step 1'
+							// 用后弃一张牌（定稿口径的代价）
+							onuse: function (result, player) {
+								try {
+									player.chooseToDiscard('he', '七星：使用「星」后弃置一张牌', 1)
+										.set('ai', function (card) { return 1; });
+								} catch (e) { }
 							},
 						},
 						// 七星（每轮开始时）
