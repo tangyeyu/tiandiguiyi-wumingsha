@@ -2911,10 +2911,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							content: function () {
 								'step 0'
 								if (event.name == 'phaseJieshu') {
+									// ★ 诊断（双通道）：确认 content 真的进来了
+									try {
+										var _d0 = 'content进入(phaseJieshu) step=' + event.step +
+											'｜on=' + !!player.storage.gy_po_on;
+										game.log(player, '【破敌·诊断】', _d0);
+										(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 ' + _d0);
+									} catch (eD0) { }
 									for (var i = 0; i < game.players.length; i++) {
 										var c = game.players[i];
 										var n = c.countMark('gy_po');
 										if (n > 0) {
+											try {
+												var _d1 = '结算 ' + c.name + ' 失去' + n + '点体力';
+												(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 ' + _d1);
+											} catch (eD1) { }
 											c.loseHp(n);
 											c.removeMark('gy_po', n);
 											if (c.hasSkill('gy_po_mark')) c.removeSkill('gy_po_mark');
