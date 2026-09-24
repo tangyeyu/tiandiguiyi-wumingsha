@@ -2691,8 +2691,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							check: function (card) { return 1 + get.value(card); },
 							prompt: '武圣：将一至两张手牌当作【杀】使用或打出（两张时按颜色/花色有额外效果）',
 							viewAs: function (cards) {
-								// 单牌 ⇒ 属性由玩家指定（做成【火杀】语义，属性落在伤害上）；
-								// 两张 ⇒ 普通【杀】，并按颜色/花色记录加成
+								// 单牌 ⇒ 伤害属性=火；两张 ⇒ 按颜色/花色记录加成
 								var obj = { name: 'sha' };
 								if (cards && cards.length >= 2) {
 									var c1 = cards[0], c2 = cards[1];
@@ -2703,9 +2702,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									obj.gyBlack = black ? 1 : 0;
 									obj.gyRed = red ? 1 : 0;
 									obj.gyDiff = diff ? 1 : 0;
+									try {
+										(game.bzDiag2 || lib.bzDiag2)('武圣viewAs 张数=' + cards.length +
+											' 色1=' + get.color(c1) + ' 色2=' + get.color(c2) +
+											' 花色1=' + get.suit(c1) + ' 花色2=' + get.suit(c2) +
+											' → black=' + obj.gyBlack + ' red=' + obj.gyRed + ' diff=' + obj.gyDiff);
+									} catch (eD) { }
 								} else {
 									obj.gyTag = 'one';
 									obj.nature = 'fire';      // 单牌：伤害属性=火
+									try {
+										(game.bzDiag2 || lib.bzDiag2)('武圣viewAs 张数=' + (cards ? cards.length : 'null') + ' → 单牌(火)');
+									} catch (eD2) { }
 								}
 								return obj;
 							},
@@ -2725,10 +2733,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { source: ['damageBegin2', 'damageAfter'] },
 							filter: function (event, player) {
+								// ★ 诊断：判定"加成属性有没有落到转化牌上"
+								//   （写文件走 game.bzDiag2 —— filter/content 里 require 不可达）
 								var tn = event.name;
-								if (tn != 'damageBegin2' && tn != 'damageAfter') return false;
 								var uc = event.getParent ? event.getParent('useCard') : null;
 								var c = uc && uc.card;
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('武圣dmg tn=' + tn +
+										' 有useCard=' + (uc ? 1 : 0) +
+										' 牌名=' + (c ? get.name(c) : '-') +
+										' gyBlack=' + (c ? c.gyBlack : '-') +
+										' gyRed=' + (c ? c.gyRed : '-') +
+										' gyTag=' + (c ? c.gyTag : '-'));
+								} catch (eD) { }
+								if (tn != 'damageBegin2' && tn != 'damageAfter') return false;
 								return !!(c && (c.gyBlack || c.gyRed));
 							},
 							content: function () {
