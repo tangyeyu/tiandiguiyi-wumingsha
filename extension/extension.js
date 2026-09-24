@@ -2707,6 +2707,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 
 							// 花色不同 ⇒ 不计入次数限制（用 mod 放开上限）
+							// ★ 实测确认（诊断日志）：viewAs 写在虚拟牌上的 gyDiff/gyTag 完好，
+							//   引擎确实走 mod.cardUsable，命中后返回 num+99 ⇒ 上限被放开。
 							mod: {
 								cardUsable: function (card, player, num) {
 									if (card && card.gyDiff) {
