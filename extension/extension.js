@@ -2997,40 +2997,50 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true, sub: true, popup: false, direct: true,
 							enable: 'phaseUse',
 							filter: function (event, player) {
-								// ★ 数组兜底：引擎某些路径下读取可能拿到 undefined
-								//   （实测崩溃 Cannot read properties of undefined (reading 'length')）
-								var zs = lib.skill.zl_xing_use.stars(player);
-								return zs.length > 0;
+								return lib.skill.zl_xing_tu.stars(player).length > 0;
 							},
-							// 统一的"取星"读取（永远返回数组）
 							stars: function (player) {
-								try {
-									if (!player || !player.getCards) return [];
-									var arr = lib.skill.zl_xing_tu.stars(player);
-									return arr || [];
-								} catch (e) { return []; }
+								return lib.skill.zl_xing_tu.stars(player);
 							},
 							content: function () {
 								'step 0'
-								// ★ 照抄 cc_zhilue（已验证可工作）的流程：
-								//   取牌 → gain 入手牌 → chooseUseTarget(forceTarget=true) 选目标使用
-								var zs = lib.skill.zl_xing_use.stars(player);
-								if (!zs.length) { event.finish(); return; }
-								event.star = zs[0];
-								try {
-									player.gain(event.star, 'draw');
-								} catch (eG) { }
-								try {
-									player.chooseUseTarget(event.star,
-										'七星：使用一张「星」（无距离、次数限制；用后弃置一张牌）', true, false);
-								} catch (eU) { }
+								event.zs = lib.skill.zl_xing_tu.stars(player);
+								if (!event.zs.length) { event.finish(); return; }
+								// ★ 从**容器**里选一张星（不列手牌）
+								//   chooseButton([...], [list,'vcard']) 是原版"从自定义牌集选牌"的标准写法
+								//   （clan.js:235 / collab.js:2098 等多处），也是曹操志略已验证可用的写法。
+								player.chooseButton(['七星：选择一张「星」使用', [event.zs.slice(0), 'vcard']], true)
+									.set('ai', function (button) { return 1 + get.value(button.link); });
 								'step 1'
-								// 用后弃一张牌（定稿口径的代价）
-								if (player.countCards('he') > 0) {
-									player.chooseToDiscard('he', '七星：使用「星」后，弃置一张牌', 1)
+								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
+								var pick = result.links[0];
+								var star = (pick && pick.link) ? pick.link : pick;
+								if (!star || !star.nodeType) {
+									// 兜底：按牌名在星区里找
+									var want = pick && (pick.name || (pick.link && pick.link.name));
+									for (var i = 0; i < event.zs.length; i++) {
+										if (!want || get.name(event.zs[i]) == want) { star = event.zs[i]; break; }
+									}
+								}
+								if (!star || !star.nodeType) { event.finish(); return; }
+								event.star = star;
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 选中星=' + get.translation(star) +
+										' 位置=' + get.position(star));
+								} catch (eD) { }
+								// 星移到手牌后才能走标准出牌流程
+								try { player.gain(star, 'draw'); } catch (eG) { }
+								// 使用（forceTarget=true ⇒ 需要目标时由玩家选择）
+								try {
+									player.chooseUseTarget(star, '七星：使用「' + get.translation(star) + '」（无距离、次数限制）', true, false);
+								} catch (eU) { }
+								'step 2'
+								// ★ 用后**弃置手牌区里的牌**（星不在手牌区 ⇒ 代价只能来自手牌）
+								if (player.countCards('h') > 0) {
+									player.chooseToDiscard('h', true, '七星：使用「星」后，弃置一张手牌', 1)
 										.set('ai', function (card) { return 1; });
 								}
-								'step 2'
+								'step 3'
 								event.finish(); return;
 							},
 							// 无距离与次数限制（只对「星」生效）
