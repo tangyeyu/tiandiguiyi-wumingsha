@@ -479,6 +479,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 					skill: {
 						// ============ 定策 ============
 						mgj_dingce: {
+							audio: 'jsrgdingce',
 							locked: true,
 							// ── 给「策」改为**可选**行为（去掉 forced）────────────────────
 							// 与 B17（沥血）同一套写法：`locked` 与 `forced` 是两个正交字段 ——
@@ -630,6 +631,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
 						// ============ 铸策 ============
 						mgj_zhuce: {
+							audio: 'jsrgdingce',
 							trigger: { player: 'phaseBegin' },
 							filter: function (event, player) {
 								return findCeTarget() != null;
@@ -880,6 +882,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 故原 `forced:true` 是错的（那会连"你可以"一起吃掉）；
 						// 正确写法 = 去掉 forced + 显式 locked:true。
 						mgj_lixue: {
+							audio: 'jsrgdingce',
 							locked: true,
 							// ── 触发时机：只用 changeHp ─────────────────────────────
 							// 卡面写的是「体力值发生变动时」，而引擎里**唯一**忠于这句话的事件
@@ -992,6 +995,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   判定失败则流转或进弃牌堆，场上闪电总量一直在减少，
 						//   每轮补一次正好维持 —— 不是无限堆积。
 						cm_juejing: {
+							audio: 'xinjuejing',
 							locked: true,
 							forced: true,
 							trigger: { global: 'roundStart' },
@@ -1127,6 +1131,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// ── 奇技 ──
 						// ① 回合结束时，夺取本回合未被你伤害过的角色各一张牌（锁定、必然发动）
 						cm_qiji: {
+							audio: 'dcqijing',
 							locked: true,
 							forced: true,
 							trigger: { player: 'phaseJieshuAfter' },
@@ -1244,6 +1249,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   ui.cardPile.appendChild(card)                            → 牌堆底（最后摸到）
 						// 故「牌堆底的牌」= ui.cardPile.lastChild
 						cm_taozei: {
+							audio: 'xinjuejing',
 							locked: true,
 							forced: true,
 							trigger: { global: 'roundStart' },
@@ -1442,6 +1448,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   弃置 / 被获得 / 被弃 / 顶装等全部计入 —— 与卡面语义一致。
 						// ★ trigger 是 lose 事件（技能自身事件是 event），判 trigger.type。
 						lx_lianying: {
+							audio: 'lianying',
 							locked: true,
 							forced: true,
 							charlotte: true,
@@ -1527,7 +1534,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   storage.lx_cy_used 对照 game.roundNumber 手工实现；
 						//   计数在回合开始由 tdgx_turn_reset 清零。
 						lx_chiyang: {
-							audio: 2,
+							audio: 'lianying',
 							enable: 'phaseUse',
 							filter: function (event, player) {
 								if (player.countCards('he') < player.hp) return false;
@@ -1610,6 +1617,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 谦逊：三分支（< 判定摸牌 / > 可弃谦减伤 / = 免疫），锁定自动结算
 						lx_qianxun: {
+							audio: 'qianxun',
 							locked: true,
 							forced: true,
 							popup: false,
@@ -1649,7 +1657,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 彰才（神威技）：发动后本局使用牌无次数与距离限制
 						lx_zhangcai: {
-							audio: 2,
+							audio: 'dczhangcai',
 							enable: 'phaseUse',
 							skillAnimation: true,
 							animationColor: 'orange',
@@ -1699,6 +1707,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 时机三选一 + storage 闸门，同 mgj_dingce（gameStart 不保证派发、
 						// enterGame 只在 addFellow/restorePlayer 创建，gameDrawAfter 兜底）
 						mlb_rende: {
+							audio: 'rende',
 							locked: true,
 							forced: true,
 							popup: false,
@@ -1855,7 +1864,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 章武（神威技）：回合开始额外出牌阶段 + 本回合使用牌无次数限制
 						// 插队姿势与 mgj_extra_phase 同款（trigger.next.push，判据见心得 §4.6）
 						mlb_zhangwu: {
-							audio: 2,
+							audio: 'zhangwu',
 							skillAnimation: true,
 							animationColor: 'orange',
 							trigger: { player: 'phaseBegin' },
@@ -1895,7 +1904,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   （获得路径未定位，可能被其他扩展改写 init）——这里兜底保证
 						//   非主公必定不生效，与仁德开局 +1「仁」的 isZhu2 判定同口径。
 						mlb_xinghan: {
-							audio: 2,
+							audio: 'xinghan',
 							zhuSkill: true,
 							locked: true,
 							forced: true,
@@ -1930,6 +1939,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   备满后上装备仍摸牌，只是不再获得标记（原先 filter 把
 						//   摸牌和标记绑死，备满后什么都不给——用户实测报错点）。
 						dy_wuku: {
+							audio: 'spwuku',
 							locked: true,
 							forced: true,
 							popup: false,
@@ -2039,7 +2049,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 破竹：选手牌里的一个牌名 → 本回合无次数距离限制；造成过伤害 → 本局永久
 						dy_pozhu: {
-							audio: 2,
+							audio: 'pozhu',
 							enable: 'phaseUse',
 							usable: 1,
 							filter: function (event, player) {
@@ -2139,6 +2149,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 振鞘①：装备武器时，使用牌无法被响应（directHit 共享数组，
 						// 逐目标子事件上 add 即可覆盖该目标；yjzhenlve 同族）
 						dy_zhenqiao: {
+							audio: 'jsrgzhenqiao',
 							locked: true,
 							forced: true,
 							direct: true,
@@ -2192,7 +2203,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 灭吴（神威技）：摸「备」数 + 体力上限（「备」不消耗）
 						dy_miewu: {
-							audio: 2,
+							audio: 'spmiewu',
 							enable: 'phaseUse',
 							skillAnimation: true,
 							animationColor: 'orange',
@@ -2224,7 +2235,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// · 判定区/手牌区走 storage.lkang_zone 状态位 + lkang_hy_mod 查询期干预
 						// · storage.lkang_zone：{e1,e2,e3,e4,judge,hand}，true = 已废除
 						lkang_huiyan: {
-							audio: 2,
+							audio: 'beishui',
 							enable: 'phaseUse',
 							filter: function (event, player) {
 								var z = player.storage.lkang_zone;
@@ -2408,7 +2419,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 抗晋①：受到体力值不低于你的角色的伤害 → 弃一张牌判定，红色免伤
 						lkang_kangjin: {
-							audio: 2,
+							audio: 'beishui',
 							locked: true,
 							trigger: { player: 'damageBegin' },
 							filter: function (event, player) {
@@ -2575,7 +2586,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 背水（神威技）：恢复所有已失效区域（四装备栏 + 判定/手牌状态位）
 						lkang_beishui: {
-							audio: 2,
+							audio: 'beishui',
 							enable: 'phaseUse',
 							skillAnimation: true,
 							animationColor: 'orange',
@@ -2682,7 +2693,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//      颜色/牌数信息存进 player.storage，伤害与回血全部由**本技能自己**
 						//      的 damageBegin2 / damageAfter 处理。
 						gy_wusheng: {
-							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							audio: 'sbwusheng', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							// ★★ 出口技能**不能带 filter** ★★
 							//   实测：enable+viewAs 的技能若挂一个只匹配伤害事件的 filter，
 							//   引擎会拿它当"能否选用此技能"的判定 ⇒ 非伤害场景恒 false
@@ -2787,7 +2798,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 义绝（回合开始时）：按座位顺序问，未交牌者得「绝」
 						gy_yijue: {
-							audio: 2,
+							audio: 'sbyijue',
 							trigger: { player: 'phaseBegin' },
 							filter: function (event, player) {
 								return player.isIn() && game.hasPlayer(function (c) { return c != player && c.isIn(); });
@@ -2886,7 +2897,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   引擎视作同一技能 ⇒ 回合结束时会走"发动"那条路
 						//   （用户实测"回合结束自动触发了破敌"）。
 						gy_po_di: {
-							audio: 2, enable: 'phaseUse',
+							audio: 'sbwusheng', enable: 'phaseUse',
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
 								if (player.storage.tdgx_sw['gy_po_di'] == undefined) player.storage.tdgx_sw['gy_po_di'] = 1;
@@ -3000,6 +3011,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						zl_xing_use: {
+							audio: 'guanxing_re_zhugeliang',   // 台词：观星系（同名技能优先）
 							charlotte: true, sub: true, popup: false, direct: true,
 							enable: 'phaseUse',
 							filter: function (event, player) {
@@ -3070,7 +3082,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						zl_qixing: {
-							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							audio: 'guanxing_re_zhugeliang', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'roundStart' },
 							filter: function (event, player) { return player.isIn(); },
 							content: function () {
@@ -3098,7 +3110,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   （引擎对非 forced 的技能会自动弹"是否发动【空城】？"询问框，
 						//     玩家可以拒绝 ⇒ 不会强制弃星）
 						zl_kongcheng: {
-							audio: 2, charlotte: true, popup: true,
+							audio: 'kongcheng_re_zhugeliang', charlotte: true, popup: true,
 							// ★ 触发声明加上 **global** 分支：既监听"我是目标"也监听全局，
 							//   然后用 filter 自己判定"我是不是被指定的目标"。
 							//   原因：只写 {player:'useCardToTargeted'} 时，实测**别人对我出牌**
@@ -3224,7 +3236,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 火计（神威技）：弃所有星 ⇒ 造成 X 点火焰伤害（星为 0 也能发动）
 						zl_huoji: {
-							audio: 2, enable: 'phaseUse',
+							audio: 'huoji', enable: 'phaseUse',
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
 								if (player.storage.tdgx_sw['zl_huoji'] == undefined) player.storage.tdgx_sw['zl_huoji'] = 1;
@@ -3308,7 +3320,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 奸雄（每轮开始移去略 / 受到伤害后记录并摸牌）
 						cc_jianxiong: {
-							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							audio: 'jianxiong', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: ['roundStart', 'damageAfter'] },
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
@@ -3400,7 +3412,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 清正（每回合限一次）：令一名角色获得「治」
 						cc_qingzheng: {
-							audio: 2, enable: 'phaseUse', usable: 1,
+							audio: 'mbcmqingzheng', enable: 'phaseUse', usable: 1,
 							filter: function (event, player) {
 								return game.hasPlayer(function (c) { return c.isIn() && !c.hasMark('cc_zhi'); });
 							},
@@ -3458,7 +3470,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   之前用 chooseButton + gain + chooseUseTarget 的链路始终不生效
 						//   （用户实测"点了没有效果"），故换成这条已验证的路线。
 						cc_zhilue: {
-							audio: 2, enable: 'phaseUse',
+							audio: 'jsrgzhenglve', enable: 'phaseUse',
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
 								if (player.storage.tdgx_sw['cc_zhilue'] == undefined) player.storage.tdgx_sw['cc_zhilue'] = 1;
