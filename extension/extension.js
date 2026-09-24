@@ -1058,12 +1058,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 'xinjuejing',
 							locked: true,
 							forced: true,
-							trigger: { global: 'roundStart' },
+							trigger: { global: 'phaseBefore' },
 							filter: function (event, player) {
+								// 「每轮开始时」= 每轮第一次轮到我（引擎的 roundStart 只派发给最小座位号，不可用）
+								if (player.storage.cm_juejing_round === game.roundNumber) return false;
 								return player.isIn();
 							},
 							content: function () {
 								'step 0'
+								if (player.storage.cm_juejing_round !== game.roundNumber) player.storage.cm_juejing_round = game.roundNumber;
 								// 记录**每个人**摸牌前的手牌，用于事后各自找出新摸到的那张。
 								// 用 playerid 作键（不能把 Player 对象当普通 JS 对象键用）；
 								// 全部挂 event —— 'step 0' 与 'step 1' 是独立编译的函数体，变量不跨步
@@ -1312,12 +1315,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 'jianxiong',
 							locked: true,
 							forced: true,
-							trigger: { global: 'roundStart' },
+							trigger: { global: 'phaseBefore' },
 							filter: function (event, player) {
+								// 「每轮开始时」= 每轮第一次轮到我（引擎的 roundStart 只派发给最小座位号，不可用）
+								if (player.storage.cm_taozei_round === game.roundNumber) return false;
 								return player.isIn() && player.countCards('he') > 0;
 							},
 							content: function () {
 								'step 0'
+								if (player.storage.cm_taozei_round !== game.roundNumber) player.storage.cm_taozei_round = game.roundNumber;
 								player.chooseToDiscard('he', [1, Infinity], '讨贼：可将任意张牌置于牌堆底')
 									.set('ai', function (card) { return -get.value(card); });
 								'step 1'
@@ -2635,6 +2641,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						// 抗晋·复轨：每轮开始清理「本轮」复制状态（幂等，多名持有者只清一次）
+						// ★ 触发时机同样从 roundStart 改成 phaseBefore + 自记轮号：
+						//   引擎的 roundStart 只派发给"座位号最小"的那位玩家
+						//   （game.js:34502-34542 的 isRound 判定），其余座位收不到 ⇒ 不可依赖。
 						lkang_kangjin_clear: {
 							forced: true,
 							locked: true,
@@ -2642,8 +2651,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							sub: true,
 							popup: false,
 							direct: true,
-							trigger: { global: 'roundStart' },
+							trigger: { global: 'phaseBefore' },
 							filter: function (event, player) {
+								// 每轮只清一次（用全局轮号闸门，避免多人持有者重复清）
+								if (game.__lkang_kj_cleared === game.roundNumber) return false;
 								for (var i = 0; i < game.players.length; i++) {
 									var c = game.players[i].storage && game.players[i].storage.lkang_copy;
 									if (c && (c.e1 || c.e2 || c.e3 || c.e4 || c.judge || c.hand)) return true;
@@ -2651,6 +2662,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								return false;
 							},
 							content: function () {
+								game.__lkang_kj_cleared = game.roundNumber;   // 每轮只清一次的闸门
 								for (var i = 0; i < game.players.length; i++) {
 									var p = game.players[i];
 									var c = p.storage && p.storage.lkang_copy;
@@ -3169,7 +3181,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						zl_qixing: {
 							audio: 'guanxing_re_zhugeliang', locked: true, forced: true, charlotte: true, popup: false, direct: true,
-							trigger: { player: 'roundStart' },
+							trigger: { player: 'phaseBefore' },
 							filter: function (event, player) {
 								// ★ 双通道诊断：确认 roundStart 是否派发
 								try {
@@ -3177,10 +3189,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									game.log(player, '【七星·诊断】', _q);
 									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 ' + _q);
 								} catch (eD0) { }
+								// 「每轮开始时」= 每轮第一次轮到我（引擎的 roundStart 只派发给最小座位号，不可用）
+								if (player.storage.zl_qixing_round === game.roundNumber) return false;
 								return player.isIn();
 							},
 							content: function () {
 								'step 0'
+								if (player.storage.zl_qixing_round !== game.roundNumber) player.storage.zl_qixing_round = game.roundNumber;
 								// 旧的星置入弃牌堆（照抄 sbguanxing：loseToDiscardpile）
 								var old = lib.skill.zl_xing_tu.stars(player);
 								if (old.length) {
@@ -3424,15 +3439,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 奸雄（每轮开始移去略 / 受到伤害后记录并摸牌）
 						cc_jianxiong: {
 							audio: 'rejianxiong', locked: true, forced: true, charlotte: true, popup: false, direct: true,
-							trigger: { player: ['roundStart', 'damageAfter'] },
+							trigger: { player: ['phaseBefore', 'damageAfter'] },
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
-								if (event.name == 'roundStart') return player.countMark('cc_lue') > 0;
+								if (player.storage.cc_jianxiong_round !== game.roundNumber) return player.countMark('cc_lue') > 0;
 								return (event.num || 0) > 0;
 							},
 							content: function () {
 								'step 0'
-								if (event.name == 'roundStart') {
+								if (player.storage.cc_jianxiong_round !== game.roundNumber) player.storage.cc_jianxiong_round = game.roundNumber;
+								if (player.storage.cc_jianxiong_round !== game.roundNumber) {
 									var n0 = player.countMark('cc_lue');
 									player.removeMark('cc_lue', n0);
 									game.log(player, '【奸雄】：移去了所有的「略」');
