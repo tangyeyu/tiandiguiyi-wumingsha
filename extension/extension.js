@@ -3085,10 +3085,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'useCardToTargeted' },
 							filter: function (event, player) {
-								if (!player.isIn()) return false;
-								if (player.countCards('h') > 0) return false;                 // 必须没有手牌
-								// 取星读取一律走带兜底的 helper（引擎某些路径下可能拿到 undefined）
-								return lib.skill.zl_xing_use.stars(player).length > 0;         // 必须有「星」
+								var _h = player.countCards('h');
+								var _s = lib.skill.zl_xing_use.stars(player).length;
+								var _in = player.isIn();
+								// ★ 双通道诊断：把三个条件都打出来（定位空城为何不触发）
+								try {
+									var _kc = '事件=' + event.name + '｜在场=' + _in + '｜手牌=' + _h +
+										'｜星=' + _s + '｜牌=' + (event.card ? get.translation(event.card) : '-');
+									game.log(player, '【空城·诊断】', _kc);
+									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 ' + _kc);
+								} catch (eD) { }
+								if (!_in) return false;
+								if (_h > 0) return false;                 // 必须没有手牌
+								return _s > 0;                            // 必须有「星」
 							},
 							content: function () {
 								// ★ 弃 1 张「星」（从 's' 区取，绝不动手牌 —— 之前用 lose() 误伤过手牌）
