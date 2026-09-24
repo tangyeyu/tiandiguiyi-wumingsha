@@ -317,10 +317,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								};
 							}
 						} catch (e2) { }
-						// ---- 第 3 层：包住 event.content 调用（技能 content 抛错的现场）----
+						// ---- 第 3 层：包住 game.loop（技能 content 抛错的现场）----
+						//   ★ 实测 lib.element.content.loop **不存在**（日志报"loop 不可用"）；
+						//     game.loop 是引擎主循环，必然存在（game.js:41662）。
 						try {
+							var loopContent = (typeof game !== 'undefined' && game.loop) ? game.loop : null;
 							var E = (typeof lib !== 'undefined' && lib.element) ? lib.element : null;
-							var loopContent = E && E.content && E.content.loop;
 							if (typeof loopContent == 'function' && !loopContent.bzWrapped) {
 								var wrap = function (ev) {
 									try {
@@ -341,7 +343,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									}
 								};
 								wrapped.bzWrapped = true;
-								E.content.loop = wrapped;
+								game.loop = wrapped;
 								bzWrite('===== 技能content监控已安装 ' + new Date().toLocaleString() + ' =====');
 							} else {
 								bzWrite('===== 技能content监控未安装（loop 不可用）' + new Date().toLocaleString() + ' =====');
@@ -4121,7 +4123,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 摧锋·决：回合结束时弃一张装备（代价），视为对当前回合角色使用【决斗】，伤害+X（至多3）
 						zycf_duel: {
 							audio: 2, forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { player: 'phaseJieshuBegin' },
+							// ★ 必须是 **global**："每回合结束时"= **任何人的回合**结束。
+							//   写成 player 侧只在自己回合触发 ⇒ 目标恒为自己 ⇒ 被"不能以自己为目标"拦掉（实测 X=0、技能失效）。
+							trigger: { global: 'phaseJieshuBegin' },
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
 								// 需要有装备牌可弃，且场上存在其他角色（不能以自己为目标）
@@ -4150,23 +4154,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!card || !card.nodeType) { event.finish(); return; }
 								player.discard(card);                                 // 弃置是代价（取消不返还）
 								// X = 本回合所有角色使用/打出【杀】的次数（同一次多目标按 1 次计），至多 3
+								// ★ X 的统计：用 game.getGlobalHistory(type, filter) ——
+								//   它返回的是**扁平记录数组**（不是按事件分组），
+								//   我上一版按 rec.useCard / rec.respond 分组遍历 ⇒ 结构猜错 ⇒ X 恒为 0。
 								var x = 0;
 								try {
-									var g = game.getGlobalHistory('everything');
-									for (var k = 0; k < g.length; k++) {
-										var rec = g[k];
-										if (!rec) continue;
-										if (rec.useCard) {
-											for (var u = 0; u < rec.useCard.length; u++) {
-												if (get.name(rec.useCard[u].card) == 'sha') x++;
-											}
-										}
-										if (rec.respond) {
-											for (var r = 0; r < rec.respond.length; r++) {
-												if (get.name(rec.respond[r].card) == 'sha') x++;
-											}
-										}
-									}
+									// 本回合内：所有角色"使用【杀】"的次数（同一张多目标算 1 次）
+									var used = game.getGlobalHistory('useCard', function (evt) {
+										try { return evt && evt.card && get.name(evt.card) == 'sha'; } catch (e) { return false }
+									});
+									x += (used && used.length) ? used.length : 0;
+									// 加上"打出【杀】"的次数（响应类）
+									var resp = game.getGlobalHistory('respond', function (evt) {
+										try { return evt && evt.card && get.name(evt.card) == 'sha'; } catch (e) { return false }
+									});
+									x += (resp && resp.length) ? resp.length : 0;
 								} catch (e) { }
 								if (x > 3) x = 3;
 								event.x = x;
