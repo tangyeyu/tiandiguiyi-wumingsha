@@ -339,8 +339,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'zl_xing_tu_info': '你武将牌上的「星」视为你的手牌（可被指定，但不计入你的手牌数），使用或打出时无距离与次数限制。',
 						// ★ 标记名译名：引擎显示 gaintag 名（'zl_xing'）时若查不到译名就直接显示英文
 						//   （用户实测"七星牌标签显示为 zl_xing"）⇒ 必须补这一条
-						'zl_xing_use': '星·用',
-						'zl_xing_use_info': '出牌阶段，你可以弃置一张牌，视为使用一张「星」（无距离与次数限制）；使用后你弃置一张牌。',
+						'zl_xing_use': '七星',
+						'zl_xing_use_info': '出牌阶段，你可以使用一张「星」；使用后你弃置一张手牌。（使用的星无距离与次数限制）',
 						'gy_wusheng_dmg': '武圣·效',
 						'gy_wusheng_dmg_info': '两张黑牌：【杀】伤害+1；两张红牌：造成伤害后回复1点体力。',
 						'gy_po_lock': '破敌·锁',
@@ -3088,27 +3088,48 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								var _h = player.countCards('h');
 								var _s = lib.skill.zl_xing_use.stars(player).length;
 								var _in = player.isIn();
-								// ★ 双通道诊断：把三个条件都打出来（定位空城为何不触发）
+								// ★ 每张牌限一次：同一张牌已经触发过就不再触发
+								//   （用牌的**对象身份**做闸门 —— 同一张牌可能被多次结算）
+								var _dup = !!(event.card && player.storage.zl_kc_card === event.card);
+								// ★ 双通道诊断：把各条件都打出来（定位空城为何不触发）
 								try {
 									var _kc = '事件=' + event.name + '｜在场=' + _in + '｜手牌=' + _h +
-										'｜星=' + _s + '｜牌=' + (event.card ? get.translation(event.card) : '-');
+										'｜星=' + _s + '｜重复=' + (_dup ? 1 : 0) +
+										'｜牌=' + (event.card ? get.translation(event.card) : '-');
 									game.log(player, '【空城·诊断】', _kc);
 									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 ' + _kc);
 								} catch (eD) { }
 								if (!_in) return false;
 								if (_h > 0) return false;                 // 必须没有手牌
+								if (_dup) return false;                   // 每张牌限一次
 								return _s > 0;                            // 必须有「星」
 							},
 							content: function () {
-								// ★ 弃 1 张「星」（从星容器取，绝不动手牌 —— 之前用 lose() 误伤过手牌）
+								'step 0'
+								// ★ 弃哪张「星」由**玩家自己选择**（原来是自动弃第一张）
 								var stars = lib.skill.zl_xing_use.stars(player);
+								event.zs = stars;
 								try {
 									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 content进入 星=' + stars.length);
 								} catch (eD2) { }
-								if (!stars.length) return;
-								try { player.lose([stars[0]], ui.discardPile); } catch (eL) { }
+								if (!stars.length) { event.finish(); return; }
+								player.chooseButton(['空城：选择一张「星」弃置', [stars.slice(0), 'vcard']], true)
+									.set('ai', function (button) { return 1 + get.value(button.link); });
+								'step 1'
+								var pick = (result && result.links && result.links.length) ? result.links[0] : null;
+								var star = (pick && pick.link) ? pick.link : pick;
+								if (!star || !star.nodeType) {
+									var want = pick && (pick.name || (pick.link && pick.link.name));
+									for (var i = 0; i < event.zs.length; i++) {
+										if (!want || get.name(event.zs[i]) == want) { star = event.zs[i]; break; }
+									}
+								}
+								if (star && star.nodeType) {
+									try { player.lose([star], ui.discardPile); } catch (eL) { }
+								}
+								// 记下"这张牌已处理过" ⇒ 实现"每张牌限一次"
+								player.storage.zl_kc_card = trigger.card;
 								// ★★ 令此牌**整体无效** —— 照抄原版 谋诸葛亮「看破」（sb.js:3087-3091）★★
-								//     player.unmarkAuto('sbkanpo',[trigger.card.name]);
 								//     trigger.targets.length = 0;
 								//     trigger.all_excluded = true;
 								//   ★ 此前我写的 `trigger.cancelled = true` 是**自己猜的字段**
