@@ -3365,70 +3365,49 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (player.storage.tdgx_sw['cc_zhilue'] == undefined) player.storage.tdgx_sw['cc_zhilue'] = 1;
 							},
 							filter: function (event, player) {
-								// ★ 诊断：同时写**战报**（用户可见）与**文件**（作者可读）
-								//   教训：只写战报 ⇒ 作者读不到；只写文件 ⇒ 用户看不到。
-								try {
-									var all = player.getCards('x');
-									var tagged = player.getCards('x', function (c) { return c.hasGaintag && c.hasGaintag('cc_zhi'); });
-									var desc = [];
-									for (var i = 0; i < all.length; i++) {
-										desc.push(get.translation(all[i]) + '(' + get.position(all[i]) + ',' +
-											(all[i].hasGaintag && all[i].hasGaintag('cc_zhi') ? '有智' : '无智') + ')');
-									}
-									var _zl = 'x区' + all.length + '张：' + (desc.join(' ') || '（空）') +
-										'｜带智标记' + tagged.length + '张｜额度' +
-										(player.storage.tdgx_sw ? player.storage.tdgx_sw['cc_zhilue'] : '?');
-									game.log(player, '【志略·诊断】', _zl);
-									(game.bzDiag2 || lib.bzDiag2)('志略·诊断 ' + _zl);
-								} catch (eD) { }
 								if (!(player.storage.tdgx_sw && player.storage.tdgx_sw['cc_zhilue'] > 0)) return false;
 								if (!player.isIn()) return false;
-								// 有「智」才能发动
 								return player.getCards('x', function (card) {
 									return card.hasGaintag && card.hasGaintag('cc_zhi');
 								}).length > 0;
 							},
-							// 只允许选「智」区里的牌
-							filterCard: function (card, player) {
-								return !!(card && card.hasGaintag && card.hasGaintag('cc_zhi'));
-							},
-							selectCard: [1, 1],
-							check: function (card) { return 1 + get.value(card); },
-							// 直接返回该牌本身 ⇒ 像手牌一样使用它
-							viewAs: function (cards) {
-								return cards[0];
-							},
-							prompt: '志略：使用一张「智」（无距离、次数限制）',
-							// 无距离与次数限制
-							mod: {
-								cardUsable: function (card, player, num) {
-									if (card && card.hasGaintag && card.hasGaintag('cc_zhi')) {
-										if (num === false) return false;
-										return (typeof num == 'number' ? num : 0) + 99;
-									}
-								},
-								targetInRange: function (card) {
-									if (card && card.hasGaintag && card.hasGaintag('cc_zhi')) return true;
-								},
-							},
-							// 使用后：消耗一次神威额度，并把该牌移出「智」区
-							onuse: function (result, player) {
-								try {
+							// ★★ 按 **记录顺序依次使用** ★★
+							//   用户口径（原文）："你可以按照记录顺序依次使用或打出「智」中已记录的牌"。
+							//   所以不做"弹面板让玩家挑" —— 而是从**最早记录的那张**开始，
+							//   一张张依次用出去（selectCard 固定取第 1 张 = 最早记录的那张）。
+							//   [1,1] + filterCard 取整个带智的牌列表的**第一张**即可保证顺序。
+							content: function () {
+								'step 0'
+								event.pool = player.getCards('x', function (card) {
+									return card.hasGaintag && card.hasGaintag('cc_zhi');
+								});
+								event.idx = 0;
+								if (!event.pool.length) { event.finish(); return; }
+								game.log(player, '发动了神威技', '#g【志略】', '，将按记录顺序使用', get.cnNumber(event.pool.length), '张牌');
+								'step 1'
+								if (event.idx >= event.pool.length) {
+									// 全部用完 ⇒ 消耗一次神威额度
 									if (player.storage.tdgx_sw && player.storage.tdgx_sw['cc_zhilue'] > 0) {
 										player.storage.tdgx_sw['cc_zhilue']--;
 									}
-									// 把用掉的那张牌从「智」区移出（保持区与计数一致）
-									var used = (result && result.cards) ? result.cards.slice(0) : [];
-									for (var i = 0; i < used.length; i++) {
-										var c = used[i];
-										if (c && c.hasGaintag && c.hasGaintag('cc_zhi')) {
-											if (player.storage.cc_zhi_markcount > 0) player.storage.cc_zhi_markcount--;
-											if (typeof c.removeGaintag == 'function') c.removeGaintag('cc_zhi');
-										}
-									}
+									event.finish(); return;
+								}
+								event.card = event.pool[event.idx];
+								event.idx++;
+								if (!event.card || !event.card.parentNode) { event.goto(1); return; }
+								// 从「智」区移出并进入手牌，再按标准流程使用（可选择目标）
+								try {
+									if (player.storage.cc_zhi_markcount > 0) player.storage.cc_zhi_markcount--;
+									player.gain(event.card, 'draw');
 									player.markSkill('cc_zhi_zone');
-									game.log(player, '【志略】：发动（剩余次数', player.storage.tdgx_sw['cc_zhilue'], '）');
-								} catch (e) { }
+								} catch (eG) { }
+								// forceTarget = true：需要目标时由玩家选择目标
+								try {
+									player.chooseUseTarget(event.card,
+										'志略：按记录顺序使用' + get.translation(event.card) + '（无距离、次数限制）', true, false);
+								} catch (eU) { }
+								'step 2'
+								event.goto(1);
 							},
 						},
 					},
