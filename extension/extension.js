@@ -355,7 +355,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'zl_huoji': '火计',
 						'zl_huoji_info': '神威技，每局游戏限一次。你可以弃置所有的「星」，选择一名角色，使其受到X点火焰伤害（X为你发动此技能时的体力值）。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
 						'cc_jianxiong': '奸雄',
-						'cc_jianxiong_info': '每轮开始时，你清除你身上的「略」。当你受到1点伤害后，你记录此牌X次于「智」中（X为本轮受到的伤害），并获得一个「略」，然后摸X张牌（X为「略」标记的数量）。',
+						'cc_jianxiong_info': '每轮开始时，你清除你身上的「略」。当你受到1点伤害后，你记录此牌X次于「智」中（X为本轮受到的伤害；同一张实体牌无法重复记录时，从牌堆补一张同名牌），并获得一个「略」，然后摸X张牌（X为「略」标记的数量）。',
 						'cc_zhi_zone': '智',
 						'cc_zhi_zone_info': '你受到伤害后置于武将牌上的牌，可供〖志略〗使用。',
 						'cc_qingzheng': '清正',
@@ -3220,13 +3220,47 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								if (src) {
 									if (!player.hasSkill('cc_zhi_zone')) player.addSkill('cc_zhi_zone');
-									// ★ 记录到 **expansions 容器**（武将牌上的牌区），不用 's' 区：
+									// ★ 记录到 **expansions 容器**（武将牌上的牌区）：
 									//   's' 区是"手牌容器里的牌"（directgains 会 append 到 handcards1）
 									//   ⇒ 会被当可用牌。addToExpansion 放进独立容器，只可查看不可直接使用。
-									player.addToExpansion([src], player, 'cc_zhi').gaintag.add('cc_zhi');
+									// ★★ 按用户裁定实现"记录此牌X次"（X = 本次伤害点数）★★
+									//   同一张**实体牌**不能同时放进同一个区两次 ⇒ 重复的那几次
+									//   改为**从牌堆找一张同名牌**（用户建议）来充当记录。
+									var ok = player.addToExpansion([src], player, 'cc_zhi');
+									if (ok && ok.gaintag) ok.gaintag.add('cc_zhi');
 									if (!player.storage.cc_zhi_markcount) player.storage.cc_zhi_markcount = 0;
 									player.storage.cc_zhi_markcount++;
 									player.markSkill('cc_zhi_zone');
+									// 第 2..X 次：从牌堆补同名牌（第 1 次已经记录了原始伤害牌）
+									if (event.i !== 1) {
+										try {
+											var dup = null;
+											var pile = ui.cardPile;
+											for (var pi = 0; pi < pile.childElementCount; pi++) {
+												var pnode = pile.childNodes[pi];
+												if (pnode && get.name(pnode) == get.name(src)) { dup = pnode; break; }
+											}
+											if (dup) {
+												var ok2 = player.addToExpansion([dup], player, 'cc_zhi');
+												if (ok2 && ok2.gaintag) ok2.gaintag.add('cc_zhi');
+												player.storage.cc_zhi_markcount++;
+												player.markSkill('cc_zhi_zone');
+												game.log(player, '【奸雄】：从牌堆补记一张', get.translation(dup));
+											} else {
+												// 牌堆里没有同名牌：用一张随机牌堆顶的牌充当记录（保持"记录X次"的计数一致）
+												var any = get.cards(1)[0];
+												if (any) {
+													var ok3 = player.addToExpansion([any], player, 'cc_zhi');
+													if (ok3 && ok3.gaintag) ok3.gaintag.add('cc_zhi');
+													player.storage.cc_zhi_markcount++;
+													player.markSkill('cc_zhi_zone');
+													game.log(player, '【奸雄】：牌堆无同名牌，补记一张', get.translation(any));
+												}
+											}
+										} catch (eDup) {
+											try { (game.bzDiag2 || lib.bzDiag2)('奸雄补记异常：' + eDup.message); } catch (eDup2) { }
+										}
+									}
 								}
 								// 没有实体牌（虚拟伤害）时只记次数、不给「智」添牌，避免崩溃
 								player.addMark('cc_lue', 1);
