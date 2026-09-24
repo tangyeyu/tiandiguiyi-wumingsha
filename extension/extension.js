@@ -2936,24 +2936,48 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// ★ 机制：武将牌上的牌在 's' 区（ui.special），引擎的"使用手牌"默认只看手牌区，
 						//   所以必须提供一个出口技能让「星」进入出牌选择框。
 						//   读区照抄 sbguanxing：getCards('s') + hasGaintag。
-						// 星·用：**通过〖七星〗**使用「星」（不是把星变成普通手牌）
-						// ★ 用户要求：① 恢复"用星后弃一张牌"的代价
-						//             ② 修掉"星可以被当普通牌直接使用"这个 bug
-						//   ⇒ 出口只挂 phaseUse（本人出牌阶段主动发动），不再挂
-						//     chooseToUse / chooseToRespond（那两个会让星像手牌一样随时可用）。
+						// 星·用：**通过点〖七星〗技能**选一张「星」使用
+						// ★ 交互口径（按用户实测反馈修正）：
+						//   不要「星」出现在手牌/出牌选择框里像普通牌那样点。
+						//   正确流程是：出牌阶段点【七星】→ 自己弹出「星」列表 → 选一张 →
+						//   选择目标使用 → 用后弃一张牌。
+						//   ⇒ 用 content 内联 chooseToUse + viewAs（原版标准写法），
+						//     而不是靠 enable+filterCard 把星并入通用牌池
+						//     （那样星会像手牌一样随时可用，用户实测"在手牌区无损用星"）。
 						zl_xing_use: {
 							charlotte: true, sub: true, popup: false, direct: true,
 							enable: 'phaseUse',
-							filterCard: function (card, player) {
-								return !!(card && card.hasGaintag && card.hasGaintag('zl_xing'));
+							usable: 1,
+							filter: function (event, player) {
+								// 有星才能发动
+								return player.getCards('s', function (card) {
+									return card.hasGaintag && card.hasGaintag('zl_xing');
+								}).length > 0;
 							},
-							selectCard: [1, 1],
-							check: function (card) { return 1 + get.value(card); },
-							viewAs: function (cards) {
-								return cards[0];
+							content: function () {
+								'step 0'
+								// 由技能自己弹「星」列表选牌（只列星，不混入手牌）
+								event.stars = player.getCards('s', function (card) {
+									return card.hasGaintag && card.hasGaintag('zl_xing');
+								});
+								if (!event.stars.length) { event.finish(); return; }
+								player.chooseToUse('七星：选择一张「星」使用（无距离、次数限制；用后弃一张牌）')
+									.set('filterCard', function (card) {
+										return !!(card && card.hasGaintag && card.hasGaintag('zl_xing'));
+									})
+									.set('selectCard', [1, 1])
+									.set('viewAs', function (cards) { return cards[0]; })
+									.set('ai', function () { return 1; });
+								'step 1'
+								// 用后弃一张牌（定稿口径的代价）
+								if (player.countCards('he') > 0) {
+									player.chooseToDiscard('he', '七星：使用「星」后，弃置一张牌', 1)
+										.set('ai', function (card) { return 1; });
+								}
+								'step 2'
+								event.finish(); return;
 							},
-							prompt: '七星：使用一张「星」（无距离与次数限制；用后弃置一张牌）',
-							// 无距离与次数限制
+							// 无距离与次数限制（只对「星」生效）
 							mod: {
 								cardUsable: function (card, player, num) {
 									if (card && card.hasGaintag && card.hasGaintag('zl_xing')) {
@@ -2964,13 +2988,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								targetInRange: function (card) {
 									if (card && card.hasGaintag && card.hasGaintag('zl_xing')) return true;
 								},
-							},
-							// ★ 恢复定稿口径：使用/打出一张「星」后，弃置一张牌
-							onuse: function (result, player) {
-								try {
-									player.chooseToDiscard('he', '七星：使用「星」后，弃置一张牌', 1)
-										.set('ai', function (card) { return 1; });
-								} catch (e) { }
 							},
 						},
 						// 七星（每轮开始时）
