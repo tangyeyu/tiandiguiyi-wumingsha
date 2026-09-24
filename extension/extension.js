@@ -3121,13 +3121,28 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   既不可见、也拿不到有效的牌对象 ⇒ 志略面板构造时崩
 						//   `item.cloneNode is not a function`（用户实测）。
 						cc_zhi_zone: {
-							charlotte: true, sub: true, popup: false, mark: true, marktext: '智',
+							charlotte: true, sub: true, popup: false,
+							// ★ 显示三件套（照抄 sbguanxing 的 intro）：marktext + mark + markcount
+							//   缺 marktext/mark 就会出现"看不到记录的牌"（用户实测）。
+							marktext: '智',
 							intro: {
-								markcount: 'expansion',
-								content: function () {
-									var cs = player.getCards('s', function (card) { return card.hasGaintag && card.hasGaintag('cc_zhi'); });
-									if (cs && cs.length) return get.translation(cs);
-									return '暂无记录';
+								mark: function (dialog, storage, player) {
+									var cards = player.getCards('s', function (card) {
+										return card.hasGaintag && card.hasGaintag('cc_zhi');
+									});
+									if (!cards || !cards.length) return;
+									dialog.addAuto(cards);
+								},
+								markcount: function (storage, player) {
+									return player.countCards('s', function (card) {
+										return card.hasGaintag && card.hasGaintag('cc_zhi');
+									});
+								},
+								onunmark: function (storage, player) {
+									var cards = player.getCards('s', function (card) {
+										return card.hasGaintag && card.hasGaintag('cc_zhi');
+									});
+									if (cards.length) player.loseToDiscardpile(cards);
 								},
 							},
 							// 读区（与 sbguanxing 完全一致）
@@ -3164,12 +3179,30 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								'step 1'
 								if (event.i >= event.times) { event.finish(); return; }
 								event.i++;
-								var src = trigger.card;
+								// ★★ 只记录**实体牌** ★★
+								//   原版同类写法（diy.js:4394）用的是 `event.cards2`（实体牌）：
+								//     target.loseToSpecial(event.cards2,'asara_yingwei',player).visible=true;
+								//   我原来用 `trigger.card` —— 对转化【杀】而言那是**虚拟牌对象**，
+								//   没有 .fix()/.remove() ⇒ 崩在 game.js:25986 `cards[i].fix is not a function`。
+								//   判据：真牌是 DOM 节点，带 fix/remove；虚拟牌没有。
+								var src = null;
+								var cand = (trigger.cards && trigger.cards.length) ? trigger.cards
+									: (trigger.card ? [trigger.card] : []);
+								for (var ci = 0; ci < cand.length; ci++) {
+									var cc = cand[ci];
+									if (cc && typeof cc.fix == 'function' && typeof cc.remove == 'function') {
+										src = cc; break;
+									}
+								}
 								if (src) {
-									// ★ 用 loseToSpecial 把牌真正放进「智」区（照抄 sbguanxing）
 									if (!player.hasSkill('cc_zhi_zone')) player.addSkill('cc_zhi_zone');
 									player.loseToSpecial([src], 'cc_zhi').visible = true;
 									player.markSkill('cc_zhi_zone');
+								} else {
+									// 没有实体牌（虚拟伤害）时只记次数、不给「智」添牌，避免崩溃
+									try {
+										(game.bzDiag2 || lib.bzDiag2)('奸雄：本次伤害没有实体牌，跳过记录');
+									} catch (eD) { }
 								}
 								player.addMark('cc_lue', 1);
 								if (!player.hasSkill('cc_lue_mark')) player.addSkill('cc_lue_mark');
