@@ -3947,7 +3947,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 武翊·兵：造成伤害时可弃一张武器牌令伤害+1（同一回合限一次，不可叠加）
 						zyyi_weapon: {
 							audio: 2, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { player: 'damageBegin2' },
+							// ★★ 必须是 source 侧 ★★
+							//   设计口径是"你造成伤害时"（武翊4）；而 player 侧 = 我参与了该伤害事件
+							//   （无论我是造成方还是承受方）⇒ 实战中"别人打我"也弹出加伤提示。
+							//   战报实证：名赵云【武翊】：弃置武器丈八蛇矛，此伤害+1，紧接着"名赵云受到了…伤害"。
+							//   原版先例：collab.js:2884 trigger:{source:damageBegin2}
+							trigger: { source: 'damageBegin2' },
 							filter: function (event, player) {
 								if (!player.storage.zyyi_weapon_used) {
 									// 未用：需要有武器牌（装备区或手牌）
@@ -4207,21 +4212,25 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!card || !card.nodeType) { event.finish(); return; }
 								player.discard(card);                                 // 弃置是代价（取消不返还）
 								// X = 本回合所有角色使用/打出【杀】的次数（同一次多目标按 1 次计），至多 3
-								// ★ X 的统计：用 game.getGlobalHistory(type, filter) ——
-								//   它返回的是**扁平记录数组**（不是按事件分组），
-								//   我上一版按 rec.useCard / rec.respond 分组遍历 ⇒ 结构猜错 ⇒ X 恒为 0。
+								// ★★ 两个坑都踩过（实战实证）★★
+								//   ① **漏了"打出"**：只统计 useCard ⇒ 决斗里双方各"打出"一张杀时 X=0，
+								//      战报显示"（伤害+1）"、结果只掉 1 点（应为 3）。
+								//   ② **作用域**：`player.getHistory(type, filter)` 取的是**本回合**（当前 phase）内的事件
+								//      （原版范式 extra.js:9224：useCard 与 respond 都要 addArray）；
+								//      而 `game.getGlobalHistory` 会跨回合累计 ⇒ 数值偏大。
+								//   ⇒ 逐玩家取"本回合"的 useCard + respond，筛出【杀】。
 								var x = 0;
 								try {
-									// 本回合内：所有角色"使用【杀】"的次数（同一张多目标算 1 次）
-									var used = game.getGlobalHistory('useCard', function (evt) {
-										try { return evt && evt.card && get.name(evt.card) == 'sha'; } catch (e) { return false }
-									});
-									x += (used && used.length) ? used.length : 0;
-									// 加上"打出【杀】"的次数（响应类）
-									var resp = game.getGlobalHistory('respond', function (evt) {
-										try { return evt && evt.card && get.name(evt.card) == 'sha'; } catch (e) { return false }
-									});
-									x += (resp && resp.length) ? resp.length : 0;
+									var hit = function (evt) {
+										try { return !!(evt && evt.card && get.name(evt.card) == 'sha'); } catch (e) { return false }
+									};
+									for (var pi = 0; pi < game.players.length; pi++) {
+										var ps = game.players[pi];
+										try {
+											x += ps.getHistory('useCard', hit).length;   // 使用【杀】
+											x += ps.getHistory('respond', hit).length;   // 打出【杀】
+										} catch (e2) { }
+									}
 								} catch (e) { }
 								if (x > 3) x = 3;
 								event.x = x;
