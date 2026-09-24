@@ -1509,13 +1509,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							trigger: { player: 'phaseJieshuBegin' },
 							filter: function (event, player) {
 								var used = player.getHistory('useCard').length + player.getHistory('respond').length;
-								if (used > player.hp) return false;
 								var n = 0;
 								var history = player.getHistory('lose');
+								var nDisc = 0;
 								for (var i = 0; i < history.length; i++) {
 									var evt = history[i];
-									if (evt.type == 'discard' && evt.getParent('phaseDiscard') && evt.cards) n += evt.cards.length;
+									if (evt.type == 'discard') {
+										nDisc++;
+										if (evt.getParent('phaseDiscard') && evt.cards) n += evt.cards.length;
+									}
 								}
+								// ★ 双通道诊断：把每个条件值都打出来
+								try {
+									var _d = '连营·诊断 事件=' + event.name +
+										'｜用牌+响应=' + used + '｜体力=' + player.hp +
+										'｜lose事件=' + history.length + '｜其中discard=' + nDisc +
+										'｜弃牌阶段弃置数=' + n;
+									game.log(player, '【连营·诊断】', _d);
+									(game.bzDiag2 || lib.bzDiag2)('连营·诊断 ' + _d);
+								} catch (eD) { }
+								if (used > player.hp) return false;
 								return n > 0;
 							},
 							content: function () {
@@ -1590,9 +1603,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								var total = 0;
 								var history = player.getHistory('sourceDamage');
+								var nCy = 0;
 								for (var i = 0; i < history.length; i++) {
-									if (history[i].lx_cy) total += history[i].num;
+									if (history[i].lx_cy) { nCy++; total += history[i].num; }
 								}
+								// ★ 双通道诊断
+								try {
+									var _d = '炽炎·诊断 事件=' + event.name +
+										'｜sourceDamage事件=' + history.length +
+										'｜带lx_cy标记=' + nCy + '｜合计火伤=' + total +
+										'｜体力=' + player.hp;
+									game.log(player, '【炽炎·诊断】', _d);
+									(game.bzDiag2 || lib.bzDiag2)('炽炎·诊断 ' + _d);
+								} catch (eD) { }
 								return total > 0 && total >= player.hp;
 							},
 							content: function () {
@@ -3087,7 +3110,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						zl_qixing: {
 							audio: 'guanxing_re_zhugeliang', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'roundStart' },
-							filter: function (event, player) { return player.isIn(); },
+							filter: function (event, player) {
+								// ★ 双通道诊断：确认 roundStart 是否派发
+								try {
+									var _q = 'qixing入口 事件=' + event.name + '｜在场=' + player.isIn();
+									game.log(player, '【七星·诊断】', _q);
+									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 ' + _q);
+								} catch (eD0) { }
+								return player.isIn();
+							},
 							content: function () {
 								'step 0'
 								// 旧的星置入弃牌堆（照抄 sbguanxing：loseToDiscardpile）
@@ -3097,12 +3128,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									game.log(player, '将', get.cnNumber(old.length), '张「星」置入弃牌堆');
 								}
 								game.log(player, '发动了', '#g【七星】');
-								// ★ 照抄 sbguanxing：把牌堆顶 7 张**真正放进** 's' 区
+								// ★ 照抄原版 (extra.js:10126)：addToExpansion(get.cards(7),'draw')
+								//   并**立即**查 x 区核对（诊断用）
 								if (!player.hasSkill('zl_xing_tu')) player.addSkill('zl_xing_tu');
 								var got = get.cards(7);
 								player.$gain2(got, false);
-								// ★ 放进 expansions 独立容器（不再用 loseToSpecial 的 's' 区）
 								lib.skill.zl_xing_tu.add(player, got);
+								try {
+									var _xs = player.getCards('x');
+									var _tagged = lib.skill.zl_xing_tu.stars(player);
+									var _d = 'qixing取牌 got=' + got.length +
+										'｜x区总数=' + _xs.length +
+										'｜带zl_xing标记=' + _tagged.length;
+									game.log(player, '【七星·诊断】', _d);
+									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 ' + _d);
+								} catch (eD1) { }
 								'step 1'
 								var cs = lib.skill.zl_xing_tu.stars(player);
 								game.log(player, '展示了牌堆顶', get.cnNumber(cs.length), '张牌，置于武将牌上称为「星」');
