@@ -591,9 +591,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'tdgx_zhaoyun': '名赵云',
 						// ★ 技能名与描述挂在这两个"首个技能"上（面板显示它们；其余子技能不给译名 ⇒ 不显示）
 						'zyyi_sha': '武翊',
-						'zyyi_sha_info': '1.你可以将一张【杀】当【闪】、【闪】当【杀】使用或打出。<br>2.回合开始时，你从牌堆/弃牌堆里选择一项获得：【1】进攻马、【2】防御马、【3】武器、【4】防具（先从牌堆里找，没有的话就去弃牌堆里找；两处都没有则不获得）。<br>3.你的手牌上限+x（x为你装备区内已装备的数量）。<br>4.当你装备区里有武器时，你造成伤害时，可以选择弃置一张装备栏里的武器牌或手牌中的武器牌，然后此伤害+1（同一回合内不能多次发动；同一次伤害不能叠加）。<br>5.当你装备区里有防具时，你受到伤害时，可以选择弃置一张装备栏里的防具牌或手牌中的防具牌，然后完全抵消此伤害。<br>6.当你装备区里有进攻马时，你免疫第一次受到伤害，然后你可以选择弃置装备栏里的进攻马；当你装备栏里的进攻马离开你的装备栏时，你摸两张牌（当你失去此进攻马并重新装备进攻马时，此效果刷新）。<br>7.当你装备区里有防御马时，你第一次造成的伤害+1，然后你可以选择弃置装备栏里的防御马；当你装备栏里的防御马离开你的装备栏时，你摸两张牌（当你失去此防御马并重新装备防御马时，此效果刷新）。<br>8.若你从手牌中使用或者打出过的基本牌牌名数（火杀/雷杀不计为独立牌名）大于等于1/2/3：你使用基本牌无次数限制／你使用基本牌无距离限制／当你获得或失去装备时，你摸一张牌。',
+						'zyyi_sha_info': '1.你可以将一张【杀】当【闪】、【闪】当【杀】使用或打出。<br>2.回合开始时，你从牌堆/弃牌堆里选择一项获得：【1】进攻马、【2】防御马、【3】武器、【4】防具（先从牌堆里找，没有的话就去弃牌堆里找；两处都没有则不获得）。<br>3.你的手牌上限+x（x为你装备区内已装备的数量）。<br>4.当你装备区里有武器时，你造成伤害时，可以选择弃置一张装备栏里的武器牌或手牌中的武器牌，然后此伤害+1（同一回合内不能多次发动；同一次伤害不能叠加）。<br>5.当你装备区里有防具时，你受到伤害时，可以选择弃置一张装备栏里的防具牌或手牌中的防具牌，然后完全抵消此伤害。<br>6.当你装备区里有防御马（+1马）时，你免疫第一次受到的伤害，然后你可以选择弃置装备栏里的防御马；当你装备栏里的防御马离开你的装备栏时，你摸两张牌（同栏位重新装备或被夺走则刷新）。<br>7.当你装备区里有进攻马（-1马）时，你第一次造成的伤害+1，然后你可以选择弃置装备栏里的进攻马；当你装备栏里的进攻马离开你的装备栏时，你摸两张牌（同栏位重新装备或被夺走则刷新）。<br>8.若你从手牌中使用或者打出过的基本牌牌名数（火杀/雷杀不计为独立牌名）大于等于1/2/3：你使用基本牌无次数限制／你使用基本牌无距离限制／当你获得或失去装备时，你摸一张牌。',
 						'zycf_extra': '摧锋',
-						'zycf_extra_info': '1.每轮限一次，每回合结束时，你可以摸一张牌并执行一个额外的回合（额外回合包含判定/摸牌阶段；该额外回合结束时不能再发动本项）。<br>2.每回合结束时，你可以从装备栏或手牌中选择一张装备弃置，然后你可以视为对当前回合角色使用一张伤害值+X的【决斗】（X为本回合所有角色使用或打出【杀】的次数，至多为3；同一张【杀】指定多个目标按1次计）。该【决斗】不能以自己为目标，且至少造成1点伤害（若被【无懈可击】取消则保底不成立）。',
+						'zycf_extra_info': '1.每轮限一次，每回合结束时，你可以摸一张牌并执行一个额外的回合（由你选择是否发动；额外回合包含判定/摸牌阶段，该额外回合结束时不能再发动本项）。<br>2.每回合结束时，你可以从装备栏或手牌中选择一张装备弃置，然后你可以视为对当前回合角色使用一张伤害值+X的【决斗】（X为本回合所有角色使用或打出【杀】的次数，至多为3；同一张【杀】指定多个目标按1次计）。该【决斗】不能以自己为目标，且至少造成1点伤害（若被【无懈可击】取消则保底不成立）。',
 						// ★ 技能描述＝用户提供的原文，不再改写
 						// ★ 每个技能都必须有自己的译名，否则：界面空白、主动技按钮无字
 						//   （引擎用 lib.translate[skillId] 取技能名、lib.translate[skillId+'_info'] 取说明）
@@ -4001,7 +4001,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								game.log(player, '【武翊·诊断】', _a);
 								(game.bzDiag2 || lib.bzDiag2)('武翊·甲入口 ' + _a);
 								} catch (eD) { }
-								if (event.zyyi_cancelled) return false;   // 与武翊6 是同一机制，不能叠加
+								if (event.zyyi_cancelled) return false;   // 与武翊5 是同一机制，不能叠加   // 与武翊6 是同一机制，不能叠加
 								return (_e2 + _h2) > 0;
 							},
 							content: function () {
@@ -4022,10 +4022,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.finish(); return;
 							},
 						},
-						// 武翊·攻马：每局第一次受伤免疫；进攻马离开装备区摸两张（含被夺/替换）
+						// 武翊·攻马（**进攻马 = -1马 = equip4**）：每局第一次**造成**的伤害+1；
+						//   进攻马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
+						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
 							audio: 2, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { player: ['damageBegin3', 'loseAfter'] },
+							trigger: { source: 'damageBegin2', player: 'loseAfter' },
 							filter: function (event, player) {
 								if (event.name == 'loseAfter') {
 									// 装备区离场追踪：借鉴 collab.js:2351（event.getl + hs）
@@ -4038,9 +4040,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									} catch (e) { }
 									return false;
 								}
-								// damageBegin3：进攻马在场 + 本次伤害未被取消 + 每局第一次
+								// damageBegin2（source 侧）：我有进攻马 + 每局第一次
 								try {
-								var _a2 = '武翊·攻马入口 事件=' + event.name + '｜已取消=' + !!event.zyyi_cancelled +
+								var _a2 = '武翊·攻马入口 事件=' + event.name +
 								'｜有进攻马(栏4)=' + !!player.getEquip(4) + '｜已用过=' + !!player.storage.zyyi_atk_used;
 								game.log(player, '【武翊·诊断】', _a2);
 								(game.bzDiag2 || lib.bzDiag2)('武翊·攻马入口 ' + _a2);
@@ -4060,9 +4062,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									event.finish(); return;
 								}
 								player.storage.zyyi_atk_used = true;
-								trigger.zyyi_cancelled = true;
-								trigger.cancel();                       // 免疫（同一机制，不叠加）
-								game.log(player, '【武翊】：进攻马在场，免疫此伤害');
+								trigger.num += 1;                            // 与武翊4 的 +1 可叠成 +2
+								game.log(player, '【武翊】：进攻马在场，此伤害+1');
 								player.chooseBool('武翊：是否弃置装备区内的进攻马？')
 									.set('ai', function () { return false; });
 								'step 1'
@@ -4073,10 +4074,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.finish(); return;
 							},
 						},
-						// 武翊·防马：每局第一次造成伤害+1；防御马离开装备区摸两张（含被夺/替换）
+						// 武翊·防马（**防御马 = +1马 = equip3**）：每局第一次**受到**的伤害免疫；
+						//   防御马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
+						//   ★ 子类型依据：game.js:13026 equip3=防御马、22032 equip3=+1马栏
 						zyyi_horse_def: {
 							audio: 2, locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { player: ['damageBegin2', 'loseAfter'] },
+							trigger: { player: ['damageBegin3', 'loseAfter'] },
 							filter: function (event, player) {
 								if (event.name == 'loseAfter') {
 									try {
@@ -4089,7 +4092,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									return false;
 								}
 								try {
-								var _a3 = '武翊·防马入口 事件=' + event.name +
+								var _a3 = '武翊·防马入口 事件=' + event.name + '｜已取消=' + !!event.zyyi_cancelled +
 								'｜有防御马(栏3)=' + !!player.getEquip(3) + '｜已用过=' + !!player.storage.zyyi_def_used;
 								game.log(player, '【武翊·诊断】', _a3);
 								(game.bzDiag2 || lib.bzDiag2)('武翊·防马入口 ' + _a3);
@@ -4106,8 +4109,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									event.finish(); return;
 								}
 								player.storage.zyyi_def_used = true;
-								trigger.num += 1;                            // 与武翊4 的 +1 可叠成 +2
-								game.log(player, '【武翊】：防御马在场，此伤害+1');
+								trigger.zyyi_cancelled = true;
+								trigger.cancel();                       // 免疫（同一机制，不叠加）
+								game.log(player, '【武翊】：防御马在场，免疫此伤害');
 								player.chooseBool('武翊：是否弃置装备区内的防御马？')
 									.set('ai', function () { return false; });
 								'step 1'
@@ -4188,7 +4192,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 摧锋·锐：每轮限一次，回合结束时摸一张并执行额外回合（含判定/摸牌）
 						// 借鉴 extra.js:1900 → player.insertPhase()
 						zycf_extra: {
-							audio: 2, forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 2, locked: false, charlotte: true, sub: true, popup: true, direct: true,
+							// ★ 去掉 forced ⇒ **由玩家选择是否发动**（用户口径："是否发动应由玩家决定"）
 							// ★★ 必须是 global ★★ 设计口径"每回合结束时"= **任何人的回合**结束
 							//   （与摧锋·决 同一口径）。写成 player 侧只在自身回合结束触发
 							//   ⇒ 别人的回合结束时无法发动（实战战报整局没有"执行额外的回合"记录）。
@@ -4201,12 +4206,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
+								// ★ 由玩家选择是否发动（去掉 forced 后仍需显式询问，否则引擎会直接执行）
+								player.chooseBool('摧锋：是否摸一张牌并执行一个额外的回合？')
+									.set('ai', function () { return true; });
+								'step 1'
+								if (!result || !result.bool) {
+									game.log(player, '【摧锋】：放弃了额外回合');
+									event.finish(); return;
+								}
 								player.storage.zycf_round = game.roundNumber;
 								player.draw();
 								game.log(player, '【摧锋】：摸一张牌，并执行一个额外的回合');
 								player.storage.zycf_in_extra = true;
 								player.insertPhase();                                 // 引擎 API（game.js:24507）
-								'step 1'
+								'step 2'
 								delete player.storage.zycf_in_extra;
 								event.finish(); return;
 							},
