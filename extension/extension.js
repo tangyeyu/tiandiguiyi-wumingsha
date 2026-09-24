@@ -2932,6 +2932,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						gy_wusheng_buff: {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { source: 'damageBegin2' },
+							// 诊断：确认只在"我造成伤害"时进入（source 侧）
+							// （filter 里已有武器判据；这里只补一条落盘，便于实战核对方向）
 							filter: function (event, player) {
 								var uc = event.getParent ? event.getParent('useCard') : null;
 								return !!(uc && player.storage.gy_ws_uc === uc && player.storage.gy_ws_plus);
@@ -3882,7 +3884,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							sub: true, charlotte: true, nopop: true,   // ★ 不进技能面板
 							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'phaseBegin' },
-							filter: function (event, player) { return player.isIn(); },
+							filter: function (event, player) {
+								try {
+								var _e = '武翊·装入口 事件=' + event.name + '｜在场=' + player.isIn() +
+								'｜装备数=' + player.getCards('e').length;
+								game.log(player, '【武翊·诊断】', _e);
+								(game.bzDiag2 || lib.bzDiag2)('武翊·装入口 ' + _e);
+								} catch (eD) { }
+								return player.isIn();
+							},
 							content: function () {
 								'step 0'
 								// 四个选项 → 子类型（game.js:13026/13028：equip3=防御马/+1，equip4=攻击马/-1）
@@ -3983,8 +3993,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 2, locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { player: 'damageBegin3' },
 							filter: function (event, player) {
+								var _e2 = 0, _h2 = 0;
+								try { _e2 = player.countCards('e', { subtype: 'equip2' }); _h2 = player.countCards('h', { subtype: 'equip2' }); } catch (e) { }
+								try {
+								var _a = '武翊·甲入口 事件=' + event.name + '｜已取消=' + !!event.zyyi_cancelled +
+								'｜装备区防具=' + _e2 + '｜手牌防具=' + _h2 + '｜来源=' + (event.source ? event.source.name : '无');
+								game.log(player, '【武翊·诊断】', _a);
+								(game.bzDiag2 || lib.bzDiag2)('武翊·甲入口 ' + _a);
+								} catch (eD) { }
 								if (event.zyyi_cancelled) return false;   // 与武翊6 是同一机制，不能叠加
-								return player.countCards('e', { subtype: 'equip2' }) + player.countCards('h', { subtype: 'equip2' }) > 0;
+								return (_e2 + _h2) > 0;
 							},
 							content: function () {
 								'step 0'
@@ -4021,6 +4039,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									return false;
 								}
 								// damageBegin3：进攻马在场 + 本次伤害未被取消 + 每局第一次
+								try {
+								var _a2 = '武翊·攻马入口 事件=' + event.name + '｜已取消=' + !!event.zyyi_cancelled +
+								'｜有进攻马(栏4)=' + !!player.getEquip(4) + '｜已用过=' + !!player.storage.zyyi_atk_used;
+								game.log(player, '【武翊·诊断】', _a2);
+								(game.bzDiag2 || lib.bzDiag2)('武翊·攻马入口 ' + _a2);
+								} catch (eD2) { }
 								if (event.zyyi_cancelled) return false;
 								if (!player.getEquip(4)) return false;      // 4 号栏 = -1马 = 进攻马
 								return !player.storage.zyyi_atk_used;
@@ -4064,6 +4088,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									} catch (e) { }
 									return false;
 								}
+								try {
+								var _a3 = '武翊·防马入口 事件=' + event.name +
+								'｜有防御马(栏3)=' + !!player.getEquip(3) + '｜已用过=' + !!player.storage.zyyi_def_used;
+								game.log(player, '【武翊·诊断】', _a3);
+								(game.bzDiag2 || lib.bzDiag2)('武翊·防马入口 ' + _a3);
+								} catch (eD3) { }
 								if (!player.getEquip(3)) return false;      // 3 号栏 = +1马 = 防御马
 								return !player.storage.zyyi_def_used;
 							},
@@ -4159,7 +4189,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 借鉴 extra.js:1900 → player.insertPhase()
 						zycf_extra: {
 							audio: 2, forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { player: 'phaseJieshuBegin' },
+							// ★★ 必须是 global ★★ 设计口径"每回合结束时"= **任何人的回合**结束
+							//   （与摧锋·决 同一口径）。写成 player 侧只在自身回合结束触发
+							//   ⇒ 别人的回合结束时无法发动（实战战报整局没有"执行额外的回合"记录）。
+							trigger: { global: 'phaseJieshuBegin' },
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
 								if (player.storage.zycf_in_extra) return false;      // 额外回合结束时不能再发动
