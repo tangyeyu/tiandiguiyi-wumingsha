@@ -4056,8 +4056,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
 							audio: 'wuyi_hatk', locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { source: 'damageBegin2', player: 'loseAfter' },
+							// ★ equipAfter 必须用 **global** 侧：原版 equipAfter 全部是 global（player 侧 0 例）
+							//   ⇒ 写成 player:[...equipAfter] 接不到事件，"曾装备"标记永不置位。
+							//   loseAfter 用 player 侧是对的（原版 102 例，如 collab.js:2351）。
+							trigger: { source: 'damageBegin2', player: 'loseAfter', global: 'equipAfter' },
 							filter: function (event, player) {
+								// ★ 进入装备区：记录"曾装上进攻马"（供伤害分支判断；离场时清除并刷新）
+								if (event.name == 'equipAfter') {
+									if (event.player != player) return false;   // global 侧 ⇒ 只认自己的装备事件
+									try {
+									var eq = player.getEquip(4);
+									if (eq && get.subtype(eq) == 'equip4') player.storage.zyyi_atk_horse = true;
+									} catch (e) { }
+									return false;   // 本事件不触发 content
+								}
 								if (event.name == 'loseAfter') {
 									// 装备区离场追踪：借鉴 collab.js:2351（event.getl + hs）
 									try {
@@ -4078,7 +4090,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								} catch (eD2) { }
 								if (event.zyyi_cancelled) return false;
 								if (event.player == player) return false;   // 我是承受方 ⇒ 不是"造成伤害"
-								if (!player.getEquip(4)) return false;      // 4 号栏 = -1马 = 进攻马
+								// ★ 用"曾装上进攻马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
+								if (!player.storage.zyyi_atk_horse) return false;
 								return !player.storage.zyyi_atk_used;
 							},
 							content: function () {
@@ -4089,6 +4102,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌');
 									// 刷新"每局第一次"
 									delete player.storage.zyyi_atk_used;
+									delete player.storage.zyyi_atk_horse;   // 已离场 ⇒ 需重装才能再触发（即"刷新"）
 									event.finish(); return;
 								}
 								player.storage.zyyi_atk_used = true;
@@ -4109,8 +4123,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   ★ 子类型依据：game.js:13026 equip3=防御马、22032 equip3=+1马栏
 						zyyi_horse_def: {
 							audio: 'wuyi_hdef', locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { player: ['damageBegin3', 'loseAfter'] },
+							// ★ 同攻马：equipAfter 用 global 侧（原版 player 侧 0 例），loseAfter 用 player 侧
+							trigger: { player: ['damageBegin3', 'loseAfter'], global: 'equipAfter' },
 							filter: function (event, player) {
+								// ★ 进入装备区：记录"曾装上防御马"（供受伤分支判断；离场时清除并刷新）
+								if (event.name == 'equipAfter') {
+									if (event.player != player) return false;   // global 侧 ⇒ 只认自己的装备事件
+									try {
+									var eq3 = player.getEquip(3);
+									if (eq3 && get.subtype(eq3) == 'equip3') player.storage.zyyi_def_horse = true;
+									} catch (e) { }
+									return false;   // 本事件不触发 content
+								}
 								if (event.name == 'loseAfter') {
 									try {
 										var evt = event.getl(player);
@@ -4132,7 +4156,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   战报实证：12:43:13"名赵云对神关羽使用了杀"后立刻打出
 								//   "【武翊】：防御马在场，免疫此伤害" —— 我的攻击被自己免疫了。
 								if (event.source == player) return false;   // 我是造成方 ⇒ 不是"受到伤害"
-								if (!player.getEquip(3)) return false;      // 3 号栏 = +1马 = 防御马
+								// ★ 用"曾装上防御马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
+								if (!player.storage.zyyi_def_horse) return false;
 								return !player.storage.zyyi_def_used;
 							},
 							content: function () {
@@ -4141,6 +4166,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									player.draw(2);
 									game.log(player, '【武翊】：防御马离开装备区，摸两张牌');
 									delete player.storage.zyyi_def_used;
+									delete player.storage.zyyi_def_horse;   // 已离场 ⇒ 需重装才能再触发（即"刷新"）
 									event.finish(); return;
 								}
 								player.storage.zyyi_def_used = true;
