@@ -3086,9 +3086,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								game.log(player, '展示了牌堆顶', get.cnNumber(cs.length), '张牌，置于武将牌上称为「星」');
 							},
 						},
-						// 空城（锁定技）：无手牌 + 成为目标 ⇒ 弃1星令此牌无效
+						// 空城（**可选发动**）：无手牌 + 成为目标 ⇒ 可弃1星令此牌无效
+						// ★ 按用户口径："空城是可以选择不发动的" ⇒ **去掉 forced/locked/direct**
+						//   （引擎对非 forced 的技能会自动弹"是否发动【空城】？"询问框，
+						//     玩家可以拒绝 ⇒ 不会强制弃星）
 						zl_kongcheng: {
-							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							audio: 2, charlotte: true, popup: true,
 							trigger: { player: 'useCardToTargeted' },
 							filter: function (event, player) {
 								var _h = player.countCards('h');
