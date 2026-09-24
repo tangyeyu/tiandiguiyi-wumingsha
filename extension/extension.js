@@ -356,6 +356,59 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 					} catch (eTop) { }
 				})();
 
+				// ============ 战报流水镜像（DOM 层，兜底方案） ============
+				// ★ 为什么需要第二套：`game.send('log', items)`（game.js:35088）这条路
+				//   在实战中**一次都没被调用到**（bz-battle.log 里只有装机自证），
+				//   说明战报走了别的路径。而战报最终**必然**落到 DOM：
+				//     game.js:44421-44423
+				//         const node=ui.create.div();
+				//         node.innerHTML=lib.config.log_highlight?str:str2;
+				//         ui.sidebar.insertBefore(node,ui.sidebar.firstChild);
+				//   ⇒ 直接挂 `Node.prototype.insertBefore`：凡插入 ui.sidebar 的节点都记一份。
+				//   · 透传原函数，游戏行为不变
+				//   · 只记 ui.sidebar（战报侧栏），不记 historybar 等其它容器
+				(function () {
+					try {
+						if (game.bzDomHooked === 1) return;
+						var fsx2 = null;
+						try { fsx2 = require('fs'); } catch (eFs2) { return; }
+						var N = (typeof Node !== 'undefined') ? Node : null;
+						if (!N || !N.prototype || !N.prototype.insertBefore) return;
+						var origIB = N.prototype.insertBefore;
+						var isSidebar = function (parent) {
+							try {
+								if (!parent) return false;
+								if (typeof ui !== 'undefined' && ui.sidebar && parent === ui.sidebar) return true;
+								if (parent.id === 'historybar') return false;
+								return !!(parent.classList && parent.classList.contains('sidebar'));
+							} catch (e) { return false }
+						};
+						N.prototype.insertBefore = function (node, ref) {
+							var r;
+							try { r = origIB.apply(this, arguments); } catch (e) { throw e; }
+							try {
+								if (isSidebar(this) && node && node.innerHTML) {
+									var text = String(node.innerHTML)
+										.replace(/<[^>]*>/g, '')
+										.replace(/&nbsp;/g, ' ')
+										.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+										.trim();
+									if (text) {
+										fsx2.appendFileSync('C:/bz-battle.log',
+											new Date().toLocaleTimeString() + '  ' + text + '\n');
+									}
+								}
+							} catch (e2) { }
+							return r;
+						};
+						game.bzDomHooked = 1;
+						try {
+							fsx2.appendFileSync('C:/bz-battle.log',
+								'===== 战报 DOM 镜像已安装（insertBefore → ui.sidebar）' + new Date().toLocaleString() + ' =====\n');
+						} catch (e3) { }
+					} catch (eTop2) { }
+				})();
+
 				pkg = {
 					name: 'tiandiguiyi',
 					character: {
