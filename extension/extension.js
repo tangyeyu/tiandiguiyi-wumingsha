@@ -263,6 +263,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'gy_wusheng',
 							'gy_yijue',
 							'gy_po_di',
+							'gy_po_settle',
 							'gy_jue_mark',
 							'gy_jue_clear',
 							'gy_jue_limit',
@@ -2873,71 +2874,29 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						gy_po_turn: { charlotte: true, sub: true, onremove: function (player) { player.storage.gy_po_on = false; } },
-						// 破敌（神威技）：标记 + 回合结束结算
+						// 破敌（神威技）：**主动发动**部分（只做"令一名其他角色获得「破」"）
+						// ★★ 必须与"回合结束结算"拆成两个技能 ★★
+						//   原来一个技能同时挂 enable:'phaseUse' + trigger:{player:'phaseJieshuBegin'}，
+						//   引擎视作同一技能 ⇒ 回合结束时会走"发动"那条路
+						//   （用户实测"回合结束自动触发了破敌"）。
 						gy_po_di: {
 							audio: 2, enable: 'phaseUse',
-							trigger: { player: 'phaseJieshuBegin' },
 							init: function (player) {
 								if (!player.storage.tdgx_sw) player.storage.tdgx_sw = {};
 								if (player.storage.tdgx_sw['gy_po_di'] == undefined) player.storage.tdgx_sw['gy_po_di'] = 1;
 							},
 							filter: function (event, player) {
-								if (!player.isIn()) return false;
-								// ★ 诊断：**同时**写战报与文件
-								//   （只写战报 ⇒ 作者读不到；只写文件 ⇒ 用户看不到。两边都写。）
-								try {
-									var marks = [];
-									for (var pi = 0; pi < game.players.length; pi++) {
-										var m = game.players[pi].countMark('gy_po');
-										if (m > 0) marks.push(game.players[pi].name + '=' + m);
-									}
-									var _line = '事件=' + event.name + '｜on=' + !!player.storage.gy_po_on +
-										'｜目标=' + (player.storage.gy_po_target ? player.storage.gy_po_target.name : '无') +
-										'｜场上破：' + (marks.join(' ') || '无') +
-										'｜额度=' + (player.storage.tdgx_sw ? player.storage.tdgx_sw['gy_po_di'] : '?');
-									game.log(player, '【破敌·诊断】', _line);
-									(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 ' + _line);
-								} catch (eD) { }
-								// ★★ 修：原来写 `event.name == 'phaseJieshuBegin'` —— 恒为假 ★★
-								//   `phaseJieshuBegin` 是**触发键**，而 event.name 是
-								//   **阶段事件名 `phaseJieshu`**（game.js:24594）
-								//   ⇒ 回合结束的结算分支永远不进
-								//   ⇒ 用户实测"对方得到了标记，我的回合结束后却没有掉血"。
-								//   这与伤害阶段（event.name 恒为 damage、阶段靠 event.step）是同一类陷阱。
-								if (event.name == 'phaseJieshu') return !!player.storage.gy_po_on;
-								// 非阶段事件 ⇒ 视为"发动破敌"这条路径
-								return !!(player.storage.tdgx_sw && player.storage.tdgx_sw['gy_po_di'] > 0);
+								return player.isIn() &&
+									!!(player.storage.tdgx_sw && player.storage.tdgx_sw['gy_po_di'] > 0);
 							},
 							content: function () {
 								'step 0'
-								if (event.name == 'phaseJieshu') {
-									// ★ 诊断（双通道）：确认 content 真的进来了
-									try {
-										var _d0 = 'content进入(phaseJieshu) step=' + event.step +
-											'｜on=' + !!player.storage.gy_po_on;
-										game.log(player, '【破敌·诊断】', _d0);
-										(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 ' + _d0);
-									} catch (eD0) { }
-									for (var i = 0; i < game.players.length; i++) {
-										var c = game.players[i];
-										var n = c.countMark('gy_po');
-										if (n > 0) {
-											try {
-												var _d1 = '结算 ' + c.name + ' 失去' + n + '点体力';
-												(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 ' + _d1);
-											} catch (eD1) { }
-											c.loseHp(n);
-											c.removeMark('gy_po', n);
-											if (c.hasSkill('gy_po_mark')) c.removeSkill('gy_po_mark');
-											game.log(c, '【破敌】：失去', get.cnNumber(n), '点体力（移去所有「破」）');
-										}
-									}
-									player.storage.gy_po_on = false;
-									event.finish(); return;
-								}
 								player.storage.tdgx_sw['gy_po_di']--;
 								player.storage.gy_po_on = true;
 								player.addTempSkill('gy_po_turn');
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 发动（剩余额度 ' + player.storage.tdgx_sw['gy_po_di'] + '）');
+								} catch (eD) { }
 								player.chooseTarget(true, '破敌：令一名其他角色获得「破」', function (card, player, target) {
 									return target != player && target.isIn();
 								}).set('ai', function (target) { return -get.attitude(_status.event.player, target); });
@@ -2953,17 +2912,41 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.finish(); return;
 							},
 						},
-
-						// ────────────── 名·诸葛亮（四血/蜀）──────────────
-
-						// 星·区（武将牌上的「星」）
-						// ★★ 完全照抄原版 谋诸葛亮「观星」sbguanxing（sb.js:3095-3193）★★
-						//   收牌：player.loseToSpecial(cards,'zl_xing').visible = true;
-						//   读区：player.getCards('s', card => card.hasGaintag('zl_xing'))
-						//   显示：marktext + intro.mark + intro.markcount（三件套缺一不可 ——
-						//         用户实测"点的时候没有名字"就是缺这套）
-						//   ★ 此前混用过 storage 列表（牌没进区域）与 addToExpansion（另一套 API），
-						//     都导致"星不可见/不可用"。现在统一到 's' 区这一条路线。
+						// 破敌·结：**你的回合结束时**，拥有「破」的角色失去 X 点体力（X = 其破数量），然后移去
+						// 独立技能（不带 enable）⇒ 只在回合结束时机触发，不会被当主动技
+						gy_po_settle: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: 'phaseJieshuBegin' },
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								if (!player.storage.gy_po_on) return false;
+								for (var i = 0; i < game.players.length; i++) {
+									if (game.players[i].countMark('gy_po') > 0) return true;
+								}
+								return false;
+							},
+							content: function () {
+								'step 0'
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 结算阶段进入 step=' + event.step);
+								} catch (eD0) { }
+								for (var i = 0; i < game.players.length; i++) {
+									var c = game.players[i];
+									var n = c.countMark('gy_po');
+									if (n > 0) {
+										try {
+											(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 结算 ' + c.name + ' 失去' + n + '点体力');
+										} catch (eD1) { }
+										c.loseHp(n);
+										c.removeMark('gy_po', n);
+										if (c.hasSkill('gy_po_mark')) c.removeSkill('gy_po_mark');
+										game.log(c, '【破敌】：失去', get.cnNumber(n), '点体力（移去所有「破」）');
+									}
+								}
+								player.storage.gy_po_on = false;
+								event.finish(); return;
+							},
+						},
 						zl_xing_tu: {
 							charlotte: true, sub: true, popup: false,
 							marktext: '星',
