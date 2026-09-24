@@ -3339,6 +3339,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (player.storage.tdgx_sw['cc_zhilue'] == undefined) player.storage.tdgx_sw['cc_zhilue'] = 1;
 							},
 							filter: function (event, player) {
+								// ★ 战报诊断（用户可直接看到，不必读日志文件）
+								try {
+									var all = player.getCards('x');
+									var tagged = player.getCards('x', function (c) { return c.hasGaintag && c.hasGaintag('cc_zhi'); });
+									var desc = [];
+									for (var i = 0; i < all.length; i++) {
+										desc.push(get.translation(all[i]) + '(' + get.position(all[i]) + ',' +
+											(all[i].hasGaintag && all[i].hasGaintag('cc_zhi') ? '有智' : '无智') + ')');
+									}
+									game.log(player, '【志略·诊断】x区', all.length, '张：', desc.join(' ') || '（空）',
+										'｜带智标记', tagged.length, '张｜额度',
+										(player.storage.tdgx_sw ? player.storage.tdgx_sw['cc_zhilue'] : '?'));
+								} catch (eD) { }
 								if (!(player.storage.tdgx_sw && player.storage.tdgx_sw['cc_zhilue'] > 0)) return false;
 								if (!player.isIn()) return false;
 								// 有「智」才能发动
