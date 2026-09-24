@@ -183,23 +183,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 					} catch (e) { /* 落盘失败就静默放弃，不影响游戏 */ }
 				};
 				if (game && !game.bzDiag) game.bzDiag = bzDiag;
-				// ★★ 开机自检（无条件执行，用来判定"我改的代码到底有没有被加载"）★★
-				//   这一段在包级闭包里 ⇒ require 可达。写一行状态含关键技能是否存在。
-				try {
-					var _boot = [];
-					_boot.push('版本标记=NEW3-74d8ed6');
-					_boot.push('武将数=' + (pkg && pkg.character ? Object.keys(pkg.character).length : '?'));
-					_boot.push('技能数=' + (pkg && pkg.skill ? Object.keys(pkg.skill).length : '?'));
-					_boot.push('有关羽=' + !!(pkg && pkg.character && pkg.character.tdgx_guanyu));
-					_boot.push('有略标记=' + !!(pkg && pkg.skill && pkg.skill.cc_lue_mark));
-					_boot.push('有破锁=' + !!(pkg && pkg.skill && pkg.skill.gy_po_lock));
-					_boot.push('有星区=' + !!(pkg && pkg.skill && pkg.skill.zl_xing_tu));
-					bzDiag('【开机自检】' + _boot.join(' | '));
-				} catch (eBoot) {
-					try {
-						require('fs').appendFileSync('C:/bz-diag.log', '开机自检异常: ' + eBoot.message + '\n');
-					} catch (e2) { }
-				}
+				if (lib && !lib.bzDiag2) lib.bzDiag2 = bzDiag;
+				if (game && !game.bzDiag2) game.bzDiag2 = bzDiag;
 
 				pkg = {
 					name: 'tiandiguiyi',
@@ -2706,18 +2691,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									obj.gyBlack = black ? 1 : 0;
 									obj.gyRed = red ? 1 : 0;
 									obj.gyDiff = diff ? 1 : 0;
-									try {
-										(game.bzDiag2 || lib.bzDiag2)('武圣viewAs 张数=' + cards.length +
-											' 色1=' + get.color(c1) + ' 色2=' + get.color(c2) +
-											' 花色1=' + get.suit(c1) + ' 花色2=' + get.suit(c2) +
-											' → black=' + obj.gyBlack + ' red=' + obj.gyRed + ' diff=' + obj.gyDiff);
-									} catch (eD) { }
 								} else {
 									obj.gyTag = 'one';
 									obj.nature = 'fire';      // 单牌：伤害属性=火
-									try {
-										(game.bzDiag2 || lib.bzDiag2)('武圣viewAs 张数=' + (cards ? cards.length : 'null') + ' → 单牌(火)');
-									} catch (eD2) { }
 								}
 								return obj;
 							},
@@ -2737,19 +2713,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { source: ['damageBegin2', 'damageAfter'] },
 							filter: function (event, player) {
-								// ★ 诊断：判定"加成属性有没有落到转化牌上"
-								//   （写文件走 game.bzDiag2 —— filter/content 里 require 不可达）
 								var tn = event.name;
 								var uc = event.getParent ? event.getParent('useCard') : null;
 								var c = uc && uc.card;
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('武圣dmg tn=' + tn +
-										' 有useCard=' + (uc ? 1 : 0) +
-										' 牌名=' + (c ? get.name(c) : '-') +
-										' gyBlack=' + (c ? c.gyBlack : '-') +
-										' gyRed=' + (c ? c.gyRed : '-') +
-										' gyTag=' + (c ? c.gyTag : '-'));
-								} catch (eD) { }
 								if (tn != 'damageBegin2' && tn != 'damageAfter') return false;
 								return !!(c && (c.gyBlack || c.gyRed));
 							},
@@ -3191,12 +3157,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (!player.hasSkill('cc_zhi_zone')) player.addSkill('cc_zhi_zone');
 									player.loseToSpecial([src], 'cc_zhi').visible = true;
 									player.markSkill('cc_zhi_zone');
-								} else {
-									// 没有实体牌（虚拟伤害）时只记次数、不给「智」添牌，避免崩溃
-									try {
-										(game.bzDiag2 || lib.bzDiag2)('奸雄：本次伤害没有实体牌，跳过记录');
-									} catch (eD) { }
 								}
+								// 没有实体牌（虚拟伤害）时只记次数、不给「智」添牌，避免崩溃
 								player.addMark('cc_lue', 1);
 								if (!player.hasSkill('cc_lue_mark')) player.addSkill('cc_lue_mark');
 								player.markSkill('cc_lue_mark');   // ★ 刷新「略」数量显示
