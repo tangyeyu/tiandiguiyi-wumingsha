@@ -351,6 +351,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'zl_qixing_info': '每轮开始时，你将你武将牌上的所有「星」置入弃牌堆，然后展示牌堆顶的7张牌并置于你的武将牌上，称为「星」。你武将牌上的「星」视为你的手牌（可被指定，但不计入你的手牌数）。你可以像手牌一样使用或打出「星」；你使用或打出「星」时无距离与次数限制；你使用或打出一张「星」后，选择一张牌弃置。',
 						'zl_xing_tu': '星',
 						'zl_xing_tu_info': '你武将牌上的「星」视为你的手牌（可被指定，但不计入你的手牌数），使用或打出时无距离与次数限制。',
+						// ★ 标记名译名：引擎显示 gaintag 名（'zl_xing'）时若查不到译名就直接显示英文
+						//   （用户实测"七星牌标签显示为 zl_xing"）⇒ 必须补这一条
+						'zl_xing': '星',
+						'cc_zhi': '智',
 						'zl_kongcheng': '空城',
 						'zl_kongcheng_info': '锁定技。当你没有手牌时，如果你成为了牌的目标，你可以弃置1张「星」，令此牌整体无效（此无效化不可被【无懈可击】响应）；此牌结算结束后若仍在弃牌堆，你将其置为「星」。每张牌限一次。',
 						'zl_kc_collect': '空城·收',
@@ -2960,28 +2964,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								},
 							},
 						},
-						// 星·用：把「星」当作手牌使用/打出
-						// ★ 机制：武将牌上的牌在 ui.special 区（getCards('x')），引擎的"使用手牌"
-						//   默认只看手牌区，所以必须自己提供出口：
-						//     content 里直接把「星」加入本次可选的牌 ⇒ 引擎会照常走 useCard 流程
-						//   （原版 神诸葛亮「七星」只做交换、不做使用，故无先例可抄；
-						//     这里是最小可用实现：让「星」出现在出牌选择框里。）
+						// 星·用：「星」的直接使用出口（按用户要求：**无弃牌代价**）
+						// ★ 机制：武将牌上的牌在 's' 区（ui.special），引擎的"使用手牌"默认只看手牌区，
+						//   所以必须提供一个出口技能让「星」进入出牌选择框。
+						//   读区照抄 sbguanxing：getCards('s') + hasGaintag。
 						zl_xing_use: {
 							charlotte: true, sub: true, popup: false, direct: true,
 							enable: ['chooseToUse', 'chooseToRespond'],
-							// ★ 照抄原版 sbguanxing 的读区范式：getCards('s') + hasGaintag
-							//   （原来用 getExpansions('zl_xing') 需要 cardUsable/targetInRange 等一堆 mod 配合，
-							//     且挂在子技能上，引擎没能把它接进出牌链路 ⇒ 用户实测"星还是用不了"）
 							filterCard: function (card, player) {
 								return !!(card && card.hasGaintag && card.hasGaintag('zl_xing'));
 							},
 							selectCard: [1, 1],
 							check: function (card) { return 1 + get.value(card); },
 							viewAs: function (cards) {
-								// 直接返回该牌本身 ⇒ 玩家可以像手牌一样使用它
+								// 直接返回该牌本身 ⇒ 像手牌一样使用它
 								return cards[0];
 							},
-							prompt: '七星：将一张「星」当作手牌使用或打出（用后需弃置一张牌）',
+							prompt: '七星：使用一张「星」（无距离与次数限制）',
 							// 无距离与次数限制
 							mod: {
 								cardUsable: function (card, player, num) {
@@ -2994,13 +2993,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (card && card.hasGaintag && card.hasGaintag('zl_xing')) return true;
 								},
 							},
-							// 用后弃一张牌（定稿口径的代价）
-							onuse: function (result, player) {
-								try {
-									player.chooseToDiscard('he', '七星：使用「星」后弃置一张牌', 1)
-										.set('ai', function (card) { return 1; });
-								} catch (e) { }
-							},
+							// ★ 按用户要求去掉"用后弃一张牌"的代价（原来是 chooseToDiscard）
 						},
 						// 七星（每轮开始时）
 						zl_qixing: {
