@@ -355,7 +355,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'zl_huoji': '火计',
 						'zl_huoji_info': '神威技，每局游戏限一次。你可以弃置所有的「星」，选择一名角色，使其受到X点火焰伤害（X为你发动此技能时的体力值）。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
 						'cc_jianxiong': '奸雄',
-						'cc_jianxiong_info': '每轮开始时，你移去你所有的「略」。当你受到伤害后，每1点伤害你在「智」中记录一次造成此伤害的牌（将其置于你的武将牌上，称为「智」），你获得1枚「略」，然后摸X张牌（X为你获得此「略」后拥有的「略」数量）。',
+						'cc_jianxiong_info': '每轮开始时，你清除你身上的「略」。当你受到1点伤害后，你记录此牌X次于「智」中（X为本轮受到的伤害），并获得一个「略」，然后摸X张牌（X为「略」标记的数量）。',
 						'cc_zhi_zone': '智',
 						'cc_zhi_zone_info': '你受到伤害后置于武将牌上的牌，可供〖志略〗使用。',
 						'cc_qingzheng': '清正',
@@ -3340,17 +3340,30 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								event.pool.remove(card);
 								card.ccFromZhi = true;
-								// 使用：先把牌从 's' 区移到手里再 useCard ——
-								//   's' 区的牌不在任何"可出牌"区域，引擎的使用特效会去取不存在的字段而崩
-								//   （用户实测 `_shiyongkapaitexiao_` 栈）。gain 到手牌后走标准出牌流程。
+								// 诊断：确认取到牌
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('志略 取到牌=' + get.translation(card) +
+										' 位置=' + get.position(card) + ' 在手牌=' + player.getCards('h').contains(card));
+								} catch (eD0) { }
+								// 使用：先把牌从「智」区移入手牌再走标准出牌流程
+								//   （不在任何"可出牌"区域的牌无法直接使用）
 								try {
 									if (!player.getCards('h').contains(card)) {
 										player.gain(card, 'draw');
 									}
-									player.useCard(card, [card], false, false);
-									game.log(player, '【志略】：使用了', get.translation(card));
+								} catch (eG) {
+									try { (game.bzDiag2 || lib.bzDiag2)('志略 gain 异常：' + eG.message); } catch (eG2) { }
+								}
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('志略 gain 后 位置=' + get.position(card) +
+										' 在手牌=' + player.getCards('h').contains(card));
+								} catch (eD1) { }
+								// 用 chooseUseTarget 让玩家选目标（useCard 的 false,false 无法指定目标）
+								try {
+									player.chooseUseTarget(card, '志略：使用' + get.translation(card) + '（无距离、次数限制）', false, false);
+									game.log(player, '【志略】：使用', get.translation(card));
 								} catch (eZ) {
-									try { game.log(player, '【志略】：', get.translation(card), '无法使用'); } catch (eZ2) { }
+									try { (game.bzDiag2 || lib.bzDiag2)('志略 useTarget 异常：' + eZ.message); } catch (eZ2) { }
 								}
 								'step 3'
 								event.goto(1);
