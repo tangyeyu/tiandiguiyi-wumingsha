@@ -3878,7 +3878,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   子技能不进面板靠"不给译名"实现（另有 sub 标记双保险）。
 						zyyi_sha: {
 							sub: true, charlotte: true,
-							audio: 'wuyi_sha',
+							audio: ['wuyi_sha', 1],
 							enable: ['chooseToUse', 'chooseToRespond'],
 							filterCard: { name: 'shan' },
 							viewAs: { name: 'sha' },
@@ -3893,7 +3893,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 武翊·闪：一张【杀】当【闪】使用或打出
 						zyyi_shan: {
 							sub: true, charlotte: true, nopop: true,   // ★ 不进技能面板
-							audio: 'wuyi_shan',
+							audio: ['wuyi_shan', 1],
 							enable: ['chooseToRespond', 'chooseToUse'],
 							filterCard: { name: 'sha' },
 							viewAs: { name: 'shan' },
@@ -3908,7 +3908,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 武翊·装：回合开始时四选一，先从牌堆检索、再弃牌堆（借鉴 xianding.js:1152 / offline.js:6370）
 						zyyi_equip: {
 							sub: true, charlotte: true, nopop: true,   // ★ 不进技能面板
-							audio: 'wuyi_equip', locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							audio: ['wuyi_equip', 1], locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'phaseBegin' },
 							filter: function (event, player) {
 								try {
@@ -3982,7 +3982,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 武翊·兵：造成伤害时可弃一张武器牌令伤害+1（同一回合限一次，不可叠加）
 						zyyi_weapon: {
-							audio: 'wuyi_weapon', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: ['wuyi_weapon', 1], locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★★ 必须是 source 侧 ★★
 							//   设计口径是"你造成伤害时"（武翊4）；而 player 侧 = 我参与了该伤害事件
 							//   （无论我是造成方还是承受方）⇒ 实战中"别人打我"也弹出加伤提示。
@@ -4016,7 +4016,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 武翊·甲：受到伤害时可弃一张防具牌**完全抵消**（借鉴 offline.js:8444：damageBegin3 + trigger.cancel）
 						zyyi_armor: {
-							audio: 'wuyi_armor', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: ['wuyi_armor', 1], locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { player: 'damageBegin3' },
 							filter: function (event, player) {
 								var _e2 = 0, _h2 = 0;
@@ -4055,12 +4055,22 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   进攻马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
 						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
-							audio: 'wuyi_hatk', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: ['wuyi_hatk', 1], locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ equipAfter 必须用 **global** 侧：原版 equipAfter 全部是 global（player 侧 0 例）
 							//   ⇒ 写成 player:[...equipAfter] 接不到事件，"曾装备"标记永不置位。
 							//   loseAfter 用 player 侧是对的（原版 102 例，如 collab.js:2351）。
 							trigger: { source: 'damageBegin2', player: 'loseAfter', global: 'equipAfter' },
 							filter: function (event, player) {
+								var _dbg = function (why) {
+									try {
+									var m = '攻马·filter 事件=' + event.name + '｜' + why +
+									'｜source=' + (event.source ? event.source.name : '无') +
+									'｜eventPlayer=' + (event.player ? event.player.name : '无') +
+									'｜我=' + player.name +
+									'｜曾装备=' + !!player.storage.zyyi_atk_horse + '｜已用过=' + !!player.storage.zyyi_atk_used;
+									(game.bzDiag2 || lib.bzDiag2)(m);
+									} catch (e) { }
+								};
 								// ★ 进入装备区：记录"曾装上进攻马"（供伤害分支判断；离场时清除并刷新）
 								if (event.name == 'equipAfter') {
 									if (event.player != player) return false;   // global 侧 ⇒ 只认自己的装备事件
@@ -4088,11 +4098,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								game.log(player, '【武翊·诊断】', _a2);
 								(game.bzDiag2 || lib.bzDiag2)('武翊·攻马入口 ' + _a2);
 								} catch (eD2) { }
-								if (event.zyyi_cancelled) return false;
-								if (event.player == player) return false;   // 我是承受方 ⇒ 不是"造成伤害"
+								if (event.zyyi_cancelled) { _dbg('cancelled'); return false; }
+								if (event.player == player) { _dbg('我是承受方'); return false; }
 								// ★ 用"曾装上进攻马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
-								if (!player.storage.zyyi_atk_horse) return false;
-								return !player.storage.zyyi_atk_used;
+								if (!player.storage.zyyi_atk_horse) { _dbg('曾装备标记未置位'); return false; }
+								if (player.storage.zyyi_atk_used) { _dbg('本局已用过'); return false; }
+								_dbg('通过');
+								return true;
 							},
 							content: function () {
 								'step 0'
@@ -4122,10 +4134,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   防御马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
 						//   ★ 子类型依据：game.js:13026 equip3=防御马、22032 equip3=+1马栏
 						zyyi_horse_def: {
-							audio: 'wuyi_hdef', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: ['wuyi_hdef', 1], locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ 同攻马：equipAfter 用 global 侧（原版 player 侧 0 例），loseAfter 用 player 侧
 							trigger: { player: ['damageBegin3', 'loseAfter'], global: 'equipAfter' },
 							filter: function (event, player) {
+								var _dbg2 = function (why) {
+									try {
+									var m = '防马·filter 事件=' + event.name + '｜' + why +
+									'｜source=' + (event.source ? event.source.name : '无') +
+									'｜eventPlayer=' + (event.player ? event.player.name : '无') +
+									'｜我=' + player.name +
+									'｜曾装备=' + !!player.storage.zyyi_def_horse + '｜已用过=' + !!player.storage.zyyi_def_used;
+									(game.bzDiag2 || lib.bzDiag2)(m);
+									} catch (e) { }
+								};
 								// ★ 进入装备区：记录"曾装上防御马"（供受伤分支判断；离场时清除并刷新）
 								if (event.name == 'equipAfter') {
 									if (event.player != player) return false;   // global 侧 ⇒ 只认自己的装备事件
@@ -4155,10 +4177,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   我**造成**伤害时也会进这里。
 								//   战报实证：12:43:13"名赵云对神关羽使用了杀"后立刻打出
 								//   "【武翊】：防御马在场，免疫此伤害" —— 我的攻击被自己免疫了。
-								if (event.source == player) return false;   // 我是造成方 ⇒ 不是"受到伤害"
+								if (event.source == player) { _dbg2('我是造成方'); return false; }
 								// ★ 用"曾装上防御马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
-								if (!player.storage.zyyi_def_horse) return false;
-								return !player.storage.zyyi_def_used;
+								if (!player.storage.zyyi_def_horse) { _dbg2('曾装备标记未置位'); return false; }
+								if (player.storage.zyyi_def_used) { _dbg2('本局已用过'); return false; }
+								_dbg2('通过');
+								return true;
 							},
 							content: function () {
 								'step 0'
@@ -4253,7 +4277,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 摧锋·锐：每轮限一次，回合结束时摸一张并执行额外回合（含判定/摸牌）
 						// 借鉴 extra.js:1900 → player.insertPhase()
 						zycf_extra: {
-							audio: 'cuifeng_extra', locked: false, charlotte: true, sub: true, popup: true, direct: true,
+							audio: ['cuifeng_extra', 1], locked: false, charlotte: true, sub: true, popup: true, direct: true,
 							// ★ 去掉 forced ⇒ **由玩家选择是否发动**（用户口径："是否发动应由玩家决定"）
 							// ★★ 必须是 global ★★ 设计口径"每回合结束时"= **任何人的回合**结束
 							//   （与摧锋·决 同一口径）。写成 player 侧只在自身回合结束触发
@@ -4287,7 +4311,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 摧锋·决：回合结束时弃一张装备（代价），视为对当前回合角色使用【决斗】，伤害+X（至多3）
 						zycf_duel: {
-							audio: 'cuifeng_duel', forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
+							audio: ['cuifeng_duel', 1], forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ 必须是 **global**："每回合结束时"= **任何人的回合**结束。
 							//   写成 player 侧只在自己回合触发 ⇒ 目标恒为自己 ⇒ 被"不能以自己为目标"拦掉（实测 X=0、技能失效）。
 							trigger: { global: 'phaseJieshuBegin' },
@@ -4367,7 +4391,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 摧锋·势：为 zycf_duel 提供"伤害至少为1、且 +X"的加成
 						zycf_duel_buff: {
-							audio: 'cuifeng_buff',
+							audio: ['cuifeng_buff', 1],
 							charlotte: true, sub: true, popup: false,
 							trigger: { source: 'damageBegin4' },
 							filter: function (event, player) {
