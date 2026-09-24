@@ -186,45 +186,64 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				if (lib && !lib.bzDiag2) lib.bzDiag2 = bzDiag;
 				if (game && !game.bzDiag2) game.bzDiag2 = bzDiag;
 
-				// ==== 把引擎的「战报」（game.log）镜像到文件 ====
-				// ★ 为什么需要：`game.log` 只把内容塞进侧栏 DOM，**不落盘**
-				//   （引擎目录 Home/logs 是空的；战报不进任何文件）。
-				//   而战报是排查技能行为最常用的观测面 —— 为了"我自己能读"，
-				//   这里把 game.log 用**透传包装**镜像一份到 C:/bz-battle.log。
-				//   · 包装是透传的（原函数照常执行），不影响游戏行为
-				//   · 每一行都带时间戳；只在包加载时包装一次
-				//   · 写盘失败静默（不影响游戏）
-				//   · 想关掉：把 BZ_MIRROR_BATTLE 改成 false，或删掉这段
+				// ==== 把引擎的「战报」镜像到文件 ====
+				// ★ 为什么需要：`game.log` 只把内容交给 `this.send('log',items)`，
+				//   最终只渲染到侧栏 DOM，**不落盘**（引擎目录 Home/logs 是空的）。
+				//   战报是排查技能行为最常用的观测面 —— 为了"作者自己能读"，
+				//   这里把战报镜像一份到 C:/bz-battle.log。
+				// ★ 挂点选择：`game.log` 的实现用 `eval('items.push('+arguments[i]+')')`
+				//   解析参数（参数是**代码字符串**），在那一层包装既难兼容也可能被绕过；
+				//   而 `game.send('log', items)` 是**唯一的输出出口**且 items 已解析好
+				//   ⇒ 包 `game.send` 更可靠。
+				//   · 透传：先调用原函数（游戏行为完全不变），再写文件
+				//   · 只包装一次（game.bzSendHooked 标记）
+				//   · 安装成功即写一行"安装自证"，便于确认 hook 是否生效
 				(function () {
 					try {
-						if (!game || !game.log || game.bzLogHooked) return;
-						var orig = game.log;
-						var fmt = function (args) {
-							var out = [];
-							for (var i = 0; i < args.length; i++) {
-								var a = args[i];
+						var _bv = 0;   // 版本号：每次改这段就 +1，便于确认加载到了哪一版
+						if (!game || !game.send) return;
+						if (game.bzSendHooked === 1) return;   // 已装过（幂等）
+						var origSend = game.send;
+						var fmtOne = function (a) {
+							try {
+								if (typeof a == 'string') return a;
+								if (a == null) return String(a);
+								if (a && a.name) return a.name;                    // 玩家
+								if (a && a.nodeType) return get.translation(a);    // 牌
+								if (Array.isArray(a)) return a.map(fmtOne).join('');
+								return String(a);
+							} catch (e) { return '?'; }
+						};
+						var fmtAll = function (items) {
+							try {
+								if (!items) return '';
+								if (typeof items == 'string') return items;
+								var out = '';
+								for (var i = 0; i < items.length; i++) out += fmtOne(items[i]);
+								return out;
+							} catch (e) { return ''; }
+						};
+						game.send = function (type) {
+							var args = Array.prototype.slice.call(arguments);
+							try { origSend.apply(game, args); } catch (e) { }
+							if (type === 'log') {
 								try {
-									if (typeof a == 'string') out.push(a);
-									else if (a == null) out.push(String(a));
-									else if (a && a.name) out.push(a.name);          // 玩家对象
-									else if (a && a.nodeType) out.push(get.translation(a)); // 牌
-									else out.push(String(a));
-								} catch (e) { out.push('?'); }
+									require('fs').appendFileSync('C:/bz-battle.log',
+										new Date().toLocaleTimeString() + '  ' + fmtAll(args[1]) + '\n');
+								} catch (e) { }
 							}
-							return out.join('');
+							return;
 						};
-						game.log = function () {
-							try {
-								orig.apply(game, arguments);
-							} catch (e) { }
-							try {
-								var text = fmt(Array.prototype.slice.call(arguments));
-								require('fs').appendFileSync('C:/bz-battle.log',
-									new Date().toLocaleTimeString() + '  ' + text + '\n');
-							} catch (e) { }
-						};
-						game.bzLogHooked = true;
-					} catch (eHook) { }
+						game.bzSendHooked = 1;
+						// 安装自证（能读到这行 ⇒ hook 已生效）
+						require('fs').appendFileSync('C:/bz-battle.log',
+							'\n===== 战报镜像已安装 (bzSendHooked=1) ' + new Date().toLocaleString() + ' =====\n');
+					} catch (eHook) {
+						try {
+							require('fs').appendFileSync('C:/bz-battle.log',
+								'战报镜像安装失败: ' + eHook.message + '\n');
+						} catch (e2) { }
+					}
 				})();
 
 				pkg = {
