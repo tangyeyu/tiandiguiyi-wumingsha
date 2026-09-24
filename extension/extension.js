@@ -3269,35 +3269,43 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!event.pool.length) { event.finish(); return; }
 								'step 1'
 								if (!event.pool.length) { event.finish(); return; }
-								// ★ 用 [list,'vcard'] 而不是 [list,'card']：
-								//   本包能正常工作的 dy_wuku（破竹）就是 'vcard'
-								//   （L2055：chooseButton(['…', [names,'vcard']], true)）。
-								//   用 'card' 时按钮渲染器拿到的不是牌对象 ⇒
-								//   `item.cloneNode is not a function`（用户实测崩溃）。
-								//   另用 get.cardsInfo 转成展示对象，避免直接塞裸牌 DOM。
-								var list = get.cardsInfo(event.pool.slice(0));
-								player.chooseButton(['智：选择一张牌使用（无距离、次数限制）', [list, 'vcard']], true)
+								// ★ 传**实体牌数组** + 'vcard'（本包 dy_wuku 破竹的可用写法：
+								//   chooseButton(['…', [names,'vcard']], true)）。
+								//   之前两版都错：'card' ⇒ item.cloneNode 崩；
+								//   get.cardsInfo() 包装 ⇒ result.links 的元素不带预期字段 ⇒
+								//   `Cannot read properties of undefined (reading 'name')`。
+								player.chooseButton(['智：选择一张牌使用（无距离、次数限制）', [event.pool.slice(0), 'vcard']], true)
 									.set('ai', function (button) { return 1 + get.value(button.link); });
 								'step 2'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
-								// result.links 可能是展示对象或牌本身，两种都兼容
+								// 逐层兜底取牌：links[0] 可能是牌本身、带 .link 的按钮对象、或 {name:…} 展示对象
 								var pick = result.links[0];
-								var card = (pick && pick.link) ? pick.link : pick;
-								if (!card || !card.name) {
-									// 退化：按展示对象的牌名在「智」里找对应实体
-									if (pick && pick.name) {
-										for (var zz = 0; zz < event.pool.length; zz++) {
-											if (get.name(event.pool[zz]) == pick.name) { card = event.pool[zz]; break; }
+								var card = null;
+								if (pick) {
+									if (pick.nodeType || (pick.hasGaintag && pick.hasGaintag('cc_zhi'))) card = pick;
+									else if (pick.link && pick.link.nodeType) card = pick.link;
+									else {
+										var wantName = pick.name || (pick.link && pick.link.name);
+										if (wantName) {
+											for (var zz = 0; zz < event.pool.length; zz++) {
+												if (get.name(event.pool[zz]) == wantName) { card = event.pool[zz]; break; }
+											}
 										}
 									}
 								}
-								if (!card) { event.finish(); return; }
+								if (!card) {
+									try { (game.bzDiag2 || lib.bzDiag2)('志略：取牌失败 pick=' + JSON.stringify(pick && (pick.name || pick.link || Object.keys(pick)))); } catch (eD) { }
+									event.finish(); return;
+								}
 								event.pool.remove(card);
 								card.ccFromZhi = true;
-								// ★ 用 player.useCard 直接使用（不再 chooseUseTarget）：
-								//   「智」里的牌在 ui.special 区，chooseUseTarget 的合法性判定
-								//   不认这个区的牌；直接 useCard 才能走出来（无距离、次数限制由下列参数放开）。
+								// 使用：先把牌从 's' 区移到手里再 useCard ——
+								//   's' 区的牌不在任何"可出牌"区域，引擎的使用特效会去取不存在的字段而崩
+								//   （用户实测 `_shiyongkapaitexiao_` 栈）。gain 到手牌后走标准出牌流程。
 								try {
+									if (!player.getCards('h').contains(card)) {
+										player.gain(card, 'draw');
+									}
 									player.useCard(card, [card], false, false);
 									game.log(player, '【志略】：使用了', get.translation(card));
 								} catch (eZ) {
