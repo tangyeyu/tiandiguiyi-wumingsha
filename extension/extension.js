@@ -3088,20 +3088,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								var _h = player.countCards('h');
 								var _s = lib.skill.zl_xing_use.stars(player).length;
 								var _in = player.isIn();
-								// ★ 每张牌限一次：同一张牌已经触发过就不再触发
-								//   （用牌的**对象身份**做闸门 —— 同一张牌可能被多次结算）
-								var _dup = !!(event.card && player.storage.zl_kc_card === event.card);
+								// ※ 按用户要求**不做**"每张牌限一次"
+								//   （同一张牌的每次结算都可触发）
 								// ★ 双通道诊断：把各条件都打出来（定位空城为何不触发）
 								try {
 									var _kc = '事件=' + event.name + '｜在场=' + _in + '｜手牌=' + _h +
-										'｜星=' + _s + '｜重复=' + (_dup ? 1 : 0) +
+										'｜星=' + _s +
 										'｜牌=' + (event.card ? get.translation(event.card) : '-');
 									game.log(player, '【空城·诊断】', _kc);
 									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 ' + _kc);
 								} catch (eD) { }
 								if (!_in) return false;
 								if (_h > 0) return false;                 // 必须没有手牌
-								if (_dup) return false;                   // 每张牌限一次
 								return _s > 0;                            // 必须有「星」
 							},
 							content: function () {
@@ -3127,8 +3125,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (star && star.nodeType) {
 									try { player.lose([star], ui.discardPile); } catch (eL) { }
 								}
-								// 记下"这张牌已处理过" ⇒ 实现"每张牌限一次"
-								player.storage.zl_kc_card = trigger.card;
 								// ★★ 令此牌**整体无效** —— 照抄原版 谋诸葛亮「看破」（sb.js:3087-3091）★★
 								//     trigger.targets.length = 0;
 								//     trigger.all_excluded = true;
