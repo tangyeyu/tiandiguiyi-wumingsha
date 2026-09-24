@@ -3183,9 +3183,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 'guanxing_re_zhugeliang', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'phaseBefore' },
 							filter: function (event, player) {
-								// ★ 双通道诊断：确认 roundStart 是否派发
+								// ★★★ 无条件诊断（放在最前，任何 return 之前）★★★
+								//   只要 filter 被评估就留痕；同时打印轮号、记录轮号、技能是否在身上，
+								//   用于区分三种情况：①根本没触发 ②触发了但被闸门挡住 ③技能没挂上
 								try {
-									var _q = 'qixing入口 事件=' + event.name + '｜在场=' + player.isIn();
+									var _q = 'qixing入口 事件=' + event.name +
+										'｜轮号=' + game.roundNumber +
+										'｜记录=' + player.storage.zl_qixing_round +
+										'｜在场=' + player.isIn() +
+										'｜有七星=' + player.hasSkill('zl_qixing') +
+										'｜有星区=' + player.hasSkill('zl_xing_tu');
 									game.log(player, '【七星·诊断】', _q);
 									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 ' + _q);
 								} catch (eD0) { }
