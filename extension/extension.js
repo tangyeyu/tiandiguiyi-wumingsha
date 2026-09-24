@@ -3009,7 +3009,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// ★ 从**容器**里选一张星（不列手牌）
 								//   chooseButton([...], [list,'vcard']) 是原版"从自定义牌集选牌"的标准写法
 								//   （clan.js:235 / collab.js:2098 等多处），也是曹操志略已验证可用的写法。
-								player.chooseButton(['七星：选择一张「星」使用', [event.zs.slice(0), 'vcard']], true)
+								// ★★ 用 chooseCardButton（专门选**实体牌**的 API）★★
+								//   game.js:24886 chooseCardButton(cards, prompt, forced)
+								//   内部是 chooseButton(forced,select,'hidden',[prompt,cards,'hidden'])
+								//   ⇒ 三元素 + 'hidden' 类型，按钮直接由牌节点渲染（显示**卡牌**）。
+								//   我此前传 [list,'vcard'] ⇒ 引擎按"牌名列表"渲染（显示成牌名）；
+								//   传 [list,'card'] ⇒ 渲染器拿不到牌节点 ⇒ item.cloneNode 崩。
+								player.chooseCardButton(event.zs.slice(0), '七星：选择一张「星」使用', true)
 									.set('ai', function (button) { return 1 + get.value(button.link); });
 								'step 1'
 								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
@@ -3111,7 +3117,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 content进入 星=' + stars.length);
 								} catch (eD2) { }
 								if (!stars.length) { event.finish(); return; }
-								player.chooseButton(['空城：选择一张「星」弃置', [stars.slice(0), 'vcard']], true)
+								// ★ 同上：选实体牌用 chooseCardButton
+								player.chooseCardButton(stars.slice(0), '空城：选择一张「星」弃置', true)
 									.set('ai', function (button) { return 1 + get.value(button.link); });
 								'step 1'
 								var pick = (result && result.links && result.links.length) ? result.links[0] : null;
