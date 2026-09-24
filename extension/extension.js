@@ -345,6 +345,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'tdgx_shenwei_kill',
 							'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_zhugeliang.jpg']],
+						tdgx_zhaoyun: ['male', 'shu', 4, [
+							'zyyi_sha', 'zyyi_shan',
+							'zyyi_equip', 'zyyi_limit',
+							'zyyi_weapon', 'zyyi_armor',
+							'zyyi_horse_atk', 'zyyi_horse_def',
+							'zyyi_ready', 'zyyi_unlock', 'zyyi_equip_draw',
+							'zycf_extra', 'zycf_duel', 'zycf_duel_buff',
+							'tdgx_shenwei_kill', 'tdgx_turn_reset'
+						]],
 						tdgx_caocao: ['male', 'wei', 4, [
 							'cc_jianxiong',
 							'cc_qingzheng',
@@ -416,6 +425,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'zl_huoji': '火计',
 						'zl_huoji_info': '神威技，每局游戏限一次。你可以弃置所有的「星」，选择一名角色，使其受到X点火焰伤害（X为你发动此技能时的体力值）。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
 						'cc_jianxiong': '奸雄',
+						'tdgx_zhaoyun': '名赵云',
+						'zyyi': '武翊',
+						'zyyi_info': '①你可以将一张【杀】当【闪】、【闪】当【杀】使用或打出。②回合开始时，你从"进攻马/防御马/武器/防具"中选择一项，先从牌堆、再弃牌堆检索并获得该装备（两处都没有则不获得）。③你的手牌上限+X（X为你装备区内已装备的栏位数）。④你造成伤害时，可弃置一张武器牌（装备区或手牌），令此伤害+1（同一回合限一次）。⑤你受到伤害时，可弃置一张防具牌（装备区或手牌），完全抵消此伤害。⑥当你装备区内有进攻马时，每局第一次你受到伤害免疫之；进攻马离开装备区时你摸两张牌（同栏位重装或被夺走则刷新）。⑦当你装备区内有防御马时，每局第一次你造成的伤害+1；防御马离开装备区时你摸两张牌（同上刷新）。⑧你使用或打出过的基本牌牌名数（火杀/雷杀不计为独立牌名）本局累计达到1/2/3时，依次获得：基本牌无次数限制/无距离限制/获得或失去装备时摸一张牌。',
+						'zycf': '摧锋',
+						'zycf_info': '①每轮限一次，每回合结束时，你可以摸一张牌并执行一个额外的回合（该额外回合结束时不能再发动本项）。②每回合结束时，你可以弃置一张装备牌，然后视为对当前回合角色使用一张【决斗】，此【决斗】造成的伤害+X（X为本回合所有角色使用或打出【杀】的次数，至多为3）；该【决斗】不能以你自己为目标，且至少造成1点伤害（若被【无懈可击】取消则保底不成立）。',
 						'cc_jianxiong_info': '每轮开始时，你清除你身上的「略」。当你受到1点伤害后，你记录此牌X次于「智」中（X为本轮受到的伤害；同一张实体牌无法重复记录时，从牌堆补一张同名牌），并获得一个「略」，然后摸X张牌（X为「略」标记的数量）。',
 						'cc_zhi_zone': '智',
 						'cc_zhi_zone_info': '你受到伤害后置于武将牌上的牌，可供〖志略〗使用。',
@@ -3656,6 +3670,416 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.goto(1);
 							},
 						},
+						// ────────────── 名·赵云（四血/蜀）──────────────
+						// ★ 设计口径见 docs/新将审查-赵云.md（娱乐向超模；全部裁定已并入）
+						// 卡面一个技能名「武翊」，实现上按触发类型内部分装（用户已确认允许）。
+
+						// 武翊·杀：一张【闪】当【杀】使用或打出（借鉴龙胆 standard.js:1275）
+						zyyi_sha: {
+							audio: 'longdan_sha',
+							enable: ['chooseToUse', 'chooseToRespond'],
+							filterCard: { name: 'shan' },
+							viewAs: { name: 'sha' },
+							position: 'hs',
+							prompt: '武翊：将一张【闪】当【杀】使用或打出',
+							check: function () { return 1; },
+							viewAsFilter: function (player) {
+								return player.countCards('hs', 'shan') > 0;
+							},
+							ai: { respondSha: true, order: 4, useful: -1, value: -1 },
+						},
+						// 武翊·闪：一张【杀】当【闪】使用或打出
+						zyyi_shan: {
+							audio: 'longdan_sha',
+							enable: ['chooseToRespond', 'chooseToUse'],
+							filterCard: { name: 'sha' },
+							viewAs: { name: 'shan' },
+							position: 'hs',
+							prompt: '武翊：将一张【杀】当【闪】使用或打出',
+							check: function () { return 1; },
+							viewAsFilter: function (player) {
+								return player.countCards('hs', 'sha') > 0;
+							},
+							ai: { respondShan: true, useful: -1, value: -1 },
+						},
+						// 武翊·装：回合开始时四选一，先从牌堆检索、再弃牌堆（借鉴 xianding.js:1152 / offline.js:6370）
+						zyyi_equip: {
+							audio: 2, locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							trigger: { player: 'phaseBegin' },
+							filter: function (event, player) { return player.isIn(); },
+							content: function () {
+								'step 0'
+								// 四个选项 → 子类型（game.js:13026/13028：equip3=防御马/+1，equip4=攻击马/-1）
+								event.subs = ['equip4', 'equip3', 'equip1', 'equip2'];
+								event.names = ['进攻马（-1马）', '防御马（+1马）', '武器', '防具'];
+								var controls = [];
+								for (var i = 0; i < event.names.length; i++) controls.push(event.names[i]);
+								player.chooseControl(controls)
+									.set('prompt', '武翊：选择一项，从牌堆（无则弃牌堆）获得该装备')
+									.set('ai', function () { return 0; });
+								'step 1'
+								if (!result || !result.control) { event.finish(); return; }
+								var idx = event.names.indexOf(result.control);
+								if (idx < 0) { event.finish(); return; }
+								var sub = event.subs[idx];
+								var pick = function () { return function (c) { return get.subtype(c) == sub; }; };
+								// 先从牌堆找
+								var card = null;
+								try {
+									var pile = Array.from(ui.cardPile.childNodes);
+									for (var a = 0; a < pile.length; a++) {
+										if (get.subtype(pile[a]) == sub) { card = pile[a]; break; }
+									}
+								} catch (e1) { }
+								// 牌堆没有 ⇒ 弃牌堆
+								if (!card) {
+									try {
+										var dis = Array.from(ui.discardPile.childNodes);
+										for (var b = 0; b < dis.length; b++) {
+											if (get.subtype(dis[b]) == sub) { card = dis[b]; break; }
+										}
+									} catch (e2) { }
+								}
+								// 两处都没有 ⇒ 不获得
+								if (!card) {
+									game.log(player, '【武翊】：牌堆与弃牌堆都没有', event.names[idx], '，未获得');
+									event.finish(); return;
+								}
+								player.gain(card, 'gain2');
+								game.log(player, '【武翊】：获得了', get.translation(card));
+								event.finish(); return;
+							},
+						},
+						// 武翊·限：手牌上限 +已装备栏位数（借鉴 clan.js:2276）
+						zyyi_limit: {
+							charlotte: true, sub: true, popup: false,
+							mod: {
+								maxHandcard: function (player, num) {
+									var n = 0;
+									var keys = ['equip1', 'equip2', 'equip3', 'equip4'];
+									for (var i = 0; i < keys.length; i++) {
+										if (player.getEquip(keys[i].slice(5) - 0)) n++;
+									}
+									return num + n;
+								},
+							},
+						},
+						// 武翊·兵：造成伤害时可弃一张武器牌令伤害+1（同一回合限一次，不可叠加）
+						zyyi_weapon: {
+							audio: 2, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: 'damageBegin2' },
+							filter: function (event, player) {
+								if (!player.storage.zyyi_weapon_used) {
+									// 未用：需要有武器牌（装备区或手牌）
+								} else return false;
+								if (player.countCards('e', { subtype: 'equip1' }) + player.countCards('h', { subtype: 'equip1' }) <= 0) return false;
+								return true;
+							},
+							content: function () {
+								'step 0'
+								var list = player.getCards('e', { subtype: 'equip1' }).concat(player.getCards('h', { subtype: 'equip1' }));
+								if (!list.length) { event.finish(); return; }
+								player.chooseButton(['武翊：弃置一张武器牌，令此伤害+1', [list, 'vcard']], true)
+									.set('ai', function (button) { return 1; });
+								'step 1'
+								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
+								var card = result.links[0];
+								if (card && card.link) card = card.link;
+								if (!card || !card.nodeType) { event.finish(); return; }
+								player.discard(card);
+								player.storage.zyyi_weapon_used = true;
+								trigger.num += 1;
+								game.log(player, '【武翊】：弃置武器', get.translation(card), '，此伤害+1');
+								event.finish(); return;
+							},
+						},
+						// 武翊·甲：受到伤害时可弃一张防具牌**完全抵消**（借鉴 offline.js:8444：damageBegin3 + trigger.cancel）
+						zyyi_armor: {
+							audio: 2, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: 'damageBegin3' },
+							filter: function (event, player) {
+								if (event.zyyi_cancelled) return false;   // 与武翊6 是同一机制，不能叠加
+								return player.countCards('e', { subtype: 'equip2' }) + player.countCards('h', { subtype: 'equip2' }) > 0;
+							},
+							content: function () {
+								'step 0'
+								var list = player.getCards('e', { subtype: 'equip2' }).concat(player.getCards('h', { subtype: 'equip2' }));
+								if (!list.length) { event.finish(); return; }
+								player.chooseButton(['武翊：弃置一张防具牌，完全抵消此伤害', [list, 'vcard']], true)
+									.set('ai', function (button) { return 1; });
+								'step 1'
+								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
+								var card = result.links[0];
+								if (card && card.link) card = card.link;
+								if (!card || !card.nodeType) { event.finish(); return; }
+								player.discard(card);
+								trigger.zyyi_cancelled = true;    // 供武翊6 判"同一机制不叠加"
+								trigger.cancel();                  // 令此伤害不发生
+								game.log(player, '【武翊】：弃置防具', get.translation(card), '，完全抵消此伤害');
+								event.finish(); return;
+							},
+						},
+						// 武翊·攻马：每局第一次受伤免疫；进攻马离开装备区摸两张（含被夺/替换）
+						zyyi_horse_atk: {
+							audio: 2, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: ['damageBegin3', 'loseAfter'] },
+							filter: function (event, player) {
+								if (event.name == 'loseAfter') {
+									// 装备区离场追踪：借鉴 collab.js:2351（event.getl + hs）
+									try {
+										var evt = event.getl(player);
+										if (!evt || !evt.es || !evt.es.length) return false;
+										for (var i = 0; i < evt.es.length; i++) {
+											if (get.subtype(evt.es[i]) == 'equip4') return true;
+										}
+									} catch (e) { }
+									return false;
+								}
+								// damageBegin3：进攻马在场 + 本次伤害未被取消 + 每局第一次
+								if (event.zyyi_cancelled) return false;
+								if (!player.getEquip(4)) return false;      // 4 号栏 = -1马 = 进攻马
+								return !player.storage.zyyi_atk_used;
+							},
+							content: function () {
+								'step 0'
+								if (event.name == 'loseAfter') {
+									// 马离开装备区 ⇒ 摸两张（本项）+ 武翊8③ 另摸一张（可重复触发）
+									player.draw(2);
+									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌');
+									// 刷新"每局第一次"
+									delete player.storage.zyyi_atk_used;
+									event.finish(); return;
+								}
+								player.storage.zyyi_atk_used = true;
+								trigger.zyyi_cancelled = true;
+								trigger.cancel();                       // 免疫（同一机制，不叠加）
+								game.log(player, '【武翊】：进攻马在场，免疫此伤害');
+								player.chooseBool('武翊：是否弃置装备区内的进攻马？')
+									.set('ai', function () { return false; });
+								'step 1'
+								if (result && result.bool) {
+									var eq = player.getEquip(4);
+									if (eq) player.discard(eq);
+								}
+								event.finish(); return;
+							},
+						},
+						// 武翊·防马：每局第一次造成伤害+1；防御马离开装备区摸两张（含被夺/替换）
+						zyyi_horse_def: {
+							audio: 2, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: ['damageBegin2', 'loseAfter'] },
+							filter: function (event, player) {
+								if (event.name == 'loseAfter') {
+									try {
+										var evt = event.getl(player);
+										if (!evt || !evt.es || !evt.es.length) return false;
+										for (var i = 0; i < evt.es.length; i++) {
+											if (get.subtype(evt.es[i]) == 'equip3') return true;
+										}
+									} catch (e) { }
+									return false;
+								}
+								if (!player.getEquip(3)) return false;      // 3 号栏 = +1马 = 防御马
+								return !player.storage.zyyi_def_used;
+							},
+							content: function () {
+								'step 0'
+								if (event.name == 'loseAfter') {
+									player.draw(2);
+									game.log(player, '【武翊】：防御马离开装备区，摸两张牌');
+									delete player.storage.zyyi_def_used;
+									event.finish(); return;
+								}
+								player.storage.zyyi_def_used = true;
+								trigger.num += 1;                            // 与武翊4 的 +1 可叠成 +2
+								game.log(player, '【武翊】：防御马在场，此伤害+1');
+								player.chooseBool('武翊：是否弃置装备区内的防御马？')
+									.set('ai', function () { return false; });
+								'step 1'
+								if (result && result.bool) {
+									var eq = player.getEquip(3);
+									if (eq) player.discard(eq);
+								}
+								event.finish(); return;
+							},
+						},
+						// 武翊·成：基本牌牌名数（火杀/雷杀不算独立牌名）本局累计解锁三段
+						zyyi_ready: {
+							audio: 2, locked: true, forced: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: ['useCardAfter', 'respondAfter'] },
+							filter: function (event, player) {
+								var c = event.card;
+								if (!c) return false;
+								if (get.type(c) != 'basic') return false;
+								return true;
+							},
+							content: function () {
+								// 记录"用过的不同基本牌牌名数"
+								// 火杀/雷杀不算独立牌名 ⇒ get.name 返回 'sha' 时统一归一为 'sha'
+								var raw = get.name(trigger.card);
+								var n = (raw == 'sha' || raw == 'huosha' || raw == 'leisha') ? 'sha' : raw;
+								if (n != 'sha' && n != 'shan' && n != 'tao' && n != 'jiu') { event.finish(); return; }
+								if (!player.storage.zyyi_names) player.storage.zyyi_names = [];
+								if (player.storage.zyyi_names.indexOf(n) < 0) {
+									player.storage.zyyi_names.push(n);
+									game.log(player, '【武翊】：基本牌牌名数达到', get.cnNumber(player.storage.zyyi_names.length));
+								}
+								event.finish(); return;
+							},
+						},
+						// 武翊·解：牌名数 ≥1 基本牌无次数限制；≥2 无距离限制；≥3 获得/失去装备摸一张
+						zyyi_unlock: {
+							charlotte: true, sub: true, popup: false,
+							mod: {
+								cardUsable: function (card, player, num) {
+									var ns = player.storage.zyyi_names || [];
+									if (ns.length < 1) return;
+									if (card && get.type(card) == 'basic') {
+										if (num === false) return false;
+										return (typeof num == 'number' ? num : 0) + 99;
+									}
+								},
+								targetInRange: function (card, player) {
+									var ns = player.storage.zyyi_names || [];
+									if (ns.length < 2) return;
+									if (card && get.type(card) == 'basic') return true;
+								},
+							},
+						},
+						// 武翊·成器：牌名数 ≥3 时，获得/失去装备摸一张（"移动"含装备区内部替换；不含手牌→装备区）
+						zyyi_equip_draw: {
+							audio: 2, locked: true, forced: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: ['loseAfter', 'equipAfter'] },
+							filter: function (event, player) {
+								var ns = player.storage.zyyi_names || [];
+								if (ns.length < 3) return false;
+								try {
+									var evt = event.getl(player);
+									if (evt && evt.es && evt.es.length) return true;   // 装备区失去
+									if (event.name == 'equipAfter' && event.cards && event.cards.length) {
+										for (var i = 0; i < event.cards.length; i++) {
+											if (get.position(event.cards[i]) == 'e') return true;
+										}
+									}
+								} catch (e) { }
+								return false;
+							},
+							content: function () {
+								player.draw();
+								event.finish(); return;
+							},
+						},
+
+						// 摧锋·锐：每轮限一次，回合结束时摸一张并执行额外回合（含判定/摸牌）
+						// 借鉴 extra.js:1900 → player.insertPhase()
+						zycf_extra: {
+							audio: 2, forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: 'phaseJieshuBegin' },
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								if (player.storage.zycf_in_extra) return false;      // 额外回合结束时不能再发动
+								if (game.roundNumber == player.storage.zycf_round) return false;   // 每轮限一次
+								return true;
+							},
+							content: function () {
+								'step 0'
+								player.storage.zycf_round = game.roundNumber;
+								player.draw();
+								game.log(player, '【摧锋】：摸一张牌，并执行一个额外的回合');
+								player.storage.zycf_in_extra = true;
+								player.insertPhase();                                 // 引擎 API（game.js:24507）
+								'step 1'
+								delete player.storage.zycf_in_extra;
+								event.finish(); return;
+							},
+						},
+						// 摧锋·决：回合结束时弃一张装备（代价），视为对当前回合角色使用【决斗】，伤害+X（至多3）
+						zycf_duel: {
+							audio: 2, forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { player: 'phaseJieshuBegin' },
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								// 需要有装备牌可弃，且场上存在其他角色（不能以自己为目标）
+								var cnt = player.getCards('e').length + player.getCards('h').filter(function (c) { return get.type(c) == 'equip'; }).length;
+								if (cnt <= 0) return false;
+								var others = 0;
+								for (var i = 0; i < game.players.length; i++) {
+									if (game.players[i] != player && game.players[i].isIn()) others++;
+								}
+								return others > 0;
+							},
+							content: function () {
+								'step 0'
+								var list = player.getCards('e').slice(0);
+								var hs = player.getCards('h');
+								for (var i = 0; i < hs.length; i++) {
+									if (get.type(hs[i]) == 'equip') list.push(hs[i]);
+								}
+								if (!list.length) { event.finish(); return; }
+								player.chooseButton(['摧锋：弃置一张装备牌，视为对当前回合角色使用【决斗】', [list, 'vcard']], true)
+									.set('ai', function (button) { return 1; });
+								'step 1'
+								if (!result.bool || !result.links || !result.links.length) { event.finish(); return; }
+								var card = result.links[0];
+								if (card && card.link) card = card.link;
+								if (!card || !card.nodeType) { event.finish(); return; }
+								player.discard(card);                                 // 弃置是代价（取消不返还）
+								// X = 本回合所有角色使用/打出【杀】的次数（同一次多目标按 1 次计），至多 3
+								var x = 0;
+								try {
+									var g = game.getGlobalHistory('everything');
+									for (var k = 0; k < g.length; k++) {
+										var rec = g[k];
+										if (!rec) continue;
+										if (rec.useCard) {
+											for (var u = 0; u < rec.useCard.length; u++) {
+												if (get.name(rec.useCard[u].card) == 'sha') x++;
+											}
+										}
+										if (rec.respond) {
+											for (var r = 0; r < rec.respond.length; r++) {
+												if (get.name(rec.respond[r].card) == 'sha') x++;
+											}
+										}
+									}
+								} catch (e) { }
+								if (x > 3) x = 3;
+								event.x = x;
+								// 目标 = 当前回合角色（不能是自己）
+								var tgt = trigger.player;
+								if (!tgt || tgt == player || !tgt.isIn()) {
+									for (var m = 0; m < game.players.length; m++) {
+										if (game.players[m] != player && game.players[m].isIn()) { tgt = game.players[m]; break; }
+									}
+								}
+								event.tgt = tgt;
+								'step 2'
+								if (!event.tgt) { event.finish(); return; }
+								player.useCard({ name: 'juedou' }, event.tgt);
+								game.log(player, '【摧锋】：视为对', event.tgt, '使用【决斗】（伤害+', event.x, '）');
+								event.finish(); return;
+							},
+						},
+						// 摧锋·势：为 zycf_duel 提供"伤害至少为1、且 +X"的加成
+						zycf_duel_buff: {
+							charlotte: true, sub: true, popup: false,
+							trigger: { source: 'damageBegin4' },
+							filter: function (event, player) {
+								try {
+									var uc = event.getParent('useCard');
+									if (!uc || !uc.card) return false;
+									return get.name(uc.card) == 'juedou' && uc.skill == 'zycf_duel';
+								} catch (e) { return false; }
+							},
+							content: function () {
+								var x = 0;
+								try { x = (player.storage.zycf_last_x || 0); } catch (e) { }
+								if (trigger.num < 1) trigger.num = 1;      // 至少造成 1 点伤害
+								trigger.num += x;
+								event.finish(); return;
+							},
+						},
+
 					},
 					// ── 动态技能说明：转换技显示"当前形态" ──
 					// 引擎在 game.js:62155 的 get.skillInfoTranslation 里查这里：
