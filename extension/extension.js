@@ -4165,7 +4165,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 武翊·甲：受到伤害时可弃一张防具牌**完全抵消**（借鉴 offline.js:8444：damageBegin3 + trigger.cancel）
 						zyyi_armor: {
 							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							trigger: { player: 'damageBegin3' },
+							trigger: { player: 'damageBegin4' },
 							filter: function (event, player) {
 								var _e2 = 0, _h2 = 0;
 								try { _e2 = player.countCards('e', { subtype: 'equip2' }); _h2 = player.countCards('h', { subtype: 'equip2' }); } catch (e) { }
@@ -4207,7 +4207,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							// ★ equipAfter 必须用 **global** 侧：原版 equipAfter 全部是 global（player 侧 0 例）
 							//   ⇒ 写成 player:[...equipAfter] 接不到事件，"曾装备"标记永不置位。
 							//   loseAfter 用 player 侧是对的（原版 102 例，如 collab.js:2351）。
-							trigger: { source: 'damageBegin2', player: 'loseAfter', global: 'equipAfter' },
+							trigger: { source: 'damageBegin4', player: 'loseAfter', global: 'equipAfter' },
 							filter: function (event, player) {
 								var _dbg = function (why) {
 									try {
@@ -4325,7 +4325,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						zyyi_horse_def: {
 							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ 同攻马：equipAfter 用 global 侧（原版 player 侧 0 例），loseAfter 用 player 侧
-							trigger: { player: ['damageBegin3', 'loseAfter'], global: 'equipAfter' },
+							trigger: { player: ['damageBegin4', 'loseAfter'], global: 'equipAfter' },
 							filter: function (event, player) {
 								var _dbg2 = function (why) {
 									try {
