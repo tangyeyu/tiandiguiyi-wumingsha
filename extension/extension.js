@@ -4244,6 +4244,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.storage.zyyi_atk_used = true;
 								trigger.num += 1;                            // 与武翊4 的 +1 可叠成 +2
 								game.log(player, '【武翊】：进攻马在场，此伤害+1');
+								try { (game.bzDiag2 || lib.bzDiag2)('攻马·生效 已加伤 num=' + trigger.num + '；即将弹出"是否弃置进攻马"'); } catch (eDN) { }
 								player.chooseBool('武翊：是否弃置装备区内的进攻马？')
 									.set('ai', function () { return false; });
 								'step 1'
@@ -4408,6 +4409,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//   ⇒ 别人的回合结束时无法发动（实战战报整局没有"执行额外的回合"记录）。
 							trigger: { global: 'phaseJieshuBegin' },
 							filter: function (event, player) {
+								// ★ 无条件诊断：把"每轮限一次"闸门的相关值全打出来
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('摧锋·锐入口 事件=' + event.name +
+										'｜在场=' + player.isIn() +
+										'｜在额外回合中=' + !!player.storage.zycf_in_extra +
+										'｜当前轮号=' + game.roundNumber +
+										'｜已发动轮号=' + player.storage.zycf_round +
+										'｜闸门判定=' + (game.roundNumber == player.storage.zycf_round ? '拦住(本轮已发动)' : '放行'));
+								} catch (eZ) { }
 								if (!player.isIn()) return false;
 								if (player.storage.zycf_in_extra) return false;      // 额外回合结束时不能再发动
 								if (game.roundNumber == player.storage.zycf_round) return false;   // 每轮限一次
