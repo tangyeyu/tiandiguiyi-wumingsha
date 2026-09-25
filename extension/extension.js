@@ -499,6 +499,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										var sub = (card && card.nodeType) ? get.subtype(card) : null;
 										if (sub == 'equip4') { this.storage.zyyi_atk_horse = true; bzWrite('【马兜底】' + this.name + ' 装上 -1马 ⇒ zyyi_atk_horse=true'); }
 										if (sub == 'equip3') { this.storage.zyyi_def_horse = true; bzWrite('【马兜底】' + this.name + ' 装上 +1马 ⇒ zyyi_def_horse=true'); }
+										// ★ 武翊·兵：同回合一次，但**换武器即刷新**（用户口径）
+										//   装上任意武器（equip1）就清掉"已用"标记 ⇒ 本回合还能再发动一次
+										if (sub == 'equip1') {
+											delete this.storage.zyyi_weapon_used;
+											delete this.storage.zyyi_weapon_round;
+											bzWrite('【武器兜底】' + this.name + ' 装上武器(' + get.name(card) + ') ⇒ 已清武翊·兵标记（可再发动一次）');
+										}
 									} catch (eEq) { }
 									return r;
 								};
@@ -4745,6 +4752,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								try {
 									var uc = event.getParent('useCard');
+									// ★ 诊断：把判据的每一步都留痕（决斗加伤是否生效、卡在哪一步）
+									try {
+										(game.bzDiag2 || lib.bzDiag2)('摧锋·势入口 事件=' + event.name +
+										'｜找到useCard=' + !!uc +
+										'｜牌名=' + (uc && uc.card ? get.name(uc.card) : '无') +
+										'｜是摧锋标记=' + !!(uc && uc._zycfDuel) +
+										'｜X=' + (uc ? (uc._zycfX || 0) : '-'));
+									} catch (eD) { }
 									if (!uc || !uc.card) return false;
 									if (get.name(uc.card) != 'juedou') return false;
 									// 用显式标记认这次决斗是不是摧锋·决 发动的
