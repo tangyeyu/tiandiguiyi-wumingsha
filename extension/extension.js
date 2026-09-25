@@ -4718,11 +4718,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (x > 3) x = 3;
 								event.x = x;
 								player.storage.zycf_last_x = x;   // 供 zycf_duel_buff 读取（原来从未赋值）
-								// ★★ 直接算出"本次决斗的伤害值" = 1 + X，并记为 finalNum ★★
+								// ★★ 直接算出"本次决斗的伤害值" = 1 + X ★★
 								//   为什么这么做：加伤技能需要跨事件传递 X
 								//   （useCard._zycfX → damage._zycfX），实测会丢成 0（诊断：X=0）。
 								//   改为在这里把最终值算好，由加伤技能**直接取**，不经中间传递。
+								//   ★ 用 storage 存（跨 useCard→damage 事件最可靠的通道；
+								//     实测挂 useCard 上的值在 damage 侧取不到，诊断显示 _zycfFinal=null）。
 								event.finalNum = 1 + x;
+								player.storage.zycf_final = event.finalNum;
 								try { (game.bzDiag2 || lib.bzDiag2)('摧锋·决 已算出 本次决斗伤害=' + event.finalNum + '（1+X，X=' + x + '）'); } catch (eFN) { }
 								// ★ 修：目标**只认当前回合角色**（trigger.player）。
 								//   原来有个"兜底"——若 trigger.player 无效就取 game.players 里第一个其他角色
@@ -4784,8 +4787,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									// （原判据 uc.skill 恒假：useCard 未传 skill => 加伤从未生效）
 									if (!uc._zycfDuel) return false;
 									// ★ 直接取"摧锋·决 算好的最终伤害值"（1+X），不再自己拼 X
-									//   实测：跨事件传 X 会丢成 0（诊断 X=0）⇒ 改为传"最终值"
-									event._zycfFinal = (typeof uc._zycfFinal == 'number') ? uc._zycfFinal : (1 + (uc._zycfX || 0));
+									//   实测：挂 useCard 上的值在 damage 侧取不到（诊断 _zycfFinal=null）
+									//   ⇒ 改由摧锋·决 同时写入 player.storage.zycf_final（最可靠的通道）
+									var _sf = null;
+									try { _sf = player.storage.zycf_final; } catch (e) { }
+									event._zycfFinal = (typeof _sf == 'number') ? _sf
+										: ((typeof uc._zycfFinal == 'number') ? uc._zycfFinal : (1 + (uc._zycfX || 0)));
 									return true;
 								} catch (e) { return false; }
 							},
@@ -4804,7 +4811,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									trigger.num = f;
 								}
 								if (trigger.num < 1) trigger.num = 1;      // 至少造成 1 点伤害
-								try { (game.bzDiag2 || lib.bzDiag2)('摧锋·势加伤 最终num=' + trigger.num + '（取自摧锋·决算好的 _zycfFinal=' + f + '）'); } catch (eDX) { }
+								try { (game.bzDiag2 || lib.bzDiag2)('摧锋·势加伤 最终num=' + trigger.num + '（摧锋·决 算好的值=' + f + '）'); } catch (eDX) { }
 								event.finish(); return;
 							},
 						},
