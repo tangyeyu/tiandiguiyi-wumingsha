@@ -3876,9 +3876,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//     ② 有 lib.translate[id] 与 [id+'_info']
 						//   ⇒ 这里**不能**加 nopop，否则武翊不显示（实测踩过）。
 						//   子技能不进面板靠"不给译名"实现（另有 sub 标记双保险）。
+						// ── 语音池（用户口径：武翊 6 句、摧锋 4 句）──
+						//   引擎 playAudio('skill', audioname + Math.ceil(N*random())) ⇒ 随机取 1..N 句
+						//   这两个技能只用于承载音频池：audio 指向自己（自引用 ⇒ 解引用立即 break，不会崩）
+						//   对应文件：audio/skill/wuyi1..6.mp3、audio/skill/cuifeng1..4.mp3
+						wuyi: {
+							audio: 'wuyi',      // 自身 ⇒ 播 wuyi1..6.mp3（6 句随机）
+							charlotte: true, popup: false, nopop: true, sub: true,
+						},
+						cuifeng: {
+							audio: 'cuifeng',   // 自身 ⇒ 播 cuifeng1..4.mp3（4 句随机）
+							charlotte: true, popup: false, nopop: true, sub: true,
+						},
 						zyyi_sha: {
 							sub: true, charlotte: true,
-							audio: 'zyyi_sha',
+							audio: 'wuyi',
 							enable: ['chooseToUse', 'chooseToRespond'],
 							filterCard: { name: 'shan' },
 							viewAs: { name: 'sha' },
@@ -3893,7 +3905,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 武翊·闪：一张【杀】当【闪】使用或打出
 						zyyi_shan: {
 							sub: true, charlotte: true, nopop: true,   // ★ 不进技能面板
-							audio: 'zyyi_shan',
+							audio: 'wuyi',
 							enable: ['chooseToRespond', 'chooseToUse'],
 							filterCard: { name: 'sha' },
 							viewAs: { name: 'shan' },
@@ -3908,7 +3920,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 武翊·装：回合开始时四选一，先从牌堆检索、再弃牌堆（借鉴 xianding.js:1152 / offline.js:6370）
 						zyyi_equip: {
 							sub: true, charlotte: true, nopop: true,   // ★ 不进技能面板
-							audio: 'zyyi_equip', locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							audio: 'wuyi', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'phaseBegin' },
 							filter: function (event, player) {
 								try {
@@ -3982,7 +3994,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 武翊·兵：造成伤害时可弃一张武器牌令伤害+1（同一回合限一次，不可叠加）
 						zyyi_weapon: {
-							audio: 'zyyi_weapon', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'wuyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★★ 必须是 source 侧 ★★
 							//   设计口径是"你造成伤害时"（武翊4）；而 player 侧 = 我参与了该伤害事件
 							//   （无论我是造成方还是承受方）⇒ 实战中"别人打我"也弹出加伤提示。
@@ -4016,7 +4028,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 武翊·甲：受到伤害时可弃一张防具牌**完全抵消**（借鉴 offline.js:8444：damageBegin3 + trigger.cancel）
 						zyyi_armor: {
-							audio: 'zyyi_armor', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'wuyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { player: 'damageBegin3' },
 							filter: function (event, player) {
 								var _e2 = 0, _h2 = 0;
@@ -4055,7 +4067,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   进攻马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
 						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
-							audio: 'zyyi_horse_atk', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'wuyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ equipAfter 必须用 **global** 侧：原版 equipAfter 全部是 global（player 侧 0 例）
 							//   ⇒ 写成 player:[...equipAfter] 接不到事件，"曾装备"标记永不置位。
 							//   loseAfter 用 player 侧是对的（原版 102 例，如 collab.js:2351）。
@@ -4134,7 +4146,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   防御马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
 						//   ★ 子类型依据：game.js:13026 equip3=防御马、22032 equip3=+1马栏
 						zyyi_horse_def: {
-							audio: 'zyyi_horse_def', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'wuyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ 同攻马：equipAfter 用 global 侧（原版 player 侧 0 例），loseAfter 用 player 侧
 							trigger: { player: ['damageBegin3', 'loseAfter'], global: 'equipAfter' },
 							filter: function (event, player) {
@@ -4277,7 +4289,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 摧锋·锐：每轮限一次，回合结束时摸一张并执行额外回合（含判定/摸牌）
 						// 借鉴 extra.js:1900 → player.insertPhase()
 						zycf_extra: {
-							audio: 'zycf_extra', locked: false, charlotte: true, sub: true, popup: true, direct: true,
+							audio: 'cuifeng', locked: false, charlotte: true, sub: true, popup: true, direct: true,
 							// ★ 去掉 forced ⇒ **由玩家选择是否发动**（用户口径："是否发动应由玩家决定"）
 							// ★★ 必须是 global ★★ 设计口径"每回合结束时"= **任何人的回合**结束
 							//   （与摧锋·决 同一口径）。写成 player 侧只在自身回合结束触发
@@ -4311,7 +4323,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 摧锋·决：回合结束时弃一张装备（代价），视为对当前回合角色使用【决斗】，伤害+X（至多3）
 						zycf_duel: {
-							audio: 'zycf_duel', forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'cuifeng', forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ 必须是 **global**："每回合结束时"= **任何人的回合**结束。
 							//   写成 player 侧只在自己回合触发 ⇒ 目标恒为自己 ⇒ 被"不能以自己为目标"拦掉（实测 X=0、技能失效）。
 							trigger: { global: 'phaseJieshuBegin' },
@@ -4391,7 +4403,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 摧锋·势：为 zycf_duel 提供"伤害至少为1、且 +X"的加成
 						zycf_duel_buff: {
-							audio: 'zycf_duel_buff',
+							audio: 'cuifeng',
 							charlotte: true, sub: true, popup: false,
 							trigger: { source: 'damageBegin4' },
 							filter: function (event, player) {
