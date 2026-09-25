@@ -4759,7 +4759,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 摧锋·势：为 zycf_duel 提供"伤害至少为1、且 +X"的加成
 						zycf_duel_buff: {
 							audio: 'zycf',
-							charlotte: true, sub: true, popup: false,
+							// ★★ 关键：加 forced（+locked）★★
+							//   缺 forced 时，引擎会把"触发型技能"当成**可选发动** ⇒ 弹出询问
+							//   （用户反馈："决斗后出现了 zycf_duel_buff 的选项"）。
+							//   本技能只是"修正决斗自身的伤害数值"，不是独立发动的东西，
+							//   因此必须 forced（自动生效、不询问），并且不让它写技能战报。
+							charlotte: true, sub: true, forced: true, locked: true, silent: true,
+							popup: false, direct: true, nopop: true,
 							trigger: { source: 'damageBegin4' },
 							filter: function (event, player) {
 								try {
