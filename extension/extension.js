@@ -4351,14 +4351,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								// ★ 诊断：content 里的 event.name / trigger.name 到底是什么？
-								//   （filter 里 event.name 是 'lose'，但 content 的 event 可能指向别的事件对象）
+								// ★★★ 最直接的落盘：只要 content 被执行就留痕（无论走哪个分支）★★★
 								try {
-									(game.bzDiag2 || lib.bzDiag2)('攻马·content入口 event.name=' + (event ? event.name : '?') +
-										'｜event===trigger? ' + (event === trigger) +
-										'｜trigger.name=' + (trigger ? trigger.name : '?') +
-										'｜drawDone=' + !!player.storage.zyyi_atk_drawDone);
-								} catch (eCE) { }
+									(game.bzDiag2 || lib.bzDiag2)('【攻马·content执行】trigger.name=' + (trigger ? trigger.name : '?') +
+										'｜将走=' + ((trigger && trigger.name == 'lose') ? 'lose分支(摸两张)' : 'damage分支(加伤/弹框)'));
+								} catch (eCE0) { }
 								if (trigger.name == 'lose') {   // ★ content 内 event 是技能自己的事件，真事件在 trigger 里（filter 里 event 才是真事件）
 									// 马离开装备区 ⇒ 摸两张（本项）+ 武翊8③ 另摸一张（可重复触发）
 									player.draw(2);
