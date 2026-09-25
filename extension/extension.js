@@ -4717,7 +4717,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								} catch (e) { }
 								if (x > 3) x = 3;
 								event.x = x;
-								player.storage.zycf_last_x = x;   // ★ 供 zycf_duel_buff 读取（原来从未赋值）
+								player.storage.zycf_last_x = x;   // 供 zycf_duel_buff 读取（原来从未赋值）
+								// ★★ 直接算出"本次决斗的伤害值" = 1 + X，并记为 finalNum ★★
+								//   为什么这么做：加伤技能需要跨事件传递 X
+								//   （useCard._zycfX → damage._zycfX），实测会丢成 0（诊断：X=0）。
+								//   改为在这里把最终值算好，由加伤技能**直接取**，不经中间传递。
+								event.finalNum = 1 + x;
+								try { (game.bzDiag2 || lib.bzDiag2)('摧锋·决 已算出 本次决斗伤害=' + event.finalNum + '（1+X，X=' + x + '）'); } catch (eFN) { }
 								// ★ 修：目标**只认当前回合角色**（trigger.player）。
 								//   原来有个"兜底"——若 trigger.player 无效就取 game.players 里第一个其他角色
 								//   ⇒ 那正是"下家" ⇒ 出现"对下一个角色发动决斗"的现象。
@@ -4739,7 +4745,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// 打出标记：加伤技能靠它认出这次决斗由摧锋·决 发动
 								// （原先靠 useCard 的 skill 字段，但 useCard 不传 skill => 恒假 => 加伤不生效）
 								var _uc = player.useCard({ name: 'juedou' }, event.tgt);
-								try { if (_uc) { _uc._zycfDuel = true; _uc._zycfX = event.x; } } catch (eUC) { }
+								try {
+									if (_uc) {
+										_uc._zycfDuel = true;
+										_uc._zycfX = event.x;
+										_uc._zycfFinal = event.finalNum;   // ★ 直接带上"最终伤害值"
+									}
+								} catch (eUC) { }
 								game.log(player, '【摧锋】：视为对', event.tgt, '使用【决斗】（伤害+', event.x, '）');
 								event.finish(); return;
 							},
@@ -4765,19 +4777,28 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									// 用显式标记认这次决斗是不是摧锋·决 发动的
 									// （原判据 uc.skill 恒假：useCard 未传 skill => 加伤从未生效）
 									if (!uc._zycfDuel) return false;
-									event._zycfX = uc._zycfX || 0;
+									// ★ 直接取"摧锋·决 算好的最终伤害值"（1+X），不再自己拼 X
+									//   实测：跨事件传 X 会丢成 0（诊断 X=0）⇒ 改为传"最终值"
+									event._zycfFinal = (typeof uc._zycfFinal == 'number') ? uc._zycfFinal : (1 + (uc._zycfX || 0));
 									return true;
 								} catch (e) { return false; }
 							},
 							content: function () {
-								// ★ X 从 filter 挂到本 event 上的值取（更可靠）
-								//   原先读 player.storage.zycf_last_x：那是"上一次发动时的值"，
-								//   跨回合会陈旧（上一轮的 X 被这轮误用）。
-								var x = 0;
-								try { x = (typeof event._zycfX == 'number') ? event._zycfX : (player.storage.zycf_last_x || 0); } catch (e) { }
+								// ★ 把伤害直接设为"摧锋·决 算好的最终值"（1+X）
+								//   这样不依赖任何中间传递，也不受"至少1点"等逻辑干扰。
+								var f = null;
+								try { f = (typeof event._zycfFinal == 'number') ? event._zycfFinal : null; } catch (e) { }
+								if (f == null) {
+									// 兜底：老路径（X + 保底1）
+									var x = 0;
+									try { x = (typeof event._zycfX == 'number') ? event._zycfX : (player.storage.zycf_last_x || 0); } catch (e) { }
+									if (trigger.num < 1) trigger.num = 1;
+									trigger.num += x;
+								} else {
+									trigger.num = f;
+								}
 								if (trigger.num < 1) trigger.num = 1;      // 至少造成 1 点伤害
-								trigger.num += x;
-								try { (game.bzDiag2 || lib.bzDiag2)('摧锋·势加伤 生效 num=' + trigger.num + '（其中 X=' + x + '）'); } catch (eDX) { }
+								try { (game.bzDiag2 || lib.bzDiag2)('摧锋·势加伤 最终num=' + trigger.num + '（取自摧锋·决算好的 _zycfFinal=' + f + '）'); } catch (eDX) { }
 								event.finish(); return;
 							},
 						},
