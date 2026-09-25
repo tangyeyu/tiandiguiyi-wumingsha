@@ -4594,7 +4594,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.tgt = tgt;
 								'step 2'
 								if (!event.tgt) { event.finish(); return; }
-								player.useCard({ name: 'juedou' }, event.tgt);
+								// 打出标记：加伤技能靠它认出这次决斗由摧锋·决 发动
+								// （原先靠 useCard 的 skill 字段，但 useCard 不传 skill => 恒假 => 加伤不生效）
+								var _uc = player.useCard({ name: 'juedou' }, event.tgt);
+								try { if (_uc) { _uc._zycfDuel = true; _uc._zycfX = event.x; } } catch (eUC) { }
 								game.log(player, '【摧锋】：视为对', event.tgt, '使用【决斗】（伤害+', event.x, '）');
 								event.finish(); return;
 							},
@@ -4608,14 +4611,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								try {
 									var uc = event.getParent('useCard');
 									if (!uc || !uc.card) return false;
-									return get.name(uc.card) == 'juedou' && uc.skill == 'zycf_duel';
+									if (get.name(uc.card) != 'juedou') return false;
+									// 用显式标记认这次决斗是不是摧锋·决 发动的
+									// （原判据 uc.skill 恒假：useCard 未传 skill => 加伤从未生效）
+									if (!uc._zycfDuel) return false;
+									event._zycfX = uc._zycfX || 0;
+									return true;
 								} catch (e) { return false; }
 							},
 							content: function () {
+								// ★ X 从 filter 挂到本 event 上的值取（更可靠）
+								//   原先读 player.storage.zycf_last_x：那是"上一次发动时的值"，
+								//   跨回合会陈旧（上一轮的 X 被这轮误用）。
 								var x = 0;
-								try { x = (player.storage.zycf_last_x || 0); } catch (e) { }
+								try { x = (typeof event._zycfX == 'number') ? event._zycfX : (player.storage.zycf_last_x || 0); } catch (e) { }
 								if (trigger.num < 1) trigger.num = 1;      // 至少造成 1 点伤害
 								trigger.num += x;
+								try { (game.bzDiag2 || lib.bzDiag2)('摧锋·势加伤 生效 num=' + trigger.num + '（其中 X=' + x + '）'); } catch (eDX) { }
 								event.finish(); return;
 							},
 						},
