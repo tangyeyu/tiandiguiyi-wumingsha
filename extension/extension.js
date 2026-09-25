@@ -4717,7 +4717,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								} catch (e) { }
 								if (x > 3) x = 3;
 								event.x = x;
-								player.storage.zycf_last_x = x;   // 供 zycf_duel_buff 读取（原来从未赋值）
+								player.storage.zycf_last_x = x;        // 发动时统计到的 X（供诊断对照）
+								player.storage.zycf_final_x = x;       // 最终 X 的初值（加伤时会重算并覆盖）
 								// ★★ 直接算出"本次决斗的伤害值" = 1 + X ★★
 								//   为什么这么做：加伤技能需要跨事件传递 X
 								//   （useCard._zycfX → damage._zycfX），实测会丢成 0（诊断：X=0）。
@@ -4797,21 +4798,33 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								} catch (e) { return false; }
 							},
 							content: function () {
-								// ★ 把伤害直接设为"摧锋·决 算好的最终值"（1+X）
-								//   这样不依赖任何中间传递，也不受"至少1点"等逻辑干扰。
-								var f = null;
-								try { f = (typeof event._zycfFinal == 'number') ? event._zycfFinal : null; } catch (e) { }
-								if (f == null) {
-									// 兜底：老路径（X + 保底1）
-									var x = 0;
-									try { x = (typeof event._zycfX == 'number') ? event._zycfX : (player.storage.zycf_last_x || 0); } catch (e) { }
-									if (trigger.num < 1) trigger.num = 1;
-									trigger.num += x;
-								} else {
-									trigger.num = f;
-								}
+								// ★ 在"伤害最终确定"的这一刻**重新统计一次杀**。
+								//   为什么要重算：摧锋·决 是在结束阶段发动决斗，X 在"发动时"就算好了，
+								//   而**决斗过程中双方打出的【杀】发生在发动之后** ⇒ 不重算就会漏掉它们。
+								//   用户口径：本回合所有角色"使用或打出"的【杀】都算 ⇒ 到最后一刻统一统计。
+								var x2 = player.storage.zycf_final_x;
+								try {
+									var hit2 = function (evt) {
+										try { return !!(evt && evt.card && get.name(evt.card) == 'sha'); } catch (e) { return false }
+									};
+									x2 = 0;
+									for (var pi2 = 0; pi2 < game.players.length; pi2++) {
+										try {
+											x2 += game.players[pi2].getHistory('useCard', hit2).length;
+											x2 += game.players[pi2].getHistory('respond', hit2).length;
+										} catch (e2) { }
+									}
+									if (x2 > 3) x2 = 3;
+								} catch (eR) { }
+								if (typeof x2 != 'number' || isNaN(x2)) { x2 = 0; }
+								// 决斗自身造成的伤害 = 1 + X（X 为最终统计值）
+								trigger.num = 1 + x2;
 								if (trigger.num < 1) trigger.num = 1;      // 至少造成 1 点伤害
-								try { (game.bzDiag2 || lib.bzDiag2)('摧锋·势加伤 最终num=' + trigger.num + '（摧锋·决 算好的值=' + f + '）'); } catch (eDX) { }
+								player.storage.zycf_final = trigger.num;
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('摧锋·势加伤 最终num=' + trigger.num +
+										'（最终统计 X=' + x2 + '；发动时记录的 X=' + player.storage.zycf_last_x + '）');
+								} catch (eDX) { }
 								event.finish(); return;
 							},
 						},
