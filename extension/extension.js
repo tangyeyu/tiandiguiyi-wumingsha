@@ -4219,6 +4219,25 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									(game.bzDiag2 || lib.bzDiag2)(m);
 									} catch (e) { }
 								};
+								// ★★★ 入口即落盘（无条件，在任何 return 之前）★★★
+								//   目的：回答"为什么弹弃置框" —— 记录本次 filter 被哪个事件触发、
+								//   伤害的来源与受伤者、以及**父事件链**（看出这次伤害从哪来）。
+								try {
+									var _chain = [];
+									try {
+										var _pv = event.getParent ? event.getParent() : null;
+										var _g = 0;
+										while (_pv && _g++ < 8) { _chain.push(_pv.name + (_pv.card ? '(' + get.name(_pv.card) + ')' : '')); _pv = _pv.getParent ? _pv.getParent() : null; }
+									} catch (eC) { }
+									(game.bzDiag2 || lib.bzDiag2)('攻马·入口 事件=' + event.name +
+										'｜我=' + player.name +
+										'｜曾装备=' + !!player.storage.zyyi_atk_horse +
+										'｜已用过=' + !!player.storage.zyyi_atk_used +
+										'｜伤害来源=' + (event.source ? event.source.name : '无') +
+										'｜受伤者=' + (event.player ? event.player.name : '无') +
+										'｜伤害牌=' + (event.card ? get.name(event.card) + '/' + get.translation(event.card) : '无') +
+										'｜父链=' + _chain.join('←'));
+								} catch (eEnt) { }
 								// ★ 进入装备区：记录"曾装上进攻马"（供伤害分支判断；离场时清除并刷新）
 								if (event.name == 'equip') {   // ★ 事件名是 'equip'（钩子名才是 equipAfter）
 									// ★★ 无条件落盘（在 return 之前）：把 equipAfter 的现场全记下来
