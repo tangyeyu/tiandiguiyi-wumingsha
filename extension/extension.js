@@ -4220,7 +4220,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									} catch (e) { }
 								};
 								// ★ 进入装备区：记录"曾装上进攻马"（供伤害分支判断；离场时清除并刷新）
-								if (event.name == 'equipAfter') {
+								if (event.name == 'equip') {   // ★ 事件名是 'equip'（钩子名才是 equipAfter）
 									// ★★ 无条件落盘（在 return 之前）：把 equipAfter 的现场全记下来
 									try {
 										(game.bzDiag2 || lib.bzDiag2)('攻马·equipAfter 现场 事件=' + event.name +
@@ -4238,7 +4238,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									} catch (e) { }
 									return false;   // 本事件不触发 content
 								}
-								if (event.name == 'loseAfter') {
+								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
 									// 装备区离场追踪：借鉴 collab.js:2351（event.getl + hs）
 									try {
 										var evt = event.getl(player);
@@ -4266,7 +4266,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								if (event.name == 'loseAfter') {
+								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
 									// 马离开装备区 ⇒ 摸两张（本项）+ 武翊8③ 另摸一张（可重复触发）
 									player.draw(2);
 									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌');
@@ -4319,7 +4319,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									} catch (e) { }
 								};
 								// ★ 进入装备区：记录"曾装上防御马"（供受伤分支判断；离场时清除并刷新）
-								if (event.name == 'equipAfter') {
+								if (event.name == 'equip') {   // ★ 事件名是 'equip'（钩子名才是 equipAfter）
 									if (event.player != player) return false;   // global 侧 ⇒ 只认自己的装备事件
 									try {
 									var eq3 = player.getEquip(3);
@@ -4327,7 +4327,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									} catch (e) { }
 									return false;   // 本事件不触发 content
 								}
-								if (event.name == 'loseAfter') {
+								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
 									try {
 										var evt = event.getl(player);
 										if (!evt || !evt.es || !evt.es.length) return false;
@@ -4356,7 +4356,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								if (event.name == 'loseAfter') {
+								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
 									player.draw(2);
 									game.log(player, '【武翊】：防御马离开装备区，摸两张牌');
 									delete player.storage.zyyi_def_used;
