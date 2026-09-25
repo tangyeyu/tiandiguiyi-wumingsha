@@ -4135,12 +4135,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//   设计口径是"你造成伤害时"（武翊4）；而 player 侧 = 我参与了该伤害事件
 							//   （无论我是造成方还是承受方）⇒ 实战中"别人打我"也弹出加伤提示。
 							//   战报实证：名赵云【武翊】：弃置武器丈八蛇矛，此伤害+1，紧接着"名赵云受到了…伤害"。
-							//   原版先例：collab.js:2884 trigger:{source:damageBegin2}
-							trigger: { source: 'damageBegin2' },
+							//   ★ 与两张马一致，挂 **damageBegin4**（伤害最终确定步）：
+							//     在 damageBegin2（step 1）弹框会"早于伤害实际发生"几步，观感像"还没打就弹"；
+							//     num 要到 step 4 才被使用 ⇒ 在 damageBegin4 改 num 仍然有效。
+							trigger: { source: 'damageBegin4' },
 							filter: function (event, player) {
-								if (!player.storage.zyyi_weapon_used) {
-									// 未用：需要有武器牌（装备区或手牌）
-								} else return false;
+								// ★ 设计口径："同一回合内不能多次发动" ⇒ **按回合重置**，不是整局一次。
+								//   原实现 `if (player.storage.zyyi_weapon_used) return false;` 且从不重置
+								//   ⇒ 整局只能用一次 ⇒ 第二次装备武器后不再加伤（用户实测）。
+								//   改为记录"已发动的回合标识（_status.currentPhase）"，新回合自动放行。
+								var _cur = (typeof _status !== 'undefined' && _status.currentPhase) ? _status.currentPhase : null;
+								if (player.storage.zyyi_weapon_used && player.storage.zyyi_weapon_round === _cur) {
+									return false;   // 本回合已发动过
+								}
+								// 需要有武器牌（装备区或手牌）
 								if (player.countCards('e', { subtype: 'equip1' }) + player.countCards('h', { subtype: 'equip1' }) <= 0) return false;
 								return true;
 							},
@@ -4157,6 +4165,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!card || !card.nodeType) { event.finish(); return; }
 								player.discard(card);
 								player.storage.zyyi_weapon_used = true;
+								// ★ 记录"发动所在回合" ⇒ 下个回合自动放行（原实现从不重置 ⇒ 整局只能用一次）
+								try {
+									player.storage.zyyi_weapon_round = (typeof _status !== 'undefined' && _status.currentPhase) ? _status.currentPhase : null;
+								} catch (eWR) { }
 								trigger.num += 1;
 								game.log(player, '【武翊】：弃置武器', get.translation(card), '，此伤害+1');
 								event.finish(); return;
