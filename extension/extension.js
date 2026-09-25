@@ -458,6 +458,40 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								_wrappedEquip.bzHooked = true;
 								lib.element.player.equip = _wrappedEquip;
 								bzWrite('===== 马"曾装备"兜底置位已安装 =====');
+						// ---- 装备区/标记全量快照（马排查用）----
+						//   每次装备或失去牌都打一份：栏3/栏4 子类型 + 两个"曾装备"标记 + 两个"已用过"标记
+						if (lib.element && lib.element.player && !lib.element.player.bzEqSnap) {
+							var _snap = function (p, tag) {
+								try {
+								var e3 = p.getEquip(3), e4 = p.getEquip(4);
+								bzWrite('【马快照·' + tag + '】' + p.name +
+									'｜栏3(防御马/+1)=' + (e3 ? get.subtype(e3) + ':' + get.translation(e3) : '空') +
+									'｜栏4(进攻马/-1)=' + (e4 ? get.subtype(e4) + ':' + get.translation(e4) : '空') +
+									'｜曾装攻马=' + !!p.storage.zyyi_atk_horse + '｜曾装防马=' + !!p.storage.zyyi_def_horse +
+									'｜攻马已用=' + !!p.storage.zyyi_atk_used + '｜防马已用=' + !!p.storage.zyyi_def_used);
+								} catch (e) { }
+							};
+							game.bzEqSnap = _snap;
+							// 挂钩 equip：装备时快照
+							var _oe = lib.element.player.equip;
+							if (typeof _oe == 'function' && !_oe.bzSnapEq) {
+								var _ne = function () { var r = _oe.apply(this, arguments); try { _snap(this, '装备后'); } catch (e) { } return r; };
+								_ne.bzSnapEq = true;
+								lib.element.player.equip = _ne;
+							}
+							// 挂钩 lose：失牌时快照（用 event 记录里是否有装备区的牌判断）
+							var _ol = lib.element.player.lose;
+							if (typeof _ol == 'function' && !_ol.bzSnapLose) {
+								var _nl = function () {
+									var r = _ol.apply(this, arguments);
+									try { _snap(this, '失牌后'); } catch (e) { }
+									return r;
+								};
+								_nl.bzSnapLose = true;
+								lib.element.player.lose = _nl;
+							}
+							bzWrite('===== 马状态快照钩子已安装 =====');
+						}
 							}
 						} catch (eEqH) {
 							try { bzWrite('马兜底置位安装失败: ' + eEqH.message); } catch (e) { }
