@@ -364,6 +364,81 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								'｜assetURL=' + lib.assetURL;
 							bzWrite('【音频配置】' + _ac);
 						} catch (eAc) { }
+						// ---- 语音播放链挂钩：把 trySkillAudio 的每一步决策录下来 ----
+						//   game.js:37356 trySkillAudio(skill,player,directaudio,forceTaixu)
+						//   逐条记录：技能名 / audio 字段原值 / 解引用后的 audioname+audioinfo /
+						//             走哪个分支 / 最终请求的音频 URL / 加载成功或失败
+						try {
+							var _origPlayAudio = game.playAudio;
+							var _origPlaySkillAudio = game.playSkillAudio;
+							var _origTrySkillAudio = game.trySkillAudio;
+							var _fmtArgs = function (args) {
+								var o = [];
+								for (var i = 0; i < args.length; i++) {
+									var a = args[i];
+									if (typeof a == 'string' || typeof a == 'number') o.push(String(a));
+									else if (a && a.name) o.push('玩家:' + a.name);
+									else o.push(typeof a);
+								}
+								return o.join(' / ');
+							};
+							// ① 记录 playAudio 的真实 URL（含 onerror 时追加的 .ogg 尝试）
+							game.playAudio = function () {
+								try {
+									var args = Array.prototype.slice.call(arguments);
+									var str = '';
+									for (var i = 0; i < args.length; i++) {
+										if (typeof args[i] == 'string' || typeof args[i] == 'number') str += '/' + args[i];
+									}
+									var url = (lib.assetURL || '') + 'audio' + str + '.mp3';
+									bzWrite('【语音】playAudio ' + _fmtArgs(args) + '  → ' + url);
+									// 探测该 URL 是否真能加载
+									try {
+										var probe = document.createElement('audio');
+										probe.oncanplay = function () { try { bzWrite('【语音】  加载成功 ' + url); } catch (e) { } };
+										probe.onerror = function () { try { bzWrite('【语音】  加载失败 ' + url); } catch (e) { } };
+										probe.src = url;
+									} catch (eP) { }
+									// 包装 onerror 回调，观察引擎的回退链
+									for (var k = 0; k < args.length; k++) {
+										if (typeof args[k] == 'function') {
+											var orig = args[k];
+											args[k] = function (e) { try { bzWrite('【语音】  onerror 回退被触发'); } catch (e2) { } return orig.apply(this, arguments); };
+										}
+									}
+								} catch (eL) { }
+								return _origPlayAudio.apply(game, arguments);
+							};
+							// ② 记录 playSkillAudio 的真实 URL
+							game.playSkillAudio = function () {
+								try {
+									var args = Array.prototype.slice.call(arguments);
+									bzWrite('【语音】playSkillAudio ' + _fmtArgs(args));
+								} catch (eL2) { }
+								return _origPlaySkillAudio.apply(game, arguments);
+							};
+							// ③ 记录 trySkillAudio 的决策（skill / audio 原值 / 解引用结果）
+							game.trySkillAudio = function (skill, player, directaudio) {
+								try {
+									var info = (lib.skill && lib.skill[skill]) ? lib.skill[skill] : null;
+									var raw = info ? info.audio : '(无技能信息)';
+									var direct = info ? !!info.direct : null;
+									bzWrite('【语音】trySkillAudio 技能=' + skill +
+										'｜audio原值=' + (typeof raw == 'object' ? JSON.stringify(raw) : String(raw)) +
+										'｜direct=' + direct + '｜directaudio=' + directaudio +
+										'｜background_speak=' + lib.config.background_speak);
+									// 若 audio 是字符串名，额外确认它是否为 lib.skill 里的技能
+									if (typeof raw == 'string') {
+										bzWrite('【语音】  audio 指向 "' + raw + '" ⇒ lib.skill 里' +
+											(lib.skill[raw] ? '存在' : '【不存在 ⇒ 会崩】'));
+									}
+								} catch (eL3) { }
+								return _origTrySkillAudio.apply(game, arguments);
+							};
+							bzWrite('===== 语音播放链挂钩已安装 =====');
+						} catch (eHookV) {
+							try { bzWrite('语音播放链挂钩安装失败: ' + eHookV.message); } catch (e) { }
+						}
 						// ---- 语音文件可达性自检（逐个探测能否加载）----
 						try {
 							var _probe = function (url, tag) {
@@ -534,7 +609,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'tdgx_shenwei_kill',
 							'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_zhugeliang.jpg']],
+						// zyyi / zycf 是"语音伞技能"（无 trigger/content；承载武翊6句/摧锋4句语音）
 						tdgx_zhaoyun: ['male', 'shu', 4, [
+							'zyyi', 'zycf',
 							'zyyi_sha', 'zyyi_shan',
 							'zyyi_equip', 'zyyi_limit',
 							'zyyi_weapon', 'zyyi_armor',
@@ -3876,21 +3953,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//     ② 有 lib.translate[id] 与 [id+'_info']
 						//   ⇒ 这里**不能**加 nopop，否则武翊不显示（实测踩过）。
 						//   子技能不进面板靠"不给译名"实现（另有 sub 标记双保险）。
-						// ── 语音池（用户口径：武翊 6 句、摧锋 4 句）──
-						//   引擎 playAudio('skill', audioname + Math.ceil(N*random())) ⇒ 随机取 1..N 句
-						//   这两个技能只用于承载音频池：audio 指向自己（自引用 ⇒ 解引用立即 break，不会崩）
-						//   对应文件：audio/skill/wuyi1..6.mp3、audio/skill/cuifeng1..4.mp3
-						wuyi: {
-							audio: 'wuyi',      // 自身 ⇒ 播 wuyi1..6.mp3（6 句随机）
-							charlotte: true, popup: false, nopop: true, sub: true,
+						// ── 语音伞技能（用户口径：武翊 6 句、摧锋 4 句）──
+						//   引擎 playAudio 规则（game.js:37412-37414）：`audio: N`（数字）
+						//       ⇒ playAudio('skill', audioname + Math.ceil(N*Math.random()))
+						//       ⇒ 随机播 audio/skill/<技能名>1..N.mp3
+						//   ★ 不能用"字符串自引用"：那样 audioinfo 仍是字符串 ⇒ 引擎 37401 直接 return，不播
+						//     （实测：audio 指向同名技能时，解引用后仍是字符串 ⇒ 无声）
+						zyyi: {
+							audio: 6,        // 武翊 6 句 ⇒ audio/skill/zyyi1..6.mp3
+							charlotte: true, popup: false, nopop: true,
 						},
-						cuifeng: {
-							audio: 'cuifeng',   // 自身 ⇒ 播 cuifeng1..4.mp3（4 句随机）
-							charlotte: true, popup: false, nopop: true, sub: true,
+						zycf: {
+							audio: 4,        // 摧锋 4 句 ⇒ audio/skill/zycf1..4.mp3
+							charlotte: true, popup: false, nopop: true,
 						},
 						zyyi_sha: {
 							sub: true, charlotte: true,
-							audio: 'wuyi',
+							audio: 'zyyi',
 							enable: ['chooseToUse', 'chooseToRespond'],
 							filterCard: { name: 'shan' },
 							viewAs: { name: 'sha' },
@@ -3905,7 +3984,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 武翊·闪：一张【杀】当【闪】使用或打出
 						zyyi_shan: {
 							sub: true, charlotte: true, nopop: true,   // ★ 不进技能面板
-							audio: 'wuyi',
+							audio: 'zyyi',
 							enable: ['chooseToRespond', 'chooseToUse'],
 							filterCard: { name: 'sha' },
 							viewAs: { name: 'shan' },
@@ -3920,7 +3999,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 武翊·装：回合开始时四选一，先从牌堆检索、再弃牌堆（借鉴 xianding.js:1152 / offline.js:6370）
 						zyyi_equip: {
 							sub: true, charlotte: true, nopop: true,   // ★ 不进技能面板
-							audio: 'wuyi', locked: true, forced: true, charlotte: true, popup: false, direct: true,
+							audio: 'zyyi', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'phaseBegin' },
 							filter: function (event, player) {
 								try {
@@ -3994,7 +4073,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 武翊·兵：造成伤害时可弃一张武器牌令伤害+1（同一回合限一次，不可叠加）
 						zyyi_weapon: {
-							audio: 'wuyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★★ 必须是 source 侧 ★★
 							//   设计口径是"你造成伤害时"（武翊4）；而 player 侧 = 我参与了该伤害事件
 							//   （无论我是造成方还是承受方）⇒ 实战中"别人打我"也弹出加伤提示。
@@ -4028,7 +4107,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 武翊·甲：受到伤害时可弃一张防具牌**完全抵消**（借鉴 offline.js:8444：damageBegin3 + trigger.cancel）
 						zyyi_armor: {
-							audio: 'wuyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { player: 'damageBegin3' },
 							filter: function (event, player) {
 								var _e2 = 0, _h2 = 0;
@@ -4042,7 +4121,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (event.zyyi_cancelled) return false;   // 与武翊6 是同一机制，不能叠加
 								// ★ 必须是"我受到伤害"：player 侧只说明我参与了该事件，
 								//   我**造成**伤害时也会进这里（同类问题已在防马处实测到）。
-								if (event.source == player) return false;   // 我是造成方 ⇒ 不是"受到伤害"
+								// （方向由 trigger 侧保证：player:'damageBegin3' ⇒ 我必然是承受方）
 								return (_e2 + _h2) > 0;
 							},
 							content: function () {
@@ -4067,7 +4146,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   进攻马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
 						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
-							audio: 'wuyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ equipAfter 必须用 **global** 侧：原版 equipAfter 全部是 global（player 侧 0 例）
 							//   ⇒ 写成 player:[...equipAfter] 接不到事件，"曾装备"标记永不置位。
 							//   loseAfter 用 player 侧是对的（原版 102 例，如 collab.js:2351）。
@@ -4111,7 +4190,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								(game.bzDiag2 || lib.bzDiag2)('武翊·攻马入口 ' + _a2);
 								} catch (eD2) { }
 								if (event.zyyi_cancelled) { _dbg('cancelled'); return false; }
-								if (event.player == player) { _dbg('我是承受方'); return false; }
+								// （方向由 trigger 侧保证：source 侧触发 ⇒ 我必然是来源，无需再判）
 								// ★ 用"曾装上进攻马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
 								if (!player.storage.zyyi_atk_horse) { _dbg('曾装备标记未置位'); return false; }
 								if (player.storage.zyyi_atk_used) { _dbg('本局已用过'); return false; }
@@ -4146,7 +4225,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   防御马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
 						//   ★ 子类型依据：game.js:13026 equip3=防御马、22032 equip3=+1马栏
 						zyyi_horse_def: {
-							audio: 'wuyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ 同攻马：equipAfter 用 global 侧（原版 player 侧 0 例），loseAfter 用 player 侧
 							trigger: { player: ['damageBegin3', 'loseAfter'], global: 'equipAfter' },
 							filter: function (event, player) {
@@ -4189,7 +4268,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   我**造成**伤害时也会进这里。
 								//   战报实证：12:43:13"名赵云对神关羽使用了杀"后立刻打出
 								//   "【武翊】：防御马在场，免疫此伤害" —— 我的攻击被自己免疫了。
-								if (event.source == player) { _dbg2('我是造成方'); return false; }
+								// （方向由 trigger 侧保证：player 侧触发 ⇒ 我必然是承受方，无需再判）
 								// ★ 用"曾装上防御马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
 								if (!player.storage.zyyi_def_horse) { _dbg2('曾装备标记未置位'); return false; }
 								if (player.storage.zyyi_def_used) { _dbg2('本局已用过'); return false; }
@@ -4289,7 +4368,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 摧锋·锐：每轮限一次，回合结束时摸一张并执行额外回合（含判定/摸牌）
 						// 借鉴 extra.js:1900 → player.insertPhase()
 						zycf_extra: {
-							audio: 'cuifeng', locked: false, charlotte: true, sub: true, popup: true, direct: true,
+							audio: 'zycf', locked: false, charlotte: true, sub: true, popup: true, direct: true,
 							// ★ 去掉 forced ⇒ **由玩家选择是否发动**（用户口径："是否发动应由玩家决定"）
 							// ★★ 必须是 global ★★ 设计口径"每回合结束时"= **任何人的回合**结束
 							//   （与摧锋·决 同一口径）。写成 player 侧只在自身回合结束触发
@@ -4323,7 +4402,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 摧锋·决：回合结束时弃一张装备（代价），视为对当前回合角色使用【决斗】，伤害+X（至多3）
 						zycf_duel: {
-							audio: 'cuifeng', forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
+							audio: 'zycf', forced: true, locked: false, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ 必须是 **global**："每回合结束时"= **任何人的回合**结束。
 							//   写成 player 侧只在自己回合触发 ⇒ 目标恒为自己 ⇒ 被"不能以自己为目标"拦掉（实测 X=0、技能失效）。
 							trigger: { global: 'phaseJieshuBegin' },
@@ -4367,13 +4446,25 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var hit = function (evt) {
 										try { return !!(evt && evt.card && get.name(evt.card) == 'sha'); } catch (e) { return false }
 									};
+									var _detail = '';
 									for (var pi = 0; pi < game.players.length; pi++) {
 										var ps = game.players[pi];
 										try {
-											x += ps.getHistory('useCard', hit).length;   // 使用【杀】
-											x += ps.getHistory('respond', hit).length;   // 打出【杀】
+											var _u = ps.getHistory('useCard', hit).length;
+											var _r = ps.getHistory('respond', hit).length;
+											var _aU = ps.getHistory('useCard').length;
+											var _aR = ps.getHistory('respond').length;
+											x += _u + _r;
+											if (_u || _r || _aU || _aR) {
+												_detail += '[' + ps.name + ' 杀use=' + _u + ' 杀resp=' + _r +
+													' 全use=' + _aU + ' 全resp=' + _aR + '] ';
+											}
 										} catch (e2) { }
 									}
+									try {
+										(game.bzDiag2 || lib.bzDiag2)('摧锋·X明细 回合=' + game.roundNumber +
+											'｜合计=' + x + '｜' + (_detail || '(本回合无出牌记录)'));
+									} catch (e5) { }
 								} catch (e) { }
 								if (x > 3) x = 3;
 								event.x = x;
@@ -4403,7 +4494,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						// 摧锋·势：为 zycf_duel 提供"伤害至少为1、且 +X"的加成
 						zycf_duel_buff: {
-							audio: 'cuifeng',
+							audio: 'zycf',
 							charlotte: true, sub: true, popup: false,
 							trigger: { source: 'damageBegin4' },
 							filter: function (event, player) {
