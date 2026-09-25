@@ -730,7 +730,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'zyyi_ready', 'zyyi_unlock', 'zyyi_equip_draw',
 							'zycf_extra', 'zycf_duel', 'zycf_duel_buff',
 							'tdgx_shenwei_kill', 'tdgx_turn_reset'
-						], ['ext:天地归一/tdgx_zhaoyun.jpg']],
+						], ['ext:天地归一/tdgx_zhaoyun.jpg', 'No_Outcrop']],   // ★ No_Outcrop：不露头（不出框）
 						tdgx_caocao: ['male', 'wei', 4, [
 							'cc_jianxiong',
 							'cc_qingzheng',
