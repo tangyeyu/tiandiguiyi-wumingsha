@@ -4280,7 +4280,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									} catch (e) { }
 									return false;   // 本事件不触发 content
 								}
-								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
+								if (event.name == 'lose') {   // ★ filter 里 event 就是真事件   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
 									// 装备区离场追踪：借鉴 collab.js:2351（event.getl + hs）
 									// ★★ 明细诊断：把 getl 的全部字段 + 实际失牌的牌名/子类型都打出来
 									//   （怀疑 event.getl(player).es 这个字段名不对 ⇒ 永远取不到 ⇒ "摸两张"不触发）
@@ -4359,7 +4359,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										'｜trigger.name=' + (trigger ? trigger.name : '?') +
 										'｜drawDone=' + !!player.storage.zyyi_atk_drawDone);
 								} catch (eCE) { }
-								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
+								if (trigger.name == 'lose') {   // ★ content 内 event 是技能自己的事件，真事件在 trigger 里（filter 里 event 才是真事件）
 									// 马离开装备区 ⇒ 摸两张（本项）+ 武翊8③ 另摸一张（可重复触发）
 									player.draw(2);
 									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌');
@@ -4422,7 +4422,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									} catch (e) { }
 									return false;   // 本事件不触发 content
 								}
-								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
+								if (event.name == 'lose') {   // ★ filter 里 event 就是真事件   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
 									// ★ 同攻马：失牌清单取自 event.cards（evt.es 实测为空）
 									var _lost2 = null;
 									try {
@@ -4463,7 +4463,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
+								if (trigger.name == 'lose') {   // ★ content 内 event 是技能自己的事件，真事件在 trigger 里（filter 里 event 才是真事件）
 									player.draw(2);
 									game.log(player, '【武翊】：防御马离开装备区，摸两张牌');
 									delete player.storage.zyyi_def_used;
