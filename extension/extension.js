@@ -439,6 +439,29 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						} catch (eHookV) {
 							try { bzWrite('语音播放链挂钩安装失败: ' + eHookV.message); } catch (e) { }
 						}
+						// ---- 马的"曾装备"标记：不依赖 equipAfter 的兜底置位 ----
+						//   挂钩 player.equip：任何武将装备牌进入装备区时，检查是否为 -1马/+1马 并置位。
+						//   这样即使 equipAfter 事件不来，两张马的核心判据也能成立。
+						try {
+							if (lib.element && lib.element.player && lib.element.player.equip && !lib.element.player.equip.bzHooked) {
+								var _origEquip = lib.element.player.equip;
+								var _wrappedEquip = function (card) {
+									var r;
+									try { r = _origEquip.apply(this, arguments); } catch (e) { throw e; }
+									try {
+										var sub = (card && card.nodeType) ? get.subtype(card) : null;
+										if (sub == 'equip4') { this.storage.zyyi_atk_horse = true; bzWrite('【马兜底】' + this.name + ' 装上 -1马 ⇒ zyyi_atk_horse=true'); }
+										if (sub == 'equip3') { this.storage.zyyi_def_horse = true; bzWrite('【马兜底】' + this.name + ' 装上 +1马 ⇒ zyyi_def_horse=true'); }
+									} catch (eEq) { }
+									return r;
+								};
+								_wrappedEquip.bzHooked = true;
+								lib.element.player.equip = _wrappedEquip;
+								bzWrite('===== 马"曾装备"兜底置位已安装 =====');
+							}
+						} catch (eEqH) {
+							try { bzWrite('马兜底置位安装失败: ' + eEqH.message); } catch (e) { }
+						}
 						// ---- 语音文件可达性自检（逐个探测能否加载）----
 						try {
 							var _probe = function (url, tag) {
@@ -4164,6 +4187,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								};
 								// ★ 进入装备区：记录"曾装上进攻马"（供伤害分支判断；离场时清除并刷新）
 								if (event.name == 'equipAfter') {
+									// ★★ 无条件落盘（在 return 之前）：把 equipAfter 的现场全记下来
+									try {
+										(game.bzDiag2 || lib.bzDiag2)('攻马·equipAfter 现场 事件=' + event.name +
+											'｜eventPlayer=' + (event.player ? event.player.name : '无') +
+											'｜我=' + player.name +
+											'｜event.player===我? ' + (event.player === player) +
+											'｜栏3=' + (player.getEquip(3) ? get.subtype(player.getEquip(3)) : '无') +
+											'｜栏4=' + (player.getEquip(4) ? get.subtype(player.getEquip(4)) : '无') +
+											'｜cards=' + (event.cards && event.cards.length ? get.subtype(event.cards[0]) : '无'));
+									} catch (eEA) { }
 									if (event.player != player) return false;   // global 侧 ⇒ 只认自己的装备事件
 									try {
 									var eq = player.getEquip(4);
