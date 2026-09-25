@@ -4259,6 +4259,34 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
 									// 装备区离场追踪：借鉴 collab.js:2351（event.getl + hs）
+									// ★★ 明细诊断：把 getl 的全部字段 + 实际失牌的牌名/子类型都打出来
+									//   （怀疑 event.getl(player).es 这个字段名不对 ⇒ 永远取不到 ⇒ "摸两张"不触发）
+									try {
+										var _evt = event.getl(player);
+										var _keys = _evt ? Object.keys(_evt).join(',') : '(getl 返回空)';
+										var _cards = [];
+										try {
+											if (event.cards && event.cards.length) {
+												for (var _ci = 0; _ci < event.cards.length; _ci++) {
+													_cards.push(get.name(event.cards[_ci]) + '/' + get.subtype(event.cards[_ci]));
+												}
+											}
+										} catch (eC1) { }
+										var _es = [];
+										try {
+											if (_evt && _evt.es) for (var _ei = 0; _ei < _evt.es.length; _ei++) _es.push(get.name(_evt.es[_ei]) + '/' + get.subtype(_evt.es[_ei]));
+										} catch (eC2) { }
+										var _hs2 = 0, _js2 = 0;
+										try { _hs2 = (_evt && _evt.hs) ? _evt.hs.length : 0; } catch (eC3) { }
+										try { _js2 = (_evt && _evt.js) ? _evt.js.length : 0; } catch (eC4) { }
+										(game.bzDiag2 || lib.bzDiag2)('攻马·lose明细 我=' + player.name +
+											'｜getl字段=[' + _keys + ']' +
+											'｜es=' + (_es.length ? _es.join(',') : '空') +
+											'｜hs数=' + _hs2 + '｜js数=' + _js2 +
+											'｜event.cards=' + (_cards.length ? _cards.join(',') : '空') +
+											'｜栏4=' + (player.getEquip(4) ? get.subtype(player.getEquip(4)) + ':' + get.translation(player.getEquip(4)) : '空') +
+											'｜曾装备=' + !!player.storage.zyyi_atk_horse);
+									} catch (eLose) { }
 									try {
 										var evt = event.getl(player);
 										if (!evt || !evt.es || !evt.es.length) return false;
@@ -4309,6 +4337,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										'｜父事件链=' + _p.join(' ← ') +
 										'｜当前阶段=' + (_status.currentPhase ? _status.currentPhase.name : '无'));
 								} catch (eDP) { }
+																try { (game.bzDiag2 || lib.bzDiag2)('★弹框即将出现【攻马弃置】；提示文本=武翊/摧锋 询问（见代码）'); } catch (eB) { }
 								player.chooseBool('武翊：是否弃置装备区内的进攻马？')
 									.set('ai', function () { return false; });
 								'step 1'
@@ -4386,6 +4415,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								trigger.zyyi_cancelled = true;
 								trigger.cancel();                       // 免疫（同一机制，不叠加）
 								game.log(player, '【武翊】：防御马在场，免疫此伤害');
+																try { (game.bzDiag2 || lib.bzDiag2)('★弹框即将出现【防马弃置】；提示文本=武翊/摧锋 询问（见代码）'); } catch (eB) { }
 								player.chooseBool('武翊：是否弃置装备区内的防御马？')
 									.set('ai', function () { return false; });
 								'step 1'
@@ -4490,6 +4520,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							content: function () {
 								'step 0'
 								// ★ 由玩家选择是否发动（去掉 forced 后仍需显式询问，否则引擎会直接执行）
+																try { (game.bzDiag2 || lib.bzDiag2)('★弹框即将出现【摧锋额外回合】；提示文本=武翊/摧锋 询问（见代码）'); } catch (eB) { }
 								player.chooseBool('摧锋：是否摸一张牌并执行一个额外的回合？')
 									.set('ai', function () { return true; });
 								'step 1'
