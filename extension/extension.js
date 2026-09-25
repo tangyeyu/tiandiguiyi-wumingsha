@@ -4145,11 +4145,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   ⇒ 整局只能用一次 ⇒ 第二次装备武器后不再加伤（用户实测）。
 								//   改为记录"已发动的回合标识（_status.currentPhase）"，新回合自动放行。
 								var _cur = (typeof _status !== 'undefined' && _status.currentPhase) ? _status.currentPhase : null;
+								var _weapons = player.countCards('e', { subtype: 'equip1' }) + player.countCards('h', { subtype: 'equip1' });
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('武翊·兵入口 事件=' + event.name +
+										'｜已用=' + !!player.storage.zyyi_weapon_used +
+										'｜记录回合=' + (player.storage.zyyi_weapon_round ? player.storage.zyyi_weapon_round.name : '无') +
+										'｜当前回合=' + (_cur ? _cur.name : '无') +
+										'｜同回合? ' + (player.storage.zyyi_weapon_round === _cur) +
+										'｜武器牌数=' + _weapons +
+										'｜判定=' + ((player.storage.zyyi_weapon_used && player.storage.zyyi_weapon_round === _cur) ? '拦住(本回合已用)' : (_weapons > 0 ? '放行' : '拦住(无武器牌)')));
+								} catch (eWI) { }
 								if (player.storage.zyyi_weapon_used && player.storage.zyyi_weapon_round === _cur) {
 									return false;   // 本回合已发动过
 								}
 								// 需要有武器牌（装备区或手牌）
-								if (player.countCards('e', { subtype: 'equip1' }) + player.countCards('h', { subtype: 'equip1' }) <= 0) return false;
+								if (_weapons <= 0) return false;
 								return true;
 							},
 							content: function () {
@@ -4316,10 +4326,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (!_lost) return false;
 									try { (game.bzDiag2 || lib.bzDiag2)('攻马·lose命中 牌=' + get.name(_lost) + '/equip4'); } catch (eL2) { }
 									// 必须"曾装备过"才认（避免把别处失去的同栏位牌当成马）
-									if (!player.storage.zyyi_atk_horse) return false;
+									if (!player.storage.zyyi_atk_horse) { try { (game.bzDiag2 || lib.bzDiag2)('攻马·lose被拦：曾装备标记未置位（_lost=' + get.name(_lost) + '）'); } catch (eG1) { } return false; }
 									// ★ 一次失去只结算一次（攻马/防马都挂 lose，靠各自闸门避免重复弹框/重复摸牌）
-									if (player.storage.zyyi_atk_drawDone) return false;
+									if (player.storage.zyyi_atk_drawDone) { try { (game.bzDiag2 || lib.bzDiag2)('攻马·lose被拦：drawDone 闸门已置位（_lost=' + get.name(_lost) + '）'); } catch (eG2) { } return false; }
 									player.storage.zyyi_atk_drawDone = true;
+									try { (game.bzDiag2 || lib.bzDiag2)('攻马·lose放行 → 将执行 content 摸两张（_lost=' + get.name(_lost) + '）'); } catch (eG3) { }
 									return true;
 								}
 								// damageBegin2（source 侧）：我有进攻马 + 每局第一次
@@ -4339,6 +4350,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
+								// ★ 诊断：content 里的 event.name / trigger.name 到底是什么？
+								//   （filter 里 event.name 是 'lose'，但 content 的 event 可能指向别的事件对象）
+								try {
+									(game.bzDiag2 || lib.bzDiag2)('攻马·content入口 event.name=' + (event ? event.name : '?') +
+										'｜event===trigger? ' + (event === trigger) +
+										'｜trigger.name=' + (trigger ? trigger.name : '?') +
+										'｜drawDone=' + !!player.storage.zyyi_atk_drawDone);
+								} catch (eCE) { }
 								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
 									// 马离开装备区 ⇒ 摸两张（本项）+ 武翊8③ 另摸一张（可重复触发）
 									player.draw(2);
