@@ -694,7 +694,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'tdgx_zhaoyun': '名赵云',
 						// ★ 技能名与描述挂在这两个"首个技能"上（面板显示它们；其余子技能不给译名 ⇒ 不显示）
 						'zyyi_sha': '武翊',
-						'zyyi_sha_info': '1.你可以将一张【杀】当【闪】、【闪】当【杀】使用或打出。<br>2.回合开始时，你从牌堆/弃牌堆里选择一项获得：【1】进攻马、【2】防御马、【3】武器、【4】防具（先从牌堆里找，没有的话就去弃牌堆里找；两处都没有则不获得）。<br>3.你的手牌上限+x（x为你装备区内已装备的数量）。<br>4.当你装备区里有武器时，你造成伤害时，可以选择弃置一张装备栏里的武器牌或手牌中的武器牌，然后此伤害+1（同一回合内不能多次发动；同一次伤害不能叠加）。<br>5.当你装备区里有防具时，你受到伤害时，可以选择弃置一张装备栏里的防具牌或手牌中的防具牌，然后完全抵消此伤害。<br>6.当你装备区里有防御马（+1马）时，你于受到伤害时可以免疫之，然后你可以选择弃置装备栏里的防御马；当你装备栏里的防御马离开你的装备栏时，你摸两张牌（同栏位重新装备或被夺走则刷新）。<br>7.当你装备区里有进攻马（-1马）时，你于造成伤害时令此伤害+1，然后你可以选择弃置装备栏里的进攻马；当你装备栏里的进攻马离开你的装备栏时，你摸两张牌（同栏位重新装备或被夺走则刷新）。<br>8.若你从手牌中使用或者打出过的基本牌牌名数（火杀/雷杀不计为独立牌名）大于等于1/2/3：你使用基本牌无次数限制／你使用基本牌无距离限制／当你获得或失去装备时，你摸一张牌。',
+						'zyyi_sha_info': '1.你可以将一张【杀】当【闪】、【闪】当【杀】使用或打出。<br>2.回合开始时，你从牌堆/弃牌堆里选择一项获得：【1】进攻马、【2】防御马、【3】武器、【4】防具（先从牌堆里找，没有的话就去弃牌堆里找；两处都没有则不获得）。<br>3.你的手牌上限+x（x为你装备区内已装备的数量）。<br>4.当你装备区里有武器时，你造成伤害时，可以选择弃置一张装备栏里的武器牌或手牌中的武器牌，然后此伤害+1（同一回合内不能多次发动；同一次伤害不能叠加）。<br>5.当你装备区里有防具时，你受到伤害时，可以选择弃置一张装备栏里的防具牌或手牌中的防具牌，然后完全抵消此伤害。<br>6.当你装备区里有防御马（+1马）时，你免疫第一次受到的伤害，然后你可以选择弃置装备栏里的防御马；当你装备栏里的防御马离开你的装备栏时，你摸两张牌（同栏位重新装备或被夺走则刷新）。<br>7.当你装备区里有进攻马（-1马）时，你第一次造成的伤害+1，然后你可以选择弃置装备栏里的进攻马；当你装备栏里的进攻马离开你的装备栏时，你摸两张牌（同栏位重新装备或被夺走则刷新）。<br>8.若你从手牌中使用或者打出过的基本牌牌名数（火杀/雷杀不计为独立牌名）大于等于1/2/3：你使用基本牌无次数限制／你使用基本牌无距离限制／当你获得或失去装备时，你摸一张牌。',
 						'zycf_extra': '摧锋',
 						'zycf_extra_info': '1.每轮限一次，每回合结束时，你可以摸一张牌并执行一个额外的回合（由你选择是否发动；额外回合包含判定/摸牌阶段，该额外回合结束时不能再发动本项）。<br>2.每回合结束时，你可以从装备栏或手牌中选择一张装备弃置，然后你可以视为对当前回合角色使用一张伤害值+X的【决斗】（X为本回合所有角色使用或打出【杀】的次数，至多为3；同一张【杀】指定多个目标按1次计）。该【决斗】不能以自己为目标，且至少造成1点伤害（若被【无懈可击】取消则保底不成立）。',
 						// ★ 技能描述＝用户提供的原文，不再改写
@@ -4142,7 +4142,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.finish(); return;
 							},
 						},
-						// 武翊·攻马（进攻马 = -1马 = equip4）：**造成**的伤害+1（已改为"每次造成伤害都触发"）；
+						// 武翊·攻马（**进攻马 = -1马 = equip4**）：每局第一次**造成**的伤害+1；
 						//   进攻马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
 						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
@@ -4182,7 +4182,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									} catch (e) { }
 									return false;
 								}
-								// damageBegin2（source 侧）：我有进攻马（按用户要求已改为"每次造成伤害都触发"）
+								// damageBegin2（source 侧）：我有进攻马 + 每局第一次
 								try {
 								var _a2 = '武翊·攻马入口 事件=' + event.name +
 								'｜有进攻马(栏4)=' + !!player.getEquip(4) + '｜已用过=' + !!player.storage.zyyi_atk_used;
@@ -4193,8 +4193,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// （方向由 trigger 侧保证：source 侧触发 ⇒ 我必然是来源，无需再判）
 								// ★ 用"曾装上进攻马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
 								if (!player.storage.zyyi_atk_horse) { _dbg('曾装备标记未置位'); return false; }
-								// ★ 提高触发频率（用户要求"多一点"）：去掉"每局第一次"限制 ⇒ 每次造成伤害都触发
-								//   （原设计为每局一次；现改为每次满足条件即触发，战报/台词随之变多）
+								if (player.storage.zyyi_atk_used) { _dbg('本局已用过'); return false; }
 								_dbg('通过');
 								return true;
 							},
@@ -4204,12 +4203,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									// 马离开装备区 ⇒ 摸两张（本项）+ 武翊8③ 另摸一张（可重复触发）
 									player.draw(2);
 									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌');
-									// 马已离场 ⇒ 清除"曾装备"标记，需重装才能再触发
+									// 刷新"每局第一次"
 									delete player.storage.zyyi_atk_used;
 									delete player.storage.zyyi_atk_horse;   // 已离场 ⇒ 需重装才能再触发（即"刷新"）
 									event.finish(); return;
 								}
-								player.storage.zyyi_atk_used = true;   // 仅作记录（不再用于限制触发）
+								player.storage.zyyi_atk_used = true;
 								trigger.num += 1;                            // 与武翊4 的 +1 可叠成 +2
 								game.log(player, '【武翊】：进攻马在场，此伤害+1');
 								player.chooseBool('武翊：是否弃置装备区内的进攻马？')
@@ -4222,7 +4221,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.finish(); return;
 							},
 						},
-						// 武翊·防马（防御马 = +1马 = equip3）：**受到**的伤害免疫（已改为"每次受到伤害都触发"）；
+						// 武翊·防马（**防御马 = +1马 = equip3**）：每局第一次**受到**的伤害免疫；
 						//   防御马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
 						//   ★ 子类型依据：game.js:13026 equip3=防御马、22032 equip3=+1马栏
 						zyyi_horse_def: {
@@ -4272,8 +4271,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// （方向由 trigger 侧保证：player 侧触发 ⇒ 我必然是承受方，无需再判）
 								// ★ 用"曾装上防御马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
 								if (!player.storage.zyyi_def_horse) { _dbg2('曾装备标记未置位'); return false; }
-								// ★ 提高触发频率（用户要求"多一点"）：去掉"每局第一次"限制 ⇒ 每次受到伤害都免疫
-								//   （原设计为每局一次；现改为每次满足条件即触发）
+								if (player.storage.zyyi_def_used) { _dbg2('本局已用过'); return false; }
 								_dbg2('通过');
 								return true;
 							},
@@ -4286,7 +4284,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									delete player.storage.zyyi_def_horse;   // 已离场 ⇒ 需重装才能再触发（即"刷新"）
 									event.finish(); return;
 								}
-								player.storage.zyyi_def_used = true;   // 仅作记录（不再用于限制触发）
+								player.storage.zyyi_def_used = true;
 								trigger.zyyi_cancelled = true;
 								trigger.cancel();                       // 免疫（同一机制，不叠加）
 								game.log(player, '【武翊】：防御马在场，免疫此伤害');
