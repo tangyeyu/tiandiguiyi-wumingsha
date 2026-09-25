@@ -171,12 +171,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				var isSoul = function (p) {
 					return p && p.hasSkill('mgj_dingce');
 				};
-				// ==== 诊断：写文件（探针已确认本机 require/写盘均可用）====
-				// ★ 之前写 C:\bz-diag.log 失败是因为 catch 把错误吞了、误判"通道不通"；
-				//   探针显示 require=有 / 写C盘=成功 ⇒ 现在诊断直接落盘，作者自己读，不再要用户截图。
-				// ★ 挂到 game 上：content 是引擎用 new Function 编译的，只能靠形参
+				// ==== 诊断：写文件（**默认关闭**，需要排查时把 BZ_DIAG_ON 改成 true）====
+				// ★ 默认关闭的理由：这些是排查期用的逐判据落盘，会把战报/日志写得很乱；
+				//   功能性问题已修完（见 git 历史），保留代码是为了日后回归排查。
+				// ★ 开启方式：把下面 BZ_DIAG_ON 改为 true（仅此一处），
+				//   所有 (game.bzDiag2||lib.bzDiag2)(...) 调用即刻恢复落盘到 C:/bz-diag.log。
+				var BZ_DIAG_ON = false;
+				// ★ 挂到 game/lib 上：content 是引擎用 new Function 编译的，只能靠形参
 				//   （event/player/game/lib…）拿到外部东西，闭包变量不保险。
 				var bzDiag = function (msg) {
+					if (!BZ_DIAG_ON) return;          // ★ 总开关：关闭时全部诊断静默
 					try {
 						require('fs').appendFileSync('C:/bz-diag.log',
 							new Date().toLocaleTimeString() + '  ' + msg + '\n');
@@ -255,7 +259,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						var fsx = null;
 						try { fsx = require('fs'); } catch (eFs) { return; }
 						var LOGF = 'C:/bz-battle.log';
+						// ★ 默认关闭（与 bzDiag 的总开关一致）：开启后记录 JS 异常 / console.error /
+						//   技能 content 异常 / 各类排查落盘。需要排查时把下面改为 true。
+						var BZ_LOG_ON = false;
 						var bzWrite = function (s) {
+							if (!BZ_LOG_ON) return;
 							try { fsx.appendFileSync(LOGF, s + '\n'); } catch (e) { }
 						};
 						var bzTs = function () { try { return new Date().toLocaleTimeString(); } catch (e) { return ''; } };
