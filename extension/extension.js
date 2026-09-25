@@ -439,6 +439,53 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						} catch (eHookV) {
 							try { bzWrite('语音播放链挂钩安装失败: ' + eHookV.message); } catch (e) { }
 						}
+						// ---- 马"离开装备区摸两张"：直接挂钩 player.lose（不依赖事件链）----
+						//   ★ 为什么走这条路：`lose` 钩子 + content 分支判断反复出问题
+						//     （event.name / trigger.name 的语义坑），而 player.equip 兜底钩子已证明可靠。
+						//   判据：失去的牌里含自己的 -1马/+1马，且"曾装备"标记为真（= 确实是从装备区掉的），
+						//         且未被同一张牌重复结算（用 horse 标记本身当闸门）。
+						//   动作：摸两张 + 清"已用过"标记（= 刷新）+ 清"曾装备"标记（需重装才能再触发）。
+						try {
+							if (lib.element && lib.element.player && lib.element.player.lose && !lib.element.player.lose.bzHorseHooked) {
+								var _origLose = lib.element.player.lose;
+								var _wrappedLose = function () {
+									var r;
+									try { r = _origLose.apply(this, arguments); } catch (e) { throw e; }
+									try {
+										var p = this;
+										var cards = arguments[0];
+										if (cards && !Array.isArray(cards)) cards = [cards];
+										if (cards && cards.length) {
+											for (var ci = 0; ci < cards.length; ci++) {
+												var c = cards[ci];
+												var sub = (c && c.nodeType) ? get.subtype(c) : null;
+												if (sub == 'equip4' && p.storage.zyyi_atk_horse) {
+													p.storage.zyyi_atk_horse = false;   // 先落闸，避免同一张牌重复结算
+													delete p.storage.zyyi_atk_used;      // 刷新"每局第一次"
+													delete p.storage.zyyi_atk_drawDone;
+													p.draw(2);
+													game.log(p, '【武翊】：进攻马离开装备区，摸两张牌');
+													bzWrite('【马离场兜底】' + p.name + ' 失去 -1马(' + get.name(c) + ') ⇒ 摸两张 + 刷新');
+												} else if (sub == 'equip3' && p.storage.zyyi_def_horse) {
+													p.storage.zyyi_def_horse = false;
+													delete p.storage.zyyi_def_used;
+													delete p.storage.zyyi_def_drawDone;
+													p.draw(2);
+													game.log(p, '【武翊】：防御马离开装备区，摸两张牌');
+													bzWrite('【马离场兜底】' + p.name + ' 失去 +1马(' + get.name(c) + ') ⇒ 摸两张 + 刷新');
+												}
+											}
+										}
+									} catch (eLose) { }
+									return r;
+								};
+								_wrappedLose.bzHorseHooked = true;
+								lib.element.player.lose = _wrappedLose;
+								bzWrite('===== 马"离场摸两张"兜底钩子已安装（挂钩 player.lose）=====');
+							}
+						} catch (eHorseLose) {
+							try { bzWrite('马离场兜底钩子安装失败: ' + eHorseLose.message); } catch (e) { }
+						}
 						// ---- 马的"曾装备"标记：不依赖 equipAfter 的兜底置位 ----
 						//   挂钩 player.equip：任何武将装备牌进入装备区时，检查是否为 -1马/+1马 并置位。
 						//   这样即使 equipAfter 事件不来，两张马的核心判据也能成立。
