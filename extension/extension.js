@@ -4287,14 +4287,28 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 											'｜栏4=' + (player.getEquip(4) ? get.subtype(player.getEquip(4)) + ':' + get.translation(player.getEquip(4)) : '空') +
 											'｜曾装备=' + !!player.storage.zyyi_atk_horse);
 									} catch (eLose) { }
+									// ★ 失牌清单取自 event.cards（实测证据：getl().es 为空，那张大宛被算在 hs 里）
+									//   ⇒ 原先用 evt.es 恒为空 ⇒ 本分支永不触发（既不摸牌，又继续走伤害分支去弹框）
+									var _lost = null;
 									try {
-										var evt = event.getl(player);
-										if (!evt || !evt.es || !evt.es.length) return false;
-										for (var i = 0; i < evt.es.length; i++) {
-											if (get.subtype(evt.es[i]) == 'equip4') return true;
+										var _ev = event.getl ? event.getl(player) : null;
+										var _all = [];
+										if (_ev && _ev.es) for (var _i = 0; _i < _ev.es.length; _i++) _all.push(_ev.es[_i]);
+										if (_ev && _ev.hs) for (var _j = 0; _j < _ev.hs.length; _j++) _all.push(_ev.hs[_j]);
+										if (_ev && _ev.js) for (var _k = 0; _k < _ev.js.length; _k++) _all.push(_ev.js[_k]);
+										if (event.cards) for (var _m = 0; _m < event.cards.length; _m++) _all.push(event.cards[_m]);
+										for (var _n = 0; _n < _all.length; _n++) {
+											if (_all[_n] && get.subtype(_all[_n]) == 'equip4') { _lost = _all[_n]; break; }
 										}
-									} catch (e) { }
-									return false;
+									} catch (eLoose) { }
+									if (!_lost) return false;
+									try { (game.bzDiag2 || lib.bzDiag2)('攻马·lose命中 牌=' + get.name(_lost) + '/equip4'); } catch (eL2) { }
+									// 必须"曾装备过"才认（避免把别处失去的同栏位牌当成马）
+									if (!player.storage.zyyi_atk_horse) return false;
+									// ★ 一次失去只结算一次（攻马/防马都挂 lose，靠各自闸门避免重复弹框/重复摸牌）
+									if (player.storage.zyyi_atk_drawDone) return false;
+									player.storage.zyyi_atk_drawDone = true;
+									return true;
 								}
 								// damageBegin2（source 侧）：我有进攻马 + 每局第一次
 								try {
@@ -4320,6 +4334,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									// 刷新"每局第一次"
 									delete player.storage.zyyi_atk_used;
 									delete player.storage.zyyi_atk_horse;   // 已离场 ⇒ 需重装才能再触发（即"刷新"）
+									delete player.storage.zyyi_atk_drawDone; // 清闸门：下次失去才能再结算
 									event.finish(); return;
 								}
 								player.storage.zyyi_atk_used = true;
@@ -4376,14 +4391,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									return false;   // 本事件不触发 content
 								}
 								if (event.name == 'lose') {   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
+									// ★ 同攻马：失牌清单取自 event.cards（evt.es 实测为空）
+									var _lost2 = null;
 									try {
-										var evt = event.getl(player);
-										if (!evt || !evt.es || !evt.es.length) return false;
-										for (var i = 0; i < evt.es.length; i++) {
-											if (get.subtype(evt.es[i]) == 'equip3') return true;
+										var _ev2 = event.getl ? event.getl(player) : null;
+										var _all2 = [];
+										if (_ev2 && _ev2.es) for (var _i2 = 0; _i2 < _ev2.es.length; _i2++) _all2.push(_ev2.es[_i2]);
+										if (_ev2 && _ev2.hs) for (var _j2 = 0; _j2 < _ev2.hs.length; _j2++) _all2.push(_ev2.hs[_j2]);
+										if (_ev2 && _ev2.js) for (var _k2 = 0; _k2 < _ev2.js.length; _k2++) _all2.push(_ev2.js[_k2]);
+										if (event.cards) for (var _m2 = 0; _m2 < event.cards.length; _m2++) _all2.push(event.cards[_m2]);
+										for (var _n2 = 0; _n2 < _all2.length; _n2++) {
+											if (_all2[_n2] && get.subtype(_all2[_n2]) == 'equip3') { _lost2 = _all2[_n2]; break; }
 										}
-									} catch (e) { }
-									return false;
+									} catch (eLoose2) { }
+									if (!_lost2) return false;
+									try { (game.bzDiag2 || lib.bzDiag2)('防马·lose命中 牌=' + get.name(_lost2) + '/equip3'); } catch (eL3) { }
+									if (!player.storage.zyyi_def_horse) return false;
+									// ★ 一次失去只结算一次
+									if (player.storage.zyyi_def_drawDone) return false;
+									player.storage.zyyi_def_drawDone = true;
+									return true;
 								}
 								try {
 								var _a3 = '武翊·防马入口 事件=' + event.name + '｜已取消=' + !!event.zyyi_cancelled +
@@ -4409,6 +4436,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									game.log(player, '【武翊】：防御马离开装备区，摸两张牌');
 									delete player.storage.zyyi_def_used;
 									delete player.storage.zyyi_def_horse;   // 已离场 ⇒ 需重装才能再触发（即"刷新"）
+									delete player.storage.zyyi_def_drawDone; // 清闸门：下次失去才能再结算
 									event.finish(); return;
 								}
 								player.storage.zyyi_def_used = true;
