@@ -4244,7 +4244,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.storage.zyyi_atk_used = true;
 								trigger.num += 1;                            // 与武翊4 的 +1 可叠成 +2
 								game.log(player, '【武翊】：进攻马在场，此伤害+1');
-								try { (game.bzDiag2 || lib.bzDiag2)('攻马·生效 已加伤 num=' + trigger.num + '；即将弹出"是否弃置进攻马"'); } catch (eDN) { }
+								// ★★ 决定性诊断：把"弹弃置框"时刻的伤害现场全记下来 ★★
+								//   目的：用户反馈"刚装上马就弹框"（并未攻击）⇒ 需查明这次 damageBegin2 从哪来
+								try {
+									var _p = [];
+									try { var _pv = trigger.getParent(); var _g = 0; while (_pv && _g++ < 6) { _p.push(_pv.name + ( _pv.card ? '(' + get.name(_pv.card) + ')' : '')); _pv = _pv.getParent ? _pv.getParent() : null; } } catch (ePv) { }
+									(game.bzDiag2 || lib.bzDiag2)('★★攻马·弹框现场 num=' + trigger.num +
+										'｜伤害来源=' + (trigger.source ? trigger.source.name : '无') +
+										'｜受伤者=' + (trigger.player ? trigger.player.name : '无') +
+										'｜伤害牌=' + (trigger.card ? get.name(trigger.card) + '/' + get.translation(trigger.card) : '无') +
+										'｜父事件链=' + _p.join(' ← ') +
+										'｜当前阶段=' + (_status.currentPhase ? _status.currentPhase.name : '无'));
+								} catch (eDP) { }
 								player.chooseBool('武翊：是否弃置装备区内的进攻马？')
 									.set('ai', function () { return false; });
 								'step 1'
