@@ -1037,7 +1037,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true,
 							sub: true,
 							popup: false,
-							trigger: { global: 'damageBegin' },
+							trigger: { global: 'damageBegin2' },
 							filter: function (event) {
 								// B2：原用 get.player(event.source) / get.player(event.player)，
 								// 而 get.player() 不接受参数（game.js:62081 直接 return _status.event.player），
@@ -1265,7 +1265,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							popup: false,
 							// B4：原 {source:'damageBegin'} 只在自己是伤害来源时触发；
 							// 效果应作用于「策」持有者造成的伤害 → 改监听全场并比对 event.source
-							trigger: { global: 'damageBegin' },
+							trigger: { global: 'damageBegin2' },
 							filter: function (event) {
 								var ce = findCeTarget();
 								if (ce == null || event.source != ce) return false;
@@ -1549,7 +1549,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true,
 							sub: true,
 							popup: false,
-							trigger: { player: 'damageBegin' },
+							trigger: { player: 'damageBegin2' },
 							filter: function (event, player) {
 								// ★ 同 cm_juejing_draw：延时锦囊的有效名在 viewAs||name
 								if (!player.hasSkill('cm_juejing')) return false;
@@ -1632,7 +1632,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						cm_qiji_guard: {
 							locked: true,
 							sub: true,
-							trigger: { player: 'damageBegin' },
+							trigger: { player: 'damageBegin2' },
 							filter: function (event, player) {
 								// 与 content 保持同一套枚举（都走判定区 DOM 节点），避免两者判据不一致
 								var node = player.node && player.node.judges;
@@ -2112,7 +2112,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							locked: true,
 							forced: true,
 							popup: false,
-							trigger: { player: 'damageBegin' },
+							trigger: { player: 'damageBegin2' },
 							content: function () {
 								'step 0'
 								var n = player.countMark('lx_qian');
@@ -2400,7 +2400,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							locked: true,
 							forced: true,
 							popup: false,
-							trigger: { player: 'damageBegin' },
+							trigger: { player: 'damageBegin2' },
 							filter: function (event, player) {
 								if (!player.isZhu2()) return false;
 								var source = event.source;
@@ -2660,7 +2660,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							sub: true,
 							popup: false,
-							trigger: { source: 'damageBegin' },
+							trigger: { source: 'damageBegin2' },
 							filter: function (event, player) {
 								var target = event.player;
 								return !!(target && target != player && target.getCards('e').length > 0);
@@ -2682,7 +2682,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							sub: true,
 							popup: false,
 							direct: true,
-							trigger: { source: 'damageBegin' },
+							trigger: { source: 'damageBegin2' },
 							filter: function (event, player) {
 								if (!event.card || (event.card.viewAs || event.card.name) != 'sha') return false;
 								return player.getEquip(1) != null;
@@ -2840,7 +2840,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							sub: true,
 							popup: false,
 							direct: true,
-							trigger: { source: 'damageBegin' },
+							trigger: { source: 'damageBegin2' },
 							filter: function (event, player) {
 								return !!(player.storage.lkang_zone && player.storage.lkang_zone.e1);
 							},
@@ -2856,7 +2856,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							sub: true,
 							popup: false,
-							trigger: { player: 'damageBegin' },
+							trigger: { player: 'damageBegin2' },
 							filter: function (event, player) {
 								if (!(player.storage.lkang_zone && player.storage.lkang_zone.e2)) return false;
 								return player.getHistory('damage').length == 0;
@@ -2915,7 +2915,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						lkang_kangjin: {
 							audio: 'rejizhi_lukang',
 							locked: true,
-							trigger: { player: 'damageBegin' },
+							trigger: { player: 'damageBegin2' },
 							filter: function (event, player) {
 								var source = event.source;
 								if (!source || source == player) return false;
@@ -4246,7 +4246,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							// ★ equipAfter 必须 global 侧（原版 equipAfter 全部是 global，player 侧 0 例）；
 							//   loseAfter 同理必须 global+getl 判人（先例 clan.js:1549 / shiji.js:3232）——
 							//   原 player 侧写法会让任何角色失去马都命中（他人也能触发，用户实测）。
-							trigger: { source: 'damageBegin4', global: ['loseAfter', 'equipAfter'] },
+							trigger: { source: 'damageBegin4', global: ['loseAfter', 'loseAsyncAfter', 'equipAfter'] },
 							filter: function (event, player) {
 								// 装备区进入：只认自己的事件，记录「曾装上进攻马」（供伤害分支与 lose 分支判断）
 								if (event.name == 'equip') {
@@ -4255,16 +4255,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (eq && get.subtype(eq) == 'equip4') player.storage.zyyi_atk_horse = true;
 									return false;
 								}
-								// 失去结算：global 侧 ⇒ 用 getl(player) 确认是**本人**失去 equip4（修他人触发）
-								if (event.name == 'lose') {
+								// 失去结算：只统计**赵云本人**失去的 equip4（修「他人弃马也触发」泄漏：
+								// getl 对非失去者恒返回空壳 game.js:26247；event.cards 是全局列表，
+								// 无条件扫描会把别人失去的马扫进来——上版泄漏根源，已删）
+								if (event.name == 'lose' || event.name == 'loseAsync') {
 									if (!player.storage.zyyi_atk_horse) return false;
 									if (player.storage.zyyi_atk_drawDone) return false; // 一次失去只结算一次
 									var _lost = null;
 									try {
-										var _ev = event.getl ? event.getl(player) : null;
 										var _all = [];
-										if (_ev && _ev.es) _all.addArray(_ev.es);
-										if (event.cards) _all.addArray(event.cards);
+										// ① getl 命中本人 ⇒ 只取 es（装备区离开）
+										var _ev = event.getl ? event.getl(player) : null;
+										if (_ev && _ev.player == player) _all.addArray(_ev.es);
+										// ② 事件本人即失去者（getlx:false 的换装路径 getl 恒空，game.js:13493）⇒ 才可用事件牌列表
+										if (event.player == player && event.cards) _all.addArray(event.cards);
 										for (var _i = 0; _i < _all.length; _i++) {
 											if (_all[_i] && get.subtype(_all[_i]) == 'equip4') { _lost = _all[_i]; break; }
 										}
@@ -4281,7 +4285,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								"step 0"
-								if (trigger.name == 'lose') {
+								if (trigger.name == 'lose' || trigger.name == 'loseAsync') {
 									// 进攻马离开装备区 ⇒ 摸两张（本项）
 									player.draw(2);
 									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌');
@@ -4306,7 +4310,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							// ★ 同攻马：equipAfter/loseAfter 必须 global 侧 + getl 判人（先例 clan.js:1549）；
 							//   player 侧 loseAfter 会让任何角色失去马都命中（用户实测）。
-							trigger: { player: 'damageBegin4', global: ['loseAfter', 'equipAfter'] },
+							trigger: { player: 'damageBegin4', global: ['loseAfter', 'loseAsyncAfter', 'equipAfter'] },
 							filter: function (event, player) {
 								if (event.name == 'equip') {
 									if (event.player != player) return false;
@@ -4314,15 +4318,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (eq && get.subtype(eq) == 'equip3') player.storage.zyyi_def_horse = true;
 									return false;
 								}
-								if (event.name == 'lose') {
+								// 只统计**赵云本人**失去的 equip3（同攻马：删 event.cards 全局扫描泄漏）
+								if (event.name == 'lose' || event.name == 'loseAsync') {
 									if (!player.storage.zyyi_def_horse) return false;
 									if (player.storage.zyyi_def_drawDone) return false;
 									var _lost = null;
 									try {
-										var _ev = event.getl ? event.getl(player) : null;
 										var _all = [];
-										if (_ev && _ev.es) _all.addArray(_ev.es);
-										if (event.cards) _all.addArray(event.cards);
+										var _ev = event.getl ? event.getl(player) : null;
+										if (_ev && _ev.player == player) _all.addArray(_ev.es);
+										if (event.player == player && event.cards) _all.addArray(event.cards);
 										for (var _i = 0; _i < _all.length; _i++) {
 											if (_all[_i] && get.subtype(_all[_i]) == 'equip3') { _lost = _all[_i]; break; }
 										}
@@ -4339,7 +4344,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								"step 0"
-								if (trigger.name == 'lose') {
+								if (trigger.name == 'lose' || trigger.name == 'loseAsync') {
 									player.draw(2);
 									game.log(player, '【武翊】：防御马离开装备区，摸两张牌');
 									delete player.storage.zyyi_def_used;
