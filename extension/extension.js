@@ -3840,16 +3840,21 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								// ★ 修：先取"本轮是否已处理"，**再**落闸。
-								//   原来先落闸、又用同一条件做分支 ⇒ 恒为 false ⇒ 移去「略」永不执行。
-								var isNewRound = (player.storage.cc_jianxiong_round !== game.roundNumber);
-								if (isNewRound) {
+								// ★★ 分支判定必须与 filter 同口径（event.name）（2026-09-13 修）：
+								//   原用「是否新轮」（storage 轮号≠当前轮）判分支 ⇒ 第1轮曹操自己
+								//   还没行动过时（round 落闸未发生，storage 为 undefined），第一次
+								//   受伤的 damageAfter 会被误判为「新轮」⇒ 走移略分支直接 finish
+								//   ⇒ 第一次被杀不摸牌（用户实测）。
+								if (event.name == 'phaseBefore') {
 									player.storage.cc_jianxiong_round = game.roundNumber;
 									var n0 = player.countMark('cc_lue');
-									player.removeMark('cc_lue', n0);
-									game.log(player, '【奸雄】：移去了所有的「略」');
+									if (n0 > 0) {
+										player.removeMark('cc_lue', n0);
+										game.log(player, '【奸雄】：移去了所有的「略」');
+									}
 									event.finish(); return;
 								}
+								// damageAfter：受伤后记录并摸牌
 								event.times = trigger.num || 1;
 								event.i = 0;
 								'step 1'
@@ -4288,7 +4293,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (trigger.name == 'lose' || trigger.name == 'loseAsync') {
 									// 进攻马离开装备区 ⇒ 摸两张（本项）
 									player.draw(2);
-									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌');
+									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌（事件=' + trigger.name +
+										'｜失去者=' + (trigger.player ? get.translation(trigger.player) : '未知') + '）');
 									delete player.storage.zyyi_atk_used; // 重装同栏即刷新「每局第一次」
 									delete player.storage.zyyi_atk_horse;
 									delete player.storage.zyyi_atk_drawDone;
@@ -4346,7 +4352,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								"step 0"
 								if (trigger.name == 'lose' || trigger.name == 'loseAsync') {
 									player.draw(2);
-									game.log(player, '【武翊】：防御马离开装备区，摸两张牌');
+									game.log(player, '【武翊】：防御马离开装备区，摸两张牌（事件=' + trigger.name +
+										'｜失去者=' + (trigger.player ? get.translation(trigger.player) : '未知') + '）');
 									delete player.storage.zyyi_def_used;
 									delete player.storage.zyyi_def_horse;
 									delete player.storage.zyyi_def_drawDone;
