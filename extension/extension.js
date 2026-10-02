@@ -744,9 +744,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'cc_qingzheng',
 							'cc_zhilue',
 							'cc_zhi_zone',
-							'cc_zhi_mark',
 							'cc_qingzheng_cut',
-							'cc_lue_mark',
 							'tdgx_shenwei_kill',
 							'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_caocao.jpg']],
@@ -3951,7 +3949,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
 							trigger: { global: 'phaseBegin' },
 							filter: function (event, player) {
-								return player.isIn() && event.player !== player && event.player.countMark('cc_zhi') > 0;
+								// ★ 不排除自己（2026-09-13 修）：治在自己身上时自己的回合开始同样结算。
+								//   原先排除自己 ⇒ 曹操开局误带的「治」永不结算，给别人挂治自己摸不到。
+								return player.isIn() && event.player.countMark('cc_zhi') > 0;
 							},
 							content: function () {
 								'step 0'
