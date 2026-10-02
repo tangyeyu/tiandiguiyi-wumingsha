@@ -1995,7 +1995,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										'｜用牌+响应=' + used + '｜体力=' + player.hp +
 										'｜lose事件=' + history.length + '｜其中discard=' + nDisc +
 										'｜弃牌阶段弃置数=' + n;
-									game.log(player, '【连营·诊断】', _d);
 									(game.bzDiag2 || lib.bzDiag2)('连营·诊断 ' + _d);
 								} catch (eD) { }
 								if (used > player.hp) return false;
@@ -2083,7 +2082,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										'｜sourceDamage事件=' + history.length +
 										'｜带lx_cy标记=' + nCy + '｜合计火伤=' + total +
 										'｜体力=' + player.hp;
-									game.log(player, '【炽炎·诊断】', _d);
 									(game.bzDiag2 || lib.bzDiag2)('炽炎·诊断 ' + _d);
 								} catch (eD) { }
 								return total > 0 && total >= player.hp;
@@ -3415,9 +3413,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.storage.tdgx_sw['gy_po_di']--;
 								player.storage.gy_po_on = true;
 								player.addTempSkill('gy_po_turn');
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 发动（剩余额度 ' + player.storage.tdgx_sw['gy_po_di'] + '）');
-								} catch (eD) { }
 								player.chooseTarget(true, '破敌：令一名其他角色获得「破」', function (card, player, target) {
 									return target != player && target.isIn();
 								}).set('ai', function (target) { return -get.attitude(_status.event.player, target); });
@@ -3448,16 +3443,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 结算阶段进入 step=' + event.step);
-								} catch (eD0) { }
 								for (var i = 0; i < game.players.length; i++) {
 									var c = game.players[i];
 									var n = c.countMark('gy_po');
 									if (n > 0) {
-										try {
-											(game.bzDiag2 || lib.bzDiag2)('破敌·诊断 结算 ' + c.name + ' 失去' + n + '点体力');
-										} catch (eD1) { }
 										c.loseHp(n);
 										c.removeMark('gy_po', n);
 										if (c.hasSkill('gy_po_mark')) c.removeSkill('gy_po_mark');
@@ -3553,10 +3542,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}
 								if (!star || !star.nodeType) { event.finish(); return; }
 								event.star = star;
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 选中星=' + get.translation(star) +
-										' 位置=' + get.position(star));
-								} catch (eD) { }
 								// 星移到手牌后才能走标准出牌流程
 								try { player.gain(star, 'draw'); } catch (eG) { }
 								// 使用（forceTarget=true ⇒ 需要目标时由玩家选择）
@@ -3599,7 +3584,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										'｜在场=' + player.isIn() +
 										'｜有七星=' + player.hasSkill('zl_qixing') +
 										'｜有星区=' + player.hasSkill('zl_xing_tu');
-									game.log(player, '【七星·诊断】', _q);
 									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 ' + _q);
 								} catch (eD0) { }
 								// 「每轮开始时」= 每轮第一次轮到我（引擎的 roundStart 只派发给最小座位号，不可用）
@@ -3628,7 +3612,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var _d = 'qixing取牌 got=' + got.length +
 										'｜x区总数=' + _xs.length +
 										'｜带zl_xing标记=' + _tagged.length;
-									game.log(player, '【七星·诊断】', _d);
 									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 ' + _d);
 								} catch (eD1) { }
 								'step 1'
@@ -3697,7 +3680,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var _kc = '事件=' + event.name + '｜在场=' + _in + '｜手牌=' + _h +
 										'｜星=' + _s + '｜是目标=' + (_isT ? 1 : 0) +
 										'｜牌=' + (event.card ? get.translation(event.card) : '-');
-									game.log(player, '【空城·诊断】', _kc);
 									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 ' + _kc);
 								} catch (eD) { }
 								if (!_in) return false;
@@ -3710,9 +3692,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// ★ 弃哪张「星」由**玩家自己选择**（原来是自动弃第一张）
 								var stars = lib.skill.zl_xing_use.stars(player);
 								event.zs = stars;
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 content进入 星=' + stars.length);
-								} catch (eD2) { }
 								if (!stars.length) { event.finish(); return; }
 								// ★ 同上：选实体牌用 chooseCardButton（不传 forced ⇒ 可取消）
 								player.chooseCardButton(stars.slice(0), '空城：选择一张「星」弃置')
@@ -3738,9 +3717,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (trigger.targets && trigger.targets.length) trigger.targets.length = 0;
 									trigger.all_excluded = true;
 								} catch (eC) { }
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 已置 all_excluded');
-								} catch (eD3) { }
 								player.storage.zl_kc_pending = trigger.card;
 								game.log(player, '【空城】：弃置1枚「星」，令', get.translation(trigger.card), '整体无效');
 							},
@@ -3936,7 +3912,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 												}
 											}
 										} catch (eDup) {
-											try { (game.bzDiag2 || lib.bzDiag2)('奸雄补记异常：' + eDup.message); } catch (eDup2) { }
 										}
 									}
 								}
@@ -4122,12 +4097,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							audio: 'zyyi', locked: true, forced: true, charlotte: true, popup: false, direct: true,
 							trigger: { player: 'phaseBegin' },
 							filter: function (event, player) {
-								try {
-								var _e = '武翊·装入口 事件=' + event.name + '｜在场=' + player.isIn() +
-								'｜装备数=' + player.getCards('e').length;
-								game.log(player, '【武翊·诊断】', _e);
-								(game.bzDiag2 || lib.bzDiag2)('武翊·装入口 ' + _e);
-								} catch (eD) { }
 								return player.isIn();
 							},
 							content: function () {
@@ -4209,15 +4178,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   改为记录"已发动的回合标识（_status.currentPhase）"，新回合自动放行。
 								var _cur = (typeof _status !== 'undefined' && _status.currentPhase) ? _status.currentPhase : null;
 								var _weapons = player.countCards('e', { subtype: 'equip1' }) + player.countCards('h', { subtype: 'equip1' });
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('武翊·兵入口 事件=' + event.name +
-										'｜已用=' + !!player.storage.zyyi_weapon_used +
-										'｜记录回合=' + (player.storage.zyyi_weapon_round ? player.storage.zyyi_weapon_round.name : '无') +
-										'｜当前回合=' + (_cur ? _cur.name : '无') +
-										'｜同回合? ' + (player.storage.zyyi_weapon_round === _cur) +
-										'｜武器牌数=' + _weapons +
-										'｜判定=' + ((player.storage.zyyi_weapon_used && player.storage.zyyi_weapon_round === _cur) ? '拦住(本回合已用)' : (_weapons > 0 ? '放行' : '拦住(无武器牌)')));
-								} catch (eWI) { }
 								if (player.storage.zyyi_weapon_used && player.storage.zyyi_weapon_round === _cur) {
 									return false;   // 本回合已发动过
 								}
@@ -4254,12 +4214,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								var _e2 = 0, _h2 = 0;
 								try { _e2 = player.countCards('e', { subtype: 'equip2' }); _h2 = player.countCards('h', { subtype: 'equip2' }); } catch (e) { }
-								try {
-								var _a = '武翊·甲入口 事件=' + event.name + '｜已取消=' + !!event.zyyi_cancelled +
-								'｜装备区防具=' + _e2 + '｜手牌防具=' + _h2 + '｜来源=' + (event.source ? event.source.name : '无');
-								game.log(player, '【武翊·诊断】', _a);
-								(game.bzDiag2 || lib.bzDiag2)('武翊·甲入口 ' + _a);
-								} catch (eD) { }
 								if (event.zyyi_cancelled) return false;   // 与武翊6 是同一机制，不能叠加
 								// ★ 必须是"我受到伤害"：player 侧只说明我参与了该事件，
 								//   我**造成**伤害时也会进这里（同类问题已在防马处实测到）。
@@ -4289,164 +4243,58 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
 							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							// ★ equipAfter 必须用 **global** 侧：原版 equipAfter 全部是 global（player 侧 0 例）
-							//   ⇒ 写成 player:[...equipAfter] 接不到事件，"曾装备"标记永不置位。
-							//   loseAfter 用 player 侧是对的（原版 102 例，如 collab.js:2351）。
-							trigger: { source: 'damageBegin4', player: 'loseAfter', global: 'equipAfter' },
+							// ★ equipAfter 必须 global 侧（原版 equipAfter 全部是 global，player 侧 0 例）；
+							//   loseAfter 同理必须 global+getl 判人（先例 clan.js:1549 / shiji.js:3232）——
+							//   原 player 侧写法会让任何角色失去马都命中（他人也能触发，用户实测）。
+							trigger: { source: 'damageBegin4', global: ['loseAfter', 'equipAfter'] },
 							filter: function (event, player) {
-								var _dbg = function (why) {
-									try {
-									var m = '攻马·filter 事件=' + event.name + '｜' + why +
-									'｜source=' + (event.source ? event.source.name : '无') +
-									'｜eventPlayer=' + (event.player ? event.player.name : '无') +
-									'｜我=' + player.name +
-									'｜曾装备=' + !!player.storage.zyyi_atk_horse + '｜已用过=' + !!player.storage.zyyi_atk_used;
-									(game.bzDiag2 || lib.bzDiag2)(m);
-									} catch (e) { }
-								};
-								// ★★★ 入口即落盘（无条件，在任何 return 之前）★★★
-								//   目的：回答"为什么弹弃置框" —— 记录本次 filter 被哪个事件触发、
-								//   伤害的来源与受伤者、以及**父事件链**（看出这次伤害从哪来）。
-								try {
-									var _chain = [];
-									try {
-										var _pv = event.getParent ? event.getParent() : null;
-										var _g = 0;
-										while (_pv && _g++ < 8) { _chain.push(_pv.name + (_pv.card ? '(' + get.name(_pv.card) + ')' : '')); _pv = _pv.getParent ? _pv.getParent() : null; }
-									} catch (eC) { }
-									(game.bzDiag2 || lib.bzDiag2)('攻马·入口 事件=' + event.name +
-										'｜我=' + player.name +
-										'｜曾装备=' + !!player.storage.zyyi_atk_horse +
-										'｜已用过=' + !!player.storage.zyyi_atk_used +
-										'｜伤害来源=' + (event.source ? event.source.name : '无') +
-										'｜受伤者=' + (event.player ? event.player.name : '无') +
-										'｜伤害牌=' + (event.card ? get.name(event.card) + '/' + get.translation(event.card) : '无') +
-										'｜父链=' + _chain.join('←'));
-								} catch (eEnt) { }
-								// ★ 进入装备区：记录"曾装上进攻马"（供伤害分支判断；离场时清除并刷新）
-								if (event.name == 'equip') {   // ★ 事件名是 'equip'（钩子名才是 equipAfter）
-									// ★★ 无条件落盘（在 return 之前）：把 equipAfter 的现场全记下来
-									try {
-										(game.bzDiag2 || lib.bzDiag2)('攻马·equipAfter 现场 事件=' + event.name +
-											'｜eventPlayer=' + (event.player ? event.player.name : '无') +
-											'｜我=' + player.name +
-											'｜event.player===我? ' + (event.player === player) +
-											'｜栏3=' + (player.getEquip(3) ? get.subtype(player.getEquip(3)) : '无') +
-											'｜栏4=' + (player.getEquip(4) ? get.subtype(player.getEquip(4)) : '无') +
-											'｜cards=' + (event.cards && event.cards.length ? get.subtype(event.cards[0]) : '无'));
-									} catch (eEA) { }
-									if (event.player != player) return false;   // global 侧 ⇒ 只认自己的装备事件
-									try {
+								// 装备区进入：只认自己的事件，记录「曾装上进攻马」（供伤害分支与 lose 分支判断）
+								if (event.name == 'equip') {
+									if (event.player != player) return false;
 									var eq = player.getEquip(4);
 									if (eq && get.subtype(eq) == 'equip4') player.storage.zyyi_atk_horse = true;
-									} catch (e) { }
-									return false;   // 本事件不触发 content
+									return false;
 								}
-								if (event.name == 'lose') {   // ★ filter 里 event 就是真事件   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
-									// 装备区离场追踪：借鉴 collab.js:2351（event.getl + hs）
-									// ★★ 明细诊断：把 getl 的全部字段 + 实际失牌的牌名/子类型都打出来
-									//   （怀疑 event.getl(player).es 这个字段名不对 ⇒ 永远取不到 ⇒ "摸两张"不触发）
-									try {
-										var _evt = event.getl(player);
-										var _keys = _evt ? Object.keys(_evt).join(',') : '(getl 返回空)';
-										var _cards = [];
-										try {
-											if (event.cards && event.cards.length) {
-												for (var _ci = 0; _ci < event.cards.length; _ci++) {
-													_cards.push(get.name(event.cards[_ci]) + '/' + get.subtype(event.cards[_ci]));
-												}
-											}
-										} catch (eC1) { }
-										var _es = [];
-										try {
-											if (_evt && _evt.es) for (var _ei = 0; _ei < _evt.es.length; _ei++) _es.push(get.name(_evt.es[_ei]) + '/' + get.subtype(_evt.es[_ei]));
-										} catch (eC2) { }
-										var _hs2 = 0, _js2 = 0;
-										try { _hs2 = (_evt && _evt.hs) ? _evt.hs.length : 0; } catch (eC3) { }
-										try { _js2 = (_evt && _evt.js) ? _evt.js.length : 0; } catch (eC4) { }
-										(game.bzDiag2 || lib.bzDiag2)('攻马·lose明细 我=' + player.name +
-											'｜getl字段=[' + _keys + ']' +
-											'｜es=' + (_es.length ? _es.join(',') : '空') +
-											'｜hs数=' + _hs2 + '｜js数=' + _js2 +
-											'｜event.cards=' + (_cards.length ? _cards.join(',') : '空') +
-											'｜栏4=' + (player.getEquip(4) ? get.subtype(player.getEquip(4)) + ':' + get.translation(player.getEquip(4)) : '空') +
-											'｜曾装备=' + !!player.storage.zyyi_atk_horse);
-									} catch (eLose) { }
-									// ★ 失牌清单取自 event.cards（实测证据：getl().es 为空，那张大宛被算在 hs 里）
-									//   ⇒ 原先用 evt.es 恒为空 ⇒ 本分支永不触发（既不摸牌，又继续走伤害分支去弹框）
+								// 失去结算：global 侧 ⇒ 用 getl(player) 确认是**本人**失去 equip4（修他人触发）
+								if (event.name == 'lose') {
+									if (!player.storage.zyyi_atk_horse) return false;
+									if (player.storage.zyyi_atk_drawDone) return false; // 一次失去只结算一次
 									var _lost = null;
 									try {
 										var _ev = event.getl ? event.getl(player) : null;
 										var _all = [];
-										if (_ev && _ev.es) for (var _i = 0; _i < _ev.es.length; _i++) _all.push(_ev.es[_i]);
-										if (_ev && _ev.hs) for (var _j = 0; _j < _ev.hs.length; _j++) _all.push(_ev.hs[_j]);
-										if (_ev && _ev.js) for (var _k = 0; _k < _ev.js.length; _k++) _all.push(_ev.js[_k]);
-										if (event.cards) for (var _m = 0; _m < event.cards.length; _m++) _all.push(event.cards[_m]);
-										for (var _n = 0; _n < _all.length; _n++) {
-											if (_all[_n] && get.subtype(_all[_n]) == 'equip4') { _lost = _all[_n]; break; }
+										if (_ev && _ev.es) _all.addArray(_ev.es);
+										if (event.cards) _all.addArray(event.cards);
+										for (var _i = 0; _i < _all.length; _i++) {
+											if (_all[_i] && get.subtype(_all[_i]) == 'equip4') { _lost = _all[_i]; break; }
 										}
-									} catch (eLoose) { }
+									} catch (e) { }
 									if (!_lost) return false;
-									try { (game.bzDiag2 || lib.bzDiag2)('攻马·lose命中 牌=' + get.name(_lost) + '/equip4'); } catch (eL2) { }
-									// 必须"曾装备过"才认（避免把别处失去的同栏位牌当成马）
-									if (!player.storage.zyyi_atk_horse) { try { (game.bzDiag2 || lib.bzDiag2)('攻马·lose被拦：曾装备标记未置位（_lost=' + get.name(_lost) + '）'); } catch (eG1) { } return false; }
-									// ★ 一次失去只结算一次（攻马/防马都挂 lose，靠各自闸门避免重复弹框/重复摸牌）
-									if (player.storage.zyyi_atk_drawDone) { try { (game.bzDiag2 || lib.bzDiag2)('攻马·lose被拦：drawDone 闸门已置位（_lost=' + get.name(_lost) + '）'); } catch (eG2) { } return false; }
 									player.storage.zyyi_atk_drawDone = true;
-									try { (game.bzDiag2 || lib.bzDiag2)('攻马·lose放行 → 将执行 content 摸两张（_lost=' + get.name(_lost) + '）'); } catch (eG3) { }
 									return true;
 								}
-								// damageBegin2（source 侧）：我有进攻马 + 每局第一次
-								try {
-								var _a2 = '武翊·攻马入口 事件=' + event.name +
-								'｜有进攻马(栏4)=' + !!player.getEquip(4) + '｜已用过=' + !!player.storage.zyyi_atk_used;
-								game.log(player, '【武翊·诊断】', _a2);
-								(game.bzDiag2 || lib.bzDiag2)('武翊·攻马入口 ' + _a2);
-								} catch (eD2) { }
-								if (event.zyyi_cancelled) { _dbg('cancelled'); return false; }
-								// （方向由 trigger 侧保证：source 侧触发 ⇒ 我必然是来源，无需再判）
-								// ★ 用"曾装上进攻马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
-								if (!player.storage.zyyi_atk_horse) { _dbg('曾装备标记未置位'); return false; }
-								if (player.storage.zyyi_atk_used) { _dbg('本局已用过'); return false; }
-								_dbg('通过');
+								// damageBegin4（source 侧）：我造成伤害 + 曾装进攻马 + 每局第一次 ⇒ 弃马免此判或加伤
+								if (event.zyyi_cancelled) return false;
+								if (!player.storage.zyyi_atk_horse) return false;
+								if (player.storage.zyyi_atk_used) return false;
 								return true;
 							},
 							content: function () {
-								'step 0'
-								// ★★★ 最直接的落盘：只要 content 被执行就留痕（无论走哪个分支）★★★
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('【攻马·content执行】trigger.name=' + (trigger ? trigger.name : '?') +
-										'｜将走=' + ((trigger && trigger.name == 'lose') ? 'lose分支(摸两张)' : 'damage分支(加伤/弹框)'));
-								} catch (eCE0) { }
-								if (trigger.name == 'lose') {   // ★ content 内 event 是技能自己的事件，真事件在 trigger 里（filter 里 event 才是真事件）
-									// 马离开装备区 ⇒ 摸两张（本项）+ 武翊8③ 另摸一张（可重复触发）
+								"step 0"
+								if (trigger.name == 'lose') {
+									// 进攻马离开装备区 ⇒ 摸两张（本项）
 									player.draw(2);
 									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌');
-									// 刷新"每局第一次"
-									delete player.storage.zyyi_atk_used;
-									delete player.storage.zyyi_atk_horse;   // 已离场 ⇒ 需重装才能再触发（即"刷新"）
-									delete player.storage.zyyi_atk_drawDone; // 清闸门：下次失去才能再结算
+									delete player.storage.zyyi_atk_used; // 重装同栏即刷新「每局第一次」
+									delete player.storage.zyyi_atk_horse;
+									delete player.storage.zyyi_atk_drawDone;
 									event.finish(); return;
 								}
 								player.storage.zyyi_atk_used = true;
-								trigger.num += 1;                            // 与武翊4 的 +1 可叠成 +2
+								trigger.num += 1;
 								game.log(player, '【武翊】：进攻马在场，此伤害+1');
-								// ★★ 决定性诊断：把"弹弃置框"时刻的伤害现场全记下来 ★★
-								//   目的：用户反馈"刚装上马就弹框"（并未攻击）⇒ 需查明这次 damageBegin2 从哪来
-								try {
-									var _p = [];
-									try { var _pv = trigger.getParent(); var _g = 0; while (_pv && _g++ < 6) { _p.push(_pv.name + ( _pv.card ? '(' + get.name(_pv.card) + ')' : '')); _pv = _pv.getParent ? _pv.getParent() : null; } } catch (ePv) { }
-									(game.bzDiag2 || lib.bzDiag2)('★★攻马·弹框现场 num=' + trigger.num +
-										'｜伤害来源=' + (trigger.source ? trigger.source.name : '无') +
-										'｜受伤者=' + (trigger.player ? trigger.player.name : '无') +
-										'｜伤害牌=' + (trigger.card ? get.name(trigger.card) + '/' + get.translation(trigger.card) : '无') +
-										'｜父事件链=' + _p.join(' ← ') +
-										'｜当前阶段=' + (_status.currentPhase ? _status.currentPhase.name : '无'));
-								} catch (eDP) { }
-																try { (game.bzDiag2 || lib.bzDiag2)('★弹框即将出现【攻马弃置】；提示文本=武翊/摧锋 询问（见代码）'); } catch (eB) { }
-								player.chooseBool('武翊：是否弃置装备区内的进攻马？')
-									.set('ai', function () { return false; });
-								'step 1'
+								player.chooseBool('武翊：是否弃置装备区内的进攻马？').set('ai', function () { return false; });
+								"step 1"
 								if (result && result.bool) {
 									var eq = player.getEquip(4);
 									if (eq) player.discard(eq);
@@ -4454,90 +4302,56 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.finish(); return;
 							},
 						},
-						// 武翊·防马（**防御马 = +1马 = equip3**）：每局第一次**受到**的伤害免疫；
-						//   防御马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
-						//   ★ 子类型依据：game.js:13026 equip3=防御马、22032 equip3=+1马栏
 						zyyi_horse_def: {
 							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							// ★ 同攻马：equipAfter 用 global 侧（原版 player 侧 0 例），loseAfter 用 player 侧
-							trigger: { player: ['damageBegin4', 'loseAfter'], global: 'equipAfter' },
+							// ★ 同攻马：equipAfter/loseAfter 必须 global 侧 + getl 判人（先例 clan.js:1549）；
+							//   player 侧 loseAfter 会让任何角色失去马都命中（用户实测）。
+							trigger: { player: 'damageBegin4', global: ['loseAfter', 'equipAfter'] },
 							filter: function (event, player) {
-								var _dbg2 = function (why) {
-									try {
-									var m = '防马·filter 事件=' + event.name + '｜' + why +
-									'｜source=' + (event.source ? event.source.name : '无') +
-									'｜eventPlayer=' + (event.player ? event.player.name : '无') +
-									'｜我=' + player.name +
-									'｜曾装备=' + !!player.storage.zyyi_def_horse + '｜已用过=' + !!player.storage.zyyi_def_used;
-									(game.bzDiag2 || lib.bzDiag2)(m);
-									} catch (e) { }
-								};
-								// ★ 进入装备区：记录"曾装上防御马"（供受伤分支判断；离场时清除并刷新）
-								if (event.name == 'equip') {   // ★ 事件名是 'equip'（钩子名才是 equipAfter）
-									if (event.player != player) return false;   // global 侧 ⇒ 只认自己的装备事件
-									try {
-									var eq3 = player.getEquip(3);
-									if (eq3 && get.subtype(eq3) == 'equip3') player.storage.zyyi_def_horse = true;
-									} catch (e) { }
-									return false;   // 本事件不触发 content
+								if (event.name == 'equip') {
+									if (event.player != player) return false;
+									var eq = player.getEquip(3);
+									if (eq && get.subtype(eq) == 'equip3') player.storage.zyyi_def_horse = true;
+									return false;
 								}
-								if (event.name == 'lose') {   // ★ filter 里 event 就是真事件   // ★ 事件名是 'lose'（钩子名才是 loseAfter）
-									// ★ 同攻马：失牌清单取自 event.cards（evt.es 实测为空）
-									var _lost2 = null;
-									try {
-										var _ev2 = event.getl ? event.getl(player) : null;
-										var _all2 = [];
-										if (_ev2 && _ev2.es) for (var _i2 = 0; _i2 < _ev2.es.length; _i2++) _all2.push(_ev2.es[_i2]);
-										if (_ev2 && _ev2.hs) for (var _j2 = 0; _j2 < _ev2.hs.length; _j2++) _all2.push(_ev2.hs[_j2]);
-										if (_ev2 && _ev2.js) for (var _k2 = 0; _k2 < _ev2.js.length; _k2++) _all2.push(_ev2.js[_k2]);
-										if (event.cards) for (var _m2 = 0; _m2 < event.cards.length; _m2++) _all2.push(event.cards[_m2]);
-										for (var _n2 = 0; _n2 < _all2.length; _n2++) {
-											if (_all2[_n2] && get.subtype(_all2[_n2]) == 'equip3') { _lost2 = _all2[_n2]; break; }
-										}
-									} catch (eLoose2) { }
-									if (!_lost2) return false;
-									try { (game.bzDiag2 || lib.bzDiag2)('防马·lose命中 牌=' + get.name(_lost2) + '/equip3'); } catch (eL3) { }
+								if (event.name == 'lose') {
 									if (!player.storage.zyyi_def_horse) return false;
-									// ★ 一次失去只结算一次
 									if (player.storage.zyyi_def_drawDone) return false;
+									var _lost = null;
+									try {
+										var _ev = event.getl ? event.getl(player) : null;
+										var _all = [];
+										if (_ev && _ev.es) _all.addArray(_ev.es);
+										if (event.cards) _all.addArray(event.cards);
+										for (var _i = 0; _i < _all.length; _i++) {
+											if (_all[_i] && get.subtype(_all[_i]) == 'equip3') { _lost = _all[_i]; break; }
+										}
+									} catch (e) { }
+									if (!_lost) return false;
 									player.storage.zyyi_def_drawDone = true;
 									return true;
 								}
-								try {
-								var _a3 = '武翊·防马入口 事件=' + event.name + '｜已取消=' + !!event.zyyi_cancelled +
-								'｜有防御马(栏3)=' + !!player.getEquip(3) + '｜已用过=' + !!player.storage.zyyi_def_used;
-								game.log(player, '【武翊·诊断】', _a3);
-								(game.bzDiag2 || lib.bzDiag2)('武翊·防马入口 ' + _a3);
-								} catch (eD3) { }
-								// ★ 必须是"我**受到**伤害"：player 侧只说明我参与了该事件，
-								//   我**造成**伤害时也会进这里。
-								//   战报实证：12:43:13"名赵云对神关羽使用了杀"后立刻打出
-								//   "【武翊】：防御马在场，免疫此伤害" —— 我的攻击被自己免疫了。
-								// （方向由 trigger 侧保证：player 侧触发 ⇒ 我必然是承受方，无需再判）
-								// ★ 用"曾装上防御马"判断（不能用 getEquip：弃置后即为 null，会导致后续不触发）
-								if (!player.storage.zyyi_def_horse) { _dbg2('曾装备标记未置位'); return false; }
-								if (player.storage.zyyi_def_used) { _dbg2('本局已用过'); return false; }
-								_dbg2('通过');
+								// damageBegin4（player 侧）：我受到伤害 + 曾装防御马 + 每局第一次 ⇒ 免疫/弃马问询
+								if (event.zyyi_cancelled) return false;
+								if (!player.storage.zyyi_def_horse) return false;
+								if (player.storage.zyyi_def_used) return false;
 								return true;
 							},
 							content: function () {
-								'step 0'
-								if (trigger.name == 'lose') {   // ★ content 内 event 是技能自己的事件，真事件在 trigger 里（filter 里 event 才是真事件）
+								"step 0"
+								if (trigger.name == 'lose') {
 									player.draw(2);
 									game.log(player, '【武翊】：防御马离开装备区，摸两张牌');
 									delete player.storage.zyyi_def_used;
-									delete player.storage.zyyi_def_horse;   // 已离场 ⇒ 需重装才能再触发（即"刷新"）
-									delete player.storage.zyyi_def_drawDone; // 清闸门：下次失去才能再结算
+									delete player.storage.zyyi_def_horse;
+									delete player.storage.zyyi_def_drawDone;
 									event.finish(); return;
 								}
 								player.storage.zyyi_def_used = true;
-								trigger.zyyi_cancelled = true;
-								trigger.cancel();                       // 免疫（同一机制，不叠加）
+								trigger.cancel();
 								game.log(player, '【武翊】：防御马在场，免疫此伤害');
-																try { (game.bzDiag2 || lib.bzDiag2)('★弹框即将出现【防马弃置】；提示文本=武翊/摧锋 询问（见代码）'); } catch (eB) { }
-								player.chooseBool('武翊：是否弃置装备区内的防御马？')
-									.set('ai', function () { return false; });
-								'step 1'
+								player.chooseBool('武翊：是否弃置装备区内的防御马？').set('ai', function () { return false; });
+								"step 1"
 								if (result && result.bool) {
 									var eq = player.getEquip(3);
 									if (eq) player.discard(eq);
@@ -4622,15 +4436,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//   ⇒ 别人的回合结束时无法发动（实战战报整局没有"执行额外的回合"记录）。
 							trigger: { global: 'phaseJieshuBegin' },
 							filter: function (event, player) {
-								// ★ 无条件诊断：把"每轮限一次"闸门的相关值全打出来
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('摧锋·锐入口 事件=' + event.name +
-										'｜在场=' + player.isIn() +
-										'｜在额外回合中=' + !!player.storage.zycf_in_extra +
-										'｜当前轮号=' + game.roundNumber +
-										'｜已发动轮号=' + player.storage.zycf_round +
-										'｜闸门判定=' + (game.roundNumber == player.storage.zycf_round ? '拦住(本轮已发动)' : '放行'));
-								} catch (eZ) { }
 								if (!player.isIn()) return false;
 								if (player.storage.zycf_in_extra) return false;      // 额外回合结束时不能再发动
 								if (game.roundNumber == player.storage.zycf_round) return false;   // 每轮限一次
@@ -4639,7 +4444,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							content: function () {
 								'step 0'
 								// ★ 由玩家选择是否发动（去掉 forced 后仍需显式询问，否则引擎会直接执行）
-																try { (game.bzDiag2 || lib.bzDiag2)('★弹框即将出现【摧锋额外回合】；提示文本=武翊/摧锋 询问（见代码）'); } catch (eB) { }
 								player.chooseBool('摧锋：是否摸一张牌并执行一个额外的回合？')
 									.set('ai', function () { return true; });
 								'step 1'
@@ -4719,10 +4523,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 											}
 										} catch (e2) { }
 									}
-									try {
-										(game.bzDiag2 || lib.bzDiag2)('摧锋·X明细 回合=' + game.roundNumber +
-											'｜合计=' + x + '｜' + (_detail || '(本回合无出牌记录)'));
-									} catch (e5) { }
 								} catch (e) { }
 								// ★ 按用户口径去掉"至多 3"的封顶（实测杀总数会超过 3）
 								// if (x > 3) x = 3;
@@ -4737,18 +4537,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//     实测挂 useCard 上的值在 damage 侧取不到，诊断显示 _zycfFinal=null）。
 								event.finalNum = 1 + x;
 								player.storage.zycf_final = event.finalNum;
-								try { (game.bzDiag2 || lib.bzDiag2)('摧锋·决 已算出 本次决斗伤害=' + event.finalNum + '（1+X，X=' + x + '）'); } catch (eFN) { }
 								// ★ 修：目标**只认当前回合角色**（trigger.player）。
 								//   原来有个"兜底"——若 trigger.player 无效就取 game.players 里第一个其他角色
 								//   ⇒ 那正是"下家" ⇒ 出现"对下一个角色发动决斗"的现象。
 								//   决斗以"对当前回合角色"为口径；若当前回合角色就是自己（额外回合），
 								//   按裁定"不能以自己为目标" ⇒ 本次不发动，而不是随便换人。
 								var tgt = trigger.player;
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('摧锋·诊断 目标=' + (tgt ? tgt.name : 'null') +
-										'｜是我=' + (tgt === player) + '｜在场=' + (tgt ? tgt.isIn() : '-') +
-										'｜X=' + event.x);
-								} catch (eD) { }
 								if (!tgt || tgt === player || !tgt.isIn()) {
 									game.log(player, '【摧锋】：当前回合角色不可为目标，未发动决斗');
 									event.finish(); return;
@@ -4784,14 +4578,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								try {
 									var uc = event.getParent('useCard');
-									// ★ 诊断：把判据的每一步都留痕（决斗加伤是否生效、卡在哪一步）
-									try {
-										(game.bzDiag2 || lib.bzDiag2)('摧锋·势入口 事件=' + event.name +
-										'｜找到useCard=' + !!uc +
-										'｜牌名=' + (uc && uc.card ? get.name(uc.card) : '无') +
-										'｜是摧锋标记=' + !!(uc && uc._zycfDuel) +
-										'｜X=' + (uc ? (uc._zycfX || 0) : '-'));
-									} catch (eD) { }
 									if (!uc || !uc.card) return false;
 									if (get.name(uc.card) != 'juedou') return false;
 									// 用显式标记认这次决斗是不是摧锋·决 发动的
@@ -4833,10 +4619,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								trigger.num = 1 + x2;
 								if (trigger.num < 1) trigger.num = 1;      // 至少造成 1 点伤害
 								player.storage.zycf_final = trigger.num;
-								try {
-									(game.bzDiag2 || lib.bzDiag2)('摧锋·势加伤 最终num=' + trigger.num +
-										'（最终统计 X=' + x2 + '；发动时记录的 X=' + player.storage.zycf_last_x + '）');
-								} catch (eDX) { }
 								event.finish(); return;
 							},
 						},
