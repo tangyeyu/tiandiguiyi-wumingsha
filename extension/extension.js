@@ -447,6 +447,46 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						} catch (eHookV) {
 							try { bzWrite('语音播放链挂钩安装失败: ' + eHookV.message); } catch (e) { }
 						}
+						// ---- 武翊·马「离场摸两张」：挂钩 player.lose（2026-09-13 终版）----
+						//   事件链（loseAfter/getl.es）在琉璃版实测不可用（es 分类错乱、
+						//   equipAfter 部分路径缺失），故沿用钩子方案但修掉老补丁的缺陷：
+						//   归属 = this.hasSkill（只对武翊持有者结算，他人弃马绝不触发）；
+						//   区域 = 失去牌列表里含**当前装备区的马**（引用相等，弃手牌里的
+						//   马牌不算）；每局一次标记在马离场时刷新（重装可再触发）。
+						try {
+							if (lib.element && lib.element.player && lib.element.player.lose && !lib.element.player.lose.zyyiHooked) {
+								var _zyyiOrigLose = lib.element.player.lose;
+								var _zyyiLose = function (cards) {
+									var p = this;
+									var r;
+									try {
+										// 先于真实失去判定：此时马牌仍在装备区可作引用比较
+										var eq4 = p.getEquip(4), eq3 = p.getEquip(3);
+										var list = (cards && Array.isArray(cards)) ? cards : (cards ? [cards] : []);
+										var loseAtk = false, loseDef = false;
+										for (var zi = 0; zi < list.length; zi++) {
+											if (eq4 && list[zi] === eq4) loseAtk = true;
+											if (eq3 && list[zi] === eq3) loseDef = true;
+										}
+										if (loseAtk && p.hasSkill('zyyi_horse_atk') && !p.storage.zyyi_atk_drawDone) {
+											p.storage.zyyi_atk_drawDone = true;
+											p.draw(2);
+											delete p.storage.zyyi_atk_used; // 马离场即刷新「每局第一次」（重装可再触发）
+											game.log(p, '【武翊】：进攻马离开装备区，摸两张牌');
+										}
+										if (loseDef && p.hasSkill('zyyi_horse_def') && !p.storage.zyyi_def_drawDone) {
+											p.storage.zyyi_def_drawDone = true;
+											p.draw(2);
+											delete p.storage.zyyi_def_used;
+											game.log(p, '【武翊】：防御马离开装备区，摸两张牌');
+										}
+									} catch (eZy) { }
+									return _zyyiOrigLose.apply(this, arguments);
+								};
+								_zyyiLose.zyyiHooked = true;
+								lib.element.player.lose = _zyyiLose;
+							}
+						} catch (eZyHook) { }
 						// ---- 语音文件可达性自检（逐个探测能否加载）----
 						try {
 							var _probe = function (url, tag) {
@@ -4137,47 +4177,18 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
 							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							// ★ lose 判据不用「曾装备」storage 标记（equip 事件在琉璃版部分路径不派发，
-							//   标记会没人置位 ⇒ 全被前置挡死）——直接用 getl 的 es（装备区离开的牌）。
-							//   他人弃马：getl 空壳 + event.player=他人 ⇒ 不触发（泄漏已堵）。
-							trigger: { source: 'damageBegin4', global: ['loseAfter', 'loseAsyncAfter'] },
+							// 弃马摸两张由初始化区的 player.lose 钩子负责（琉璃版 lose 事件 es 分类
+							// 不可靠、equipAfter 部分路径缺失——事件链实测全部不可用）。
+							// 本技能只负责伤害分支：装备区有进攻马时每局第一次造成伤害 +1 并可弃马。
+							trigger: { source: 'damageBegin4' },
 							filter: function (event, player) {
-								if (event.name == 'lose' || event.name == 'loseAsync') {
-									if (player.storage.zyyi_atk_drawDone) return false; // 一次失去只结算一次
-									var _lost = null;
-									try {
-										var _all = [];
-										var _ev = event.getl ? event.getl(player) : null;
-										if (_ev && _ev.player == player) {
-											_all.addArray(_ev.es); // 装备区离开的牌（权威）
-										} else if (event.player == player) {
-										_all.addArray(event.cards || []); // getlx:false 换装路径（game.js:13493）
-										}
-										for (var _i = 0; _i < _all.length; _i++) {
-											if (_all[_i] && get.subtype(_all[_i]) == 'equip4') { _lost = _all[_i]; break; }
-										}
-									} catch (e) { }
-									if (!_lost) return false;
-									player.storage.zyyi_atk_drawDone = true;
-									return true;
-								}
-								// damageBegin4（source 侧）：装备区**当前**有进攻马 + 每局第一次
 								if (event.zyyi_cancelled) return false;
-								var eq4 = player.getEquip(4);
-								if (!eq4 || get.subtype(eq4) != 'equip4') return false;
+								var eq = player.getEquip(4);
+								if (!eq || get.subtype(eq) != 'equip4') return false;
 								if (player.storage.zyyi_atk_used) return false;
 								return true;
 							},
 							content: function () {
-								"step 0"
-								if (trigger.name == 'lose' || trigger.name == 'loseAsync') {
-									player.draw(2);
-									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌（事件=' + trigger.name +
-									'｜失去者=' + (trigger.player ? get.translation(trigger.player) : '未知') + '）');
-									delete player.storage.zyyi_atk_used; // 重装同栏即刷新「每局第一次」
-									delete player.storage.zyyi_atk_drawDone;
-									event.finish(); return;
-								}
 								player.storage.zyyi_atk_used = true;
 								trigger.num += 1;
 								game.log(player, '【武翊】：进攻马在场，此伤害+1');
@@ -4187,50 +4198,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var eq = player.getEquip(4);
 									if (eq) player.discard(eq);
 								}
-								event.finish(); return;
 							},
 						},
 						zyyi_horse_def: {
 							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							// ★ 同攻马：es 权威判据 + getEquip 现场判定，无 storage 标记依赖。
-							trigger: { player: 'damageBegin4', global: ['loseAfter', 'loseAsyncAfter'] },
+							// 同攻马：免疫/弃马问询在此；弃马后的摸两张由 lose 钩子负责。
+							trigger: { player: 'damageBegin4' },
 							filter: function (event, player) {
-								if (event.name == 'lose' || event.name == 'loseAsync') {
-									if (player.storage.zyyi_def_drawDone) return false;
-									var _lost = null;
-									try {
-										var _all = [];
-										var _ev = event.getl ? event.getl(player) : null;
-										if (_ev && _ev.player == player) {
-											_all.addArray(_ev.es);
-										} else if (event.player == player) {
-										_all.addArray(event.cards || []);
-										}
-										for (var _i = 0; _i < _all.length; _i++) {
-											if (_all[_i] && get.subtype(_all[_i]) == 'equip3') { _lost = _all[_i]; break; }
-										}
-									} catch (e) { }
-									if (!_lost) return false;
-									player.storage.zyyi_def_drawDone = true;
-									return true;
-								}
-								// damageBegin4（player 侧）：装备区**当前**有防御马 + 每局第一次 ⇒ 免疫/弃马问询
 								if (event.zyyi_cancelled) return false;
-								var eq3 = player.getEquip(3);
-								if (!eq3 || get.subtype(eq3) != 'equip3') return false;
+								var eq = player.getEquip(3);
+								if (!eq || get.subtype(eq) != 'equip3') return false;
 								if (player.storage.zyyi_def_used) return false;
 								return true;
 							},
 							content: function () {
-								"step 0"
-								if (trigger.name == 'lose' || trigger.name == 'loseAsync') {
-									player.draw(2);
-									game.log(player, '【武翊】：防御马离开装备区，摸两张牌（事件=' + trigger.name +
-									'｜失去者=' + (trigger.player ? get.translation(trigger.player) : '未知') + '）');
-									delete player.storage.zyyi_def_used;
-									delete player.storage.zyyi_def_drawDone;
-									event.finish(); return;
-								}
 								player.storage.zyyi_def_used = true;
 								trigger.cancel();
 								game.log(player, '【武翊】：防御马在场，免疫此伤害');
@@ -4240,7 +4221,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var eq = player.getEquip(3);
 									if (eq) player.discard(eq);
 								}
-								event.finish(); return;
 							},
 						},
 						// 武翊·成：基本牌牌名数（火杀/雷杀不算独立牌名）本局累计解锁三段
