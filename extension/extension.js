@@ -4137,32 +4137,22 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
 							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							// ★ equipAfter 必须 global 侧（原版 equipAfter 全部是 global，player 侧 0 例）；
-							//   loseAfter 同理必须 global+getl 判人（先例 clan.js:1549 / shiji.js:3232）——
-							//   原 player 侧写法会让任何角色失去马都命中（他人也能触发，用户实测）。
-							trigger: { source: 'damageBegin4', global: ['loseAfter', 'loseAsyncAfter', 'equipAfter'] },
+							// ★ lose 判据不用「曾装备」storage 标记（equip 事件在琉璃版部分路径不派发，
+							//   标记会没人置位 ⇒ 全被前置挡死）——直接用 getl 的 es（装备区离开的牌）。
+							//   他人弃马：getl 空壳 + event.player=他人 ⇒ 不触发（泄漏已堵）。
+							trigger: { source: 'damageBegin4', global: ['loseAfter', 'loseAsyncAfter'] },
 							filter: function (event, player) {
-								// 装备区进入：只认自己的事件，记录「曾装上进攻马」（供伤害分支与 lose 分支判断）
-								if (event.name == 'equip') {
-									if (event.player != player) return false;
-									var eq = player.getEquip(4);
-									if (eq && get.subtype(eq) == 'equip4') player.storage.zyyi_atk_horse = true;
-									return false;
-								}
-								// 失去结算：只统计**赵云本人**失去的 equip4（修「他人弃马也触发」泄漏：
-								// getl 对非失去者恒返回空壳 game.js:26247；event.cards 是全局列表，
-								// 无条件扫描会把别人失去的马扫进来——上版泄漏根源，已删）
 								if (event.name == 'lose' || event.name == 'loseAsync') {
-									if (!player.storage.zyyi_atk_horse) return false;
 									if (player.storage.zyyi_atk_drawDone) return false; // 一次失去只结算一次
 									var _lost = null;
 									try {
 										var _all = [];
-										// ① getl 命中本人 ⇒ 只取 es（装备区离开）
 										var _ev = event.getl ? event.getl(player) : null;
-										if (_ev && _ev.player == player) _all.addArray(_ev.es);
-										// ② 事件本人即失去者（getlx:false 的换装路径 getl 恒空，game.js:13493）⇒ 才可用事件牌列表
-										if (event.player == player && event.cards) _all.addArray(event.cards);
+										if (_ev && _ev.player == player) {
+											_all.addArray(_ev.es); // 装备区离开的牌（权威）
+										} else if (event.player == player) {
+										_all.addArray(event.cards || []); // getlx:false 换装路径（game.js:13493）
+										}
 										for (var _i = 0; _i < _all.length; _i++) {
 											if (_all[_i] && get.subtype(_all[_i]) == 'equip4') { _lost = _all[_i]; break; }
 										}
@@ -4171,21 +4161,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									player.storage.zyyi_atk_drawDone = true;
 									return true;
 								}
-								// damageBegin4（source 侧）：我造成伤害 + 曾装进攻马 + 每局第一次 ⇒ 弃马免此判或加伤
+								// damageBegin4（source 侧）：装备区**当前**有进攻马 + 每局第一次
 								if (event.zyyi_cancelled) return false;
-								if (!player.storage.zyyi_atk_horse) return false;
+								var eq4 = player.getEquip(4);
+								if (!eq4 || get.subtype(eq4) != 'equip4') return false;
 								if (player.storage.zyyi_atk_used) return false;
 								return true;
 							},
 							content: function () {
 								"step 0"
 								if (trigger.name == 'lose' || trigger.name == 'loseAsync') {
-									// 进攻马离开装备区 ⇒ 摸两张（本项）
 									player.draw(2);
 									game.log(player, '【武翊】：进攻马离开装备区，摸两张牌（事件=' + trigger.name +
-										'｜失去者=' + (trigger.player ? get.translation(trigger.player) : '未知') + '）');
+									'｜失去者=' + (trigger.player ? get.translation(trigger.player) : '未知') + '）');
 									delete player.storage.zyyi_atk_used; // 重装同栏即刷新「每局第一次」
-									delete player.storage.zyyi_atk_horse;
 									delete player.storage.zyyi_atk_drawDone;
 									event.finish(); return;
 								}
@@ -4203,26 +4192,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						},
 						zyyi_horse_def: {
 							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
-							// ★ 同攻马：equipAfter/loseAfter 必须 global 侧 + getl 判人（先例 clan.js:1549）；
-							//   player 侧 loseAfter 会让任何角色失去马都命中（用户实测）。
-							trigger: { player: 'damageBegin4', global: ['loseAfter', 'loseAsyncAfter', 'equipAfter'] },
+							// ★ 同攻马：es 权威判据 + getEquip 现场判定，无 storage 标记依赖。
+							trigger: { player: 'damageBegin4', global: ['loseAfter', 'loseAsyncAfter'] },
 							filter: function (event, player) {
-								if (event.name == 'equip') {
-									if (event.player != player) return false;
-									var eq = player.getEquip(3);
-									if (eq && get.subtype(eq) == 'equip3') player.storage.zyyi_def_horse = true;
-									return false;
-								}
-								// 只统计**赵云本人**失去的 equip3（同攻马：删 event.cards 全局扫描泄漏）
 								if (event.name == 'lose' || event.name == 'loseAsync') {
-									if (!player.storage.zyyi_def_horse) return false;
 									if (player.storage.zyyi_def_drawDone) return false;
 									var _lost = null;
 									try {
 										var _all = [];
 										var _ev = event.getl ? event.getl(player) : null;
-										if (_ev && _ev.player == player) _all.addArray(_ev.es);
-										if (event.player == player && event.cards) _all.addArray(event.cards);
+										if (_ev && _ev.player == player) {
+											_all.addArray(_ev.es);
+										} else if (event.player == player) {
+										_all.addArray(event.cards || []);
+										}
 										for (var _i = 0; _i < _all.length; _i++) {
 											if (_all[_i] && get.subtype(_all[_i]) == 'equip3') { _lost = _all[_i]; break; }
 										}
@@ -4231,9 +4214,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									player.storage.zyyi_def_drawDone = true;
 									return true;
 								}
-								// damageBegin4（player 侧）：我受到伤害 + 曾装防御马 + 每局第一次 ⇒ 免疫/弃马问询
+								// damageBegin4（player 侧）：装备区**当前**有防御马 + 每局第一次 ⇒ 免疫/弃马问询
 								if (event.zyyi_cancelled) return false;
-								if (!player.storage.zyyi_def_horse) return false;
+								var eq3 = player.getEquip(3);
+								if (!eq3 || get.subtype(eq3) != 'equip3') return false;
 								if (player.storage.zyyi_def_used) return false;
 								return true;
 							},
@@ -4242,9 +4226,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (trigger.name == 'lose' || trigger.name == 'loseAsync') {
 									player.draw(2);
 									game.log(player, '【武翊】：防御马离开装备区，摸两张牌（事件=' + trigger.name +
-										'｜失去者=' + (trigger.player ? get.translation(trigger.player) : '未知') + '）');
+									'｜失去者=' + (trigger.player ? get.translation(trigger.player) : '未知') + '）');
 									delete player.storage.zyyi_def_used;
-									delete player.storage.zyyi_def_horse;
 									delete player.storage.zyyi_def_drawDone;
 									event.finish(); return;
 								}
