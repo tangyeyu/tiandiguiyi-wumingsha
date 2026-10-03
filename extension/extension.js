@@ -1790,14 +1790,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							//   ⇒ 以后新增/删除神威技时，**必须同步这里**。
 							filter: function (event, player) {
 								if (event.source != player) return false;
-								var list = ['gy_po_di', 'zl_huoji', 'cc_zhilue'];
+								var list = ['lx_zhangcai', 'mlb_zhangwu', 'dy_miewu', 'lkang_beishui', 'gy_po_di', 'zl_huoji', 'cc_zhilue'];
 								for (var i = 0; i < list.length; i++) {
 									if (player.hasSkill(list[i]) && !(player.storage.tdgx_sw_bonus && player.storage.tdgx_sw_bonus[list[i]])) return true;
 								}
 								return false;
 							},
 							content: function () {
-								var list = ['gy_po_di', 'zl_huoji', 'cc_zhilue'];
+								var list = ['lx_zhangcai', 'mlb_zhangwu', 'dy_miewu', 'lkang_beishui', 'gy_po_di', 'zl_huoji', 'cc_zhilue'];
 								for (var i = 0; i < list.length; i++) {
 									var s = list[i];
 									if (player.hasSkill(s) && !(player.storage.tdgx_sw_bonus && player.storage.tdgx_sw_bonus[s])) {
