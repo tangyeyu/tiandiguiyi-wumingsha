@@ -4192,11 +4192,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								return true;
 							},
 							content: function () {
+								'step 0'
 								player.storage.zyyi_atk_used = true;
 								trigger.num += 1;
 								game.log(player, '【武翊】：进攻马在场，此伤害+1');
 								player.chooseBool('武翊：是否弃置装备区内的进攻马？').set('ai', function () { return false; });
-								"step 1"
+								'step 1'
 								if (result && result.bool) {
 									var eq = player.getEquip(4);
 									if (eq) player.discard(eq);
@@ -4217,11 +4218,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								return true;
 							},
 							content: function () {
+								'step 0'
 								player.storage.zyyi_def_used = true;
 								trigger.cancel();
 								game.log(player, '【武翊】：防御马在场，免疫此伤害');
 								player.chooseBool('武翊：是否弃置装备区内的防御马？').set('ai', function () { return false; });
-								"step 1"
+								'step 1'
 								if (result && result.bool) {
 									var eq = player.getEquip(3);
 									if (eq) player.discard(eq);
