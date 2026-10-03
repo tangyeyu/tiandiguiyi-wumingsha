@@ -4176,7 +4176,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   进攻马离开装备区时摸两张（含被夺/替换），同栏位重装即刷新。
 						//   ★ 子类型依据：game.js:13028 equip4=攻击马、22032 equip4=-1马栏
 						zyyi_horse_atk: {
-							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							// ★ forced+silent 必须有（摧锋·势 9d1b6e4 同款先例）：sub 触发技
+							//   缺 forced 会被引擎当"可选发动"而 sub 技能无法主动发动 ⇒ 永不触发
+							audio: 'zyyi', locked: true, charlotte: true, sub: true, forced: true, silent: true,
+							popup: false, direct: true, nopop: true,
 							// 弃马摸两张由初始化区的 player.lose 钩子负责（琉璃版 lose 事件 es 分类
 							// 不可靠、equipAfter 部分路径缺失——事件链实测全部不可用）。
 							// 本技能只负责伤害分支：装备区有进攻马时每局第一次造成伤害 +1 并可弃马。
@@ -4201,7 +4204,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						zyyi_horse_def: {
-							audio: 'zyyi', locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							// ★ 同攻马：forced+silent 必须有（sub 触发技缺 forced 永不触发）
+							audio: 'zyyi', locked: true, charlotte: true, sub: true, forced: true, silent: true,
+							popup: false, direct: true, nopop: true,
 							// 同攻马：免疫/弃马问询在此；弃马后的摸两张由 lose 钩子负责。
 							trigger: { player: 'damageBegin4' },
 							filter: function (event, player) {
