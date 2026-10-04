@@ -748,15 +748,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'gy_wusheng': '武圣',
 						'gy_wusheng_info': '锁定技，你可以将一至两张手牌当作【杀】使用或打出。若你将恰好两张手牌转化，且这两张牌均为红色，此【杀】造成伤害后你回复1点体力；若均为黑色，此【杀】造成的伤害+1；若两张花色不同，此【杀】不计入次数限制（以上效果可叠加）。若你只转化一张手牌，此【杀】造成的伤害的属性由你指定。',
 						'gy_wusheng_buff': '武圣·黑',
-						'gy_wusheng_buff_info': '此【杀】造成的伤害+1。（已内联进〖武圣〗，本条目仅保留兼容）',
+						'gy_wusheng_buff_info': '此【杀】造成的伤害+1。（已内联进【武圣】，本条目仅保留兼容）',
 						'gy_wusheng_red': '武圣·红',
-						'gy_wusheng_red_info': '此【杀】造成伤害后，你回复1点体力。（已内联进〖武圣〗）',
+						'gy_wusheng_red_info': '此【杀】造成伤害后，你回复1点体力。（已内联进【武圣】）',
 						'gy_wusheng_free': '武圣·势',
-						'gy_wusheng_free_info': '此【杀】不计入次数限制。（已内联进〖武圣〗）',
+						'gy_wusheng_free_info': '此【杀】不计入次数限制。（已内联进【武圣】）',
 						'gy_yijue': '义绝',
 						'gy_yijue_info': '回合开始时，你可以令其他角色按座位顺序依次选择是否交给你一张手牌（背面朝上，由交牌者选择）。若其没有交给你手牌（含无手牌可交），其获得1枚「绝」。拥有「绝」的角色于其结束阶段失去所有「绝」。拥有「绝」的角色成为你使用牌的目标时，你对其使用牌无次数限制。',
 						'gy_jue_mark': '绝',
-						'gy_jue_mark_info': '你成为〖义绝〗拥有者使用牌的目标时，其对你使用牌无次数限制；你的结束阶段失去所有「绝」。',
+						'gy_jue_mark_info': '你成为【义绝】拥有者使用牌的目标时，其对你使用牌无次数限制；你的结束阶段失去所有「绝」。',
 						'gy_jue_limit': '绝·限',
 						'gy_jue_limit_info': '拥有「绝」的角色成为你使用牌的目标时，你对其使用牌无次数限制。',
 						'gy_jue_clear': '绝·清',
@@ -764,11 +764,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'gy_po_di': '破敌',
 						'gy_po_di_info': '神威技，每局游戏限一次。回合内，你可以令一名其他角色获得「破」。本回合你每次对其造成伤害时，令其免疫之，然后其获得1枚「破」（可叠加）。你的回合结束时，拥有「破」的角色失去X点体力（X为其拥有的「破」数量），然后移去其所有「破」。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
 						'gy_po_mark': '破',
-						'gy_po_mark_info': '〖破敌〗的回合结束时，你将失去X点体力（X为你拥有的「破」数量）。',
+						'gy_po_mark_info': '【破敌】的回合结束时，你将失去X点体力（X为你拥有的「破」数量）。',
 						'gy_po_immune': '破敌·免',
-						'gy_po_immune_info': '本回合〖破敌〗拥有者对你造成的伤害被免疫，你获得1枚「破」。',
+						'gy_po_immune_info': '本回合【破敌】拥有者对你造成的伤害被免疫，你获得1枚「破」。',
 						'gy_po_turn': '破敌·续',
-						'gy_po_turn_info': '本回合〖破敌〗的免疫与标记累积生效。',
+						'gy_po_turn_info': '本回合【破敌】的免疫与标记累积生效。',
 						'zl_qixing': '七星',
 						'zl_qixing_info': '每轮开始时，你将你武将牌上的所有「星」置入弃牌堆，然后展示牌堆顶的7张牌并置于你的武将牌上，称为「星」。你武将牌上的「星」视为你的手牌（可被指定，但不计入你的手牌数）。你可以像手牌一样使用或打出「星」；你使用或打出「星」时无距离与次数限制；你使用或打出一张「星」后，选择一张牌弃置。',
 						'zl_xing_tu': '星',
@@ -782,13 +782,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'gy_po_lock': '破敌·锁',
 						'gy_po_lock_info': '【破敌】的免疫在伤害结算的第二阶段兜底生效。',
 						'cc_lue_mark': '略',
-						'cc_lue_mark_info': '〖奸雄〗的计数标记：每有1枚「略」，你受到伤害后摸牌时多摸1张；每轮开始时移去所有「略」。',
+						'cc_lue_mark_info': '【奸雄】的计数标记：每有1枚「略」，你受到伤害后摸牌时多摸1张；每轮开始时移去所有「略」。',
 						'zl_xing': '星',
 						'cc_zhi': '智',
 						'zl_kongcheng': '空城',
 						'zl_kongcheng_info': '锁定技。当你没有手牌时，如果你成为了牌的目标，你可以弃置1张「星」，令此牌整体无效（此无效化不可被【无懈可击】响应）；此牌结算结束后若仍在弃牌堆，你将其置为「星」。每张牌限一次。',
 						'zl_kc_collect': '空城·收',
-						'zl_kc_collect_info': '被〖空城〗无效的牌结算结束后若仍在弃牌堆，将其置为「星」。',
+						'zl_kc_collect_info': '被【空城】无效的牌结算结束后若仍在弃牌堆，将其置为「星」。',
 						'zl_huoji': '火计',
 						'zl_huoji_info': '神威技，每局游戏限一次。你可以弃置所有的「星」，选择一名角色，使其受到X点火焰伤害（X为你发动此技能时的体力值）。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
 						'cc_jianxiong': '奸雄',
@@ -797,7 +797,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'tdgx_machao': '极·马超',
 						'mx_shenwei': '神威',
 						'mx_shenwei_info': '锁定技。当你使用或打出【杀】时，你可以对一名角色造成1点雷属性伤害，并摸X张牌（X为你攻击范围内的人数）。当你获得进攻马或防御马时，你选择一项执行：①永久增加1点攻击距离；②永久使其他角色计算与你的距离+1（攻击距离与他人距离均以此法至多加三）。你可以将任意一张坐骑牌转化为任意牌使用或打出（无次数和距离限制）。',
-						'mx_shenwei_mod': '神威·驰',
+						'mx_shenwei_horse': '神威·铁蹄',
+							'mx_shenwei_horse_info': '你可以将装备区里的一张坐骑牌转化为任意一张牌使用或打出（无次数和距离限制）。',
+							'mx_shenwei_mod': '神威·驰',
 						'mx_shenwei_mod_info': '你的攻击范围永久+X，其他角色计算与你的距离永久+Y（X、Y为你以此法增加的次数，各至多3）。',
 						'mx_shenwei_free': '神威·翼',
 						'mx_shenwei_free_info': '你使用转化牌无次数和距离限制。',
@@ -817,13 +819,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   （引擎用 lib.translate[skillId] 取技能名、lib.translate[skillId+'_info'] 取说明）
 						'cc_jianxiong_info': '每轮开始时，你清除你身上的「略」。当你受到1点伤害后，你记录此牌X次于「智」中（X为本轮受到的伤害；同一张实体牌无法重复记录时，从牌堆补一张同名牌），并获得一个「略」，然后摸X张牌（X为「略」标记的数量）。',
 						'cc_zhi_zone': '智',
-						'cc_zhi_zone_info': '你受到伤害后置于武将牌上的牌，可供〖志略〗使用。',
+						'cc_zhi_zone_info': '你受到伤害后置于武将牌上的牌，可供【志略】使用。',
 						'cc_qingzheng': '清正',
 						'cc_qingzheng_info': '每回合限一次，你可以令一名角色获得「治」（每名角色至多拥有1枚）。拥有「治」的角色回合开始时，你选择一项：令其摸X张牌，或令其弃置X张牌（若其手牌不足X张，则弃置其所有手牌）；然后其移去「治」。（X为你的体力值）',
 						'cc_zhi_mark': '治',
-						'cc_zhi_mark_info': '你回合开始时，〖清正〗拥有者选择令你摸X张牌或弃置X张牌，然后移去「治」。',
+						'cc_zhi_mark_info': '你回合开始时，【清正】拥有者选择令你摸X张牌或弃置X张牌，然后移去「治」。',
 						'cc_qingzheng_cut': '清正·裁',
-						'cc_qingzheng_cut_info': '拥有「治」的角色回合开始时，〖清正〗拥有者选择令其摸X张牌或弃置X张牌。',
+						'cc_qingzheng_cut_info': '拥有「治」的角色回合开始时，【清正】拥有者选择令其摸X张牌或弃置X张牌。',
 						'cc_zhilue': '志略',
 						'cc_zhilue_info': '神威技，每局游戏限一次。你可以按任意顺序使用「智」中记录的牌（无距离、次数限制）；已被移走的牌不再可选。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
 
@@ -1682,7 +1684,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						cm_qiji_seize: {
 							locked: true,
 							sub: true,
-							trigger: { global: 'damageEnd' },
+							trigger: { global: 'damage' },
 							filter: function (event, player) {
 								return player.isIn() && event.num > 2;
 							},
@@ -2944,7 +2946,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							sub: true,
 							popup: false,
-							trigger: { source: 'damageEnd' },
+							trigger: { source: 'damageSource' },
 							filter: function (event, player) {
 								var z = player.storage.lkang_zone;
 								if (!z) return false;
@@ -3133,7 +3135,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 绝·标记
 						gy_jue_mark: {
 							charlotte: true, sub: true, popup: false, mark: true, marktext: '绝',
-							intro: { name: '绝', content: '你成为〖义绝〗拥有者使用牌的目标时，其对你使用牌无次数限制。' },
+							intro: { name: '绝', content: '你成为【义绝】拥有者使用牌的目标时，其对你使用牌无次数限制。' },
 						},
 						// 绝·限：义绝拥有者使用牌时放开次数（由 gy_jue_limit 判定目标身上有「绝」）
 						gy_jue_limit: {
@@ -3789,7 +3791,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						//   ⇒ 用户实测「智」显示在手牌区且可直接用。
 						//   player.node.expansions 是独立的武将牌容器：
 						//   既看得见（引擎自带渲染）、又不在手牌区 ⇒ 不会进通用出牌池。
-						//   按用户裁定 **B**：UI 上可点看牌，但"使用"只走〖志略〗。
+						//   按用户裁定 **B**：UI 上可点看牌，但"使用"只走【志略】。
 						cc_zhi_zone: {
 							charlotte: true, sub: true, popup: false,
 							// 显示三件套（照抄 sbguanxing 的 intro 结构，但读 x 区）
@@ -3824,7 +3826,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 治·标记
 						cc_zhi_mark: {
 							charlotte: true, sub: true, popup: false, mark: true, marktext: '治',
-							intro: { name: '治', content: '你回合开始时，〖清正〗拥有者选择：令你摸X张牌或弃置X张牌，然后移去「治」。' },
+							intro: { name: '治', content: '你回合开始时，【清正】拥有者选择：令你摸X张牌或弃置X张牌，然后移去「治」。' },
 						},
 						// 奸雄（每轮开始移去略 / 受到伤害后记录并摸牌）
 						cc_jianxiong: {
@@ -4598,7 +4600,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-								if (event.name == 'equip') {
+								if (event.triggername == 'equipAfter') {
 									// 二选一：按各自剩余上限过滤（各至多+3）
 									var controls = [];
 									if ((player.storage.mx_cd || 0) < 3) controls.push('①永久增加1点攻击距离');
@@ -4759,7 +4761,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							popup: false,
 							direct: true,
-							trigger: { player: 'damageBegin2', source: 'damageEnd', global: 'phaseBefore' },
+							trigger: { player: 'damageBegin2', source: 'damageSource', global: 'phaseBefore' },
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
 								var tn = event.triggername;
@@ -4776,7 +4778,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									game.log(player, '【驭雷】：免疫了雷属性伤害');
 									event.finish(); return;
 								}
-								if (tn == 'damageEnd') {
+								if (tn == 'damageSource') {
 									// 受伤者获得「雷」（显示壳动态挂）
 									var t = trigger.player;
 									if (t && t.isIn()) {
@@ -4824,6 +4826,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							trigger: { source: 'damageBegin2' },
 							filter: function (event, player) {
 								return event.nature != 'thunder';
+							},
+							mod: {
+								// 额外回合内出杀次数 +X（X=场上存活人数，用户口径）
+								cardUsable: function (card, player, num) {
+									if (get.name(card) != 'sha') return;
+									var x = 0;
+									for (var i = 0; i < game.players.length; i++) {
+										if (game.players[i].isIn()) x++;
+									}
+									if (num === false) return false;
+									if (typeof num != 'number') num = 0;
+									return num + x;
+								},
 							},
 							content: function () {
 								trigger.nature = 'thunder';
