@@ -723,6 +723,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'tdgx_shenwei_kill',
 							'tdgx_turn_reset'
 						], ['ext:天地归一/tdgx_caocao.jpg']],
+						// ==== 2026-09-13 二批扩展新增：极·马超（用户手写卡）====
+						// 「神威」「驭雷」均为纯锁定触发技（卡面无"使用"概念），
+						// 不接神威技类别次数机制；无每回合复位项 ⇒ 不列 tdgx_turn_reset。
+						tdgx_machao: ['male', 'qun', 4, [
+							'mx_shenwei', 'mx_shenwei_mod',
+							'mx_shenwei_horse',
+							'mx_yulei'
+						], ['ext:天地归一/tdgx_machao.jpg']],
 					},
 					characterIntro: {
 						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你可以选择一名其他角色令其获得「策」（放弃发动则本技能本局不再生效），你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你可以摸X+1张牌（X为「策」的效果数，至多4）；若场上没有「策」，你摸一张牌。',
@@ -730,7 +738,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						tdgx_luxun: '名·陆逊。<br>连营：锁定技，失去非使用打出的牌获「谦」（每2张得1个，向上取整）；没有手牌时摸至体力上限；出牌阶段开始时按「谦」数摸牌并弃谦；结束阶段视使用打出与弃牌情况摸牌。<br>炽炎：出牌阶段限X次（X为轮次），弃等同体力值的牌造成火焰伤害并可视为使用铁索连环；结束阶段按以此法造成的伤害对连环角色扩大打击。<br>谦逊：锁定技，受伤时按「谦」与体力上限的关系判定摸牌/减伤/免疫。<br>彰才（神威技）：发动后本回合使用牌无次数和距离限制。',
 						tdgx_liubei: '名·刘备。<br>仁德：开局3个「仁」，回合开始收回全部「仁」，出牌阶段按「仁」数摸牌；有「仁」者被指定为目标时可付代价令此牌无效（每回合限一次）；结束阶段可把「仁」分配给不同角色。<br>章武（神威技）：回合开始时额外执行一个出牌阶段且本回合使用牌无次数限制。<br>兴汉（主公技）：开局多得1个「仁」；蜀势力角色对你造成的伤害免疫（每名角色每回合限1次）。',
 						tdgx_duyu: '名·杜预。<br>武库：场上有人装备牌时获「备」并摸牌（上限5）；出牌阶段可耗「备」把一张牌当非装备牌使用（每回合限一次）。<br>破竹：每回合限一次选一种牌名，本回合无次数距离限制地使用；若以此造成过伤害则本局永久解锁。<br>振鞘：锁定技，装备武器时使用牌无法被响应；造成伤害时可令其免疫并夺取其装备区所有牌；用【杀】造成伤害时伤害+X（攻击范围-体力值，最小0）。<br>灭吴（神威技）：摸等同于「备」数+体力上限的牌。',
-						tdgx_lukang: '名·陆抗。<br>毁堰：出牌阶段废除自己的一个区域换对应效果（武器/防具/进攻马/防御马/判定区/手牌区，六选一，各有一次性效果）。<br>抗晋：被体力不低于你的角色伤害时可弃牌判定免伤；造成伤害后可让一名角色的区域状态本轮与你相同，并恢复自己一个装备栏（每回合限两次）。<br>背水（神威技）：恢复所有已废除的区域。'
+						tdgx_lukang: '名·陆抗。<br>毁堰：出牌阶段废除自己的一个区域换对应效果（武器/防具/进攻马/防御马/判定区/手牌区，六选一，各有一次性效果）。<br>抗晋：被体力不低于你的角色伤害时可弃牌判定免伤；造成伤害后可让一名角色的区域状态本轮与你相同，并恢复自己一个装备栏（每回合限两次）。<br>背水（神威技）：恢复所有已废除的区域。',
+						tdgx_machao: '极·马超。<br>神威：锁定技，当你使用或打出【杀】时，你可以对一名角色造成1点雷属性伤害，并摸X张牌（X为你攻击范围内的人数）；当你获得坐骑牌时，你永久增加1点攻击距离或令其他角色计算与你的距离+1（各至多加三）；你可以将任意一张坐骑牌转化为任意牌使用或打出（无次数和距离限制）。<br>驭雷：锁定技，你免疫雷属性伤害；当你造成雷属性伤害后，受伤角色获得一个「雷」，你获得一个「驭」；当场上拥有「雷」的角色大于一个，受伤角色失去1点体力并移去其「雷」。一名角色的回合开始前，你可以消耗五个「驭」立即获得一个额外的回合，且你的回合内造成的伤害均视为雷属性伤害。',
 					},
 					translate: {
 						'tdgx_guanyu': '名·关羽',
@@ -785,6 +794,19 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'cc_jianxiong': '奸雄',
 						// ★ 名字带分隔点：卡面显示"名·赵云"（避免看成三字名"名赵云"）
 						'tdgx_zhaoyun': '名·赵云',
+						'tdgx_machao': '极·马超',
+						'mx_shenwei': '神威',
+						'mx_shenwei_info': '锁定技。当你使用或打出【杀】时，你可以对一名角色造成1点雷属性伤害，并摸X张牌（X为你攻击范围内的人数）。当你获得进攻马或防御马时，你选择一项执行：①永久增加1点攻击距离；②永久使其他角色计算与你的距离+1（攻击距离与他人距离均以此法至多加三）。你可以将任意一张坐骑牌转化为任意牌使用或打出（无次数和距离限制）。',
+						'mx_shenwei_mod': '神威·驰',
+						'mx_shenwei_mod_info': '你的攻击范围永久+X，其他角色计算与你的距离永久+Y（X、Y为你以此法增加的次数，各至多3）。',
+						'mx_shenwei_free': '神威·翼',
+						'mx_shenwei_free_info': '你使用转化牌无次数和距离限制。',
+						'mx_yulei': '驭雷',
+						'mx_yulei_info': '锁定技。你免疫雷属性伤害；当你造成雷属性伤害后，受伤角色获得一个「雷」标记，你获得一个「驭」标记；当场上拥有「雷」的角色大于一个，受伤角色失去1点体力并移去其「雷」。一名角色的回合开始前，你可以消耗五个「驭」，立即获得一个额外的回合，且你的回合内你造成的伤害均视为雷属性伤害。',
+						'mx_lei': '雷',
+						'mx_lei_info': '驭雷的雷属性印记。',
+						'mx_yu': '驭',
+						'mx_yu_info': '驭雷的计数标记：任意角色的回合开始前，可消耗五个「驭」立即获得一个额外的回合（回合内伤害视为雷属性）。',
 						// ★ 技能名与描述挂在这两个"首个技能"上（面板显示它们；其余子技能不给译名 ⇒ 不显示）
 						'zyyi_sha': '武翊',
 						'zyyi_sha_info': '1.你可以将一张【杀】当【闪】、【闪】当【杀】使用或打出。<br>2.回合开始时，你从牌堆/弃牌堆里选择一项获得：【1】进攻马、【2】防御马、【3】武器、【4】防具（先从牌堆里找，没有的话就去弃牌堆里找；两处都没有则不获得）。<br>3.你的手牌上限+x（x为你装备区内已装备的数量）。<br>4.当你装备区里有武器时，你造成伤害时，可以选择弃置一张装备栏里的武器牌或手牌中的武器牌，然后此伤害+1。同一回合内限一次，但你每装备一件武器，本项即可再发动一次（同一次伤害不能叠加）。<br>5.当你装备区里有防具时，你受到伤害时，可以选择弃置一张装备栏里的防具牌或手牌中的防具牌，然后完全抵消此伤害。<br>6.当你装备区里有防御马（+1马）时，你受到伤害时可以免疫之，然后你可以选择弃置装备栏里的防御马；当你装备栏里的防御马离开你的装备栏时，你摸两张牌（当你失去此防御马并重新装备防御马时，此效果刷新）。<br>7.当你装备区里有进攻马（-1马）时，你造成伤害时令此伤害+1，然后你可以选择弃置装备栏里的进攻马；当你装备栏里的进攻马离开你的装备栏时，你摸两张牌（当你失去此进攻马并重新装备进攻马时，此效果刷新）。<br>8.若你从手牌中使用或者打出过的基本牌牌名数（火杀/雷杀不计为独立牌名）大于等于1/2/3：你使用基本牌无次数限制／你使用基本牌无距离限制／当你获得或失去装备时，你摸一张牌。',
@@ -4545,6 +4567,276 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								player.storage.zycf_final = trigger.num;
 								event.finish(); return;
 							},
+						},
+
+						// ============ 极·马超（用户手写卡，2026-09-13）============
+						// 神威：三机制合一的多时机锁定技（雷杀触发/获马增益分派）；
+						//   转化入口独立为 mx_shenwei_horse（enable 按钮需带 translate 才能显示）。
+						//   距离加成经 mx_shenwei_mod（attackRange/globalFrom，storage 驱动，
+						//   各至多 +3）；转化无次数距离经 precontent 动态挂 mx_shenwei_free。
+						mx_shenwei: {
+							locked: true,
+							forced: true,
+							charlotte: true,
+							popup: false,
+							direct: true,
+							trigger: { global: ['useCardAfter', 'respondAfter', 'equipAfter'] },
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								if (event.name == 'equip') {
+									// 获得坐骑（含被夺/换装）：cards 里有 equip3/equip4
+									if (event.player != player) return false;
+									var cs = event.cards || [];
+									for (var i = 0; i < cs.length; i++) {
+										if (cs[i] && (get.subtype(cs[i]) == 'equip3' || get.subtype(cs[i]) == 'equip4')) return true;
+									}
+									return false;
+								}
+								// 使用或打出【杀】
+								if (event.player != player) return false;
+								return !!(event.card && get.name(event.card) == 'sha');
+							},
+							content: function () {
+								'step 0'
+								if (event.name == 'equip') {
+									// 二选一：按各自剩余上限过滤（各至多+3）
+									var controls = [];
+									if ((player.storage.mx_cd || 0) < 3) controls.push('①永久增加1点攻击距离');
+									if ((player.storage.mx_cm || 0) < 3) controls.push('②永久使其他角色计算与你的距离+1');
+									if (!controls.length) { event.finish(); return; }
+									if (controls.length == 1) {
+										event.mxPick = controls[0];
+										event.goto(2); return;
+									}
+									player.chooseControl(controls)
+										.set('prompt', '神威：选择一项执行（永久生效）')
+										.set('ai', function () {
+											var cs = _status.event.controls;
+											return 0; // 默认加攻击距离（马超进攻向）
+										});
+									'step 1'
+									event.mxPick = result.control;
+									'step 2'
+									if (event.mxPick && event.mxPick.indexOf('①') == 0) {
+										player.storage.mx_cd = (player.storage.mx_cd || 0) + 1;
+										game.log(player, '【神威】：攻击范围永久+', player.storage.mx_cd);
+									} else {
+										player.storage.mx_cm = (player.storage.mx_cm || 0) + 1;
+										game.log(player, '【神威】：其他角色计算与你的距离永久+', player.storage.mx_cm);
+									}
+									event.finish(); return;
+								}
+								// 使用或打出【杀】：对一名角色造成 1 点雷伤 + 摸 X（攻击范围内人数）
+								player.chooseTarget('神威：对一名角色造成1点雷属性伤害', function (card, player, target) {
+									return target.isIn();
+								}).set('ai', function (target) {
+									return -get.attitude(_status.event.player, target);
+								});
+								'step 1'
+								if (!result.bool || !result.targets || !result.targets.length) {
+									// 未选目标（可取消）——跳过雷伤，仍结算摸牌？卡面两句并列于同一触发，
+									// 取消伤害则本段整体放弃（严格按"你可以对一名角色…"整体可选）。
+									event.finish(); return;
+								}
+								event.mxT = result.targets[0];
+								event.mxT.damage(1, player, 'thunder');
+								var n = 0;
+								for (var i = 0; i < game.players.length; i++) {
+									var c = game.players[i];
+									if (c != player && c.isIn() && player.inRange(c)) n++;
+								}
+								if (n > 0) player.draw(n);
+								game.log(player, '【神威】：对', event.mxT, '造成1点雷属性伤害，并摸了', get.cnNumber(n), '张牌（攻击范围内人数）');
+							},
+						},
+						// 距离加成落地：attackRange（自己攻击范围）/ globalFrom（他人到自己的距离）
+						mx_shenwei_mod: {
+							charlotte: true,
+							sub: true,
+							mod: {
+								attackRange: function (player, num) {
+									return num + (player.storage.mx_cd || 0);
+								},
+								globalFrom: function (from, to, dist) {
+									return dist + (to.storage.mx_cm || 0);
+								},
+							},
+						},
+						// 马转任意牌：照武库·启备的官方灭吴范式（chooseButton + backup），
+						// 来源限装备区坐骑（position 'e'），无次数距离限制由 mx_shenwei_free 承担。
+						mx_shenwei_horse: {
+							audio: 'shen_machao',
+							enable: ['chooseToUse', 'chooseToRespond'],
+							filter: function (event, player) {
+								return player.getCards('e', function (card) {
+									return get.subtype(card) == 'equip3' || get.subtype(card) == 'equip4';
+								}).length > 0;
+							},
+							filterCard: function (card) {
+								return get.subtype(card) == 'equip3' || get.subtype(card) == 'equip4';
+							},
+							position: 'e',
+							chooseButton: {
+								dialog: function (event, player) {
+									var list = [];
+									for (var i of lib.inpile) {
+										var name = i;
+										if (name == 'sha') {
+											if (event.filterCard({ name: name }, player, event)) list.push(['基本', '', 'sha']);
+											for (var j of lib.inpile_nature) {
+												if (event.filterCard({ name: name, nature: j }, player, event)) list.push(['基本', '', 'sha', j]);
+											}
+										}
+										else if (get.type2(name) == 'trick' && event.filterCard({ name: name }, player, event)) list.push(['锦囊', '', name]);
+										else if (get.type2(name) == 'delay' && event.filterCard({ name: name }, player, event)) list.push(['延时锦囊', '', name]);
+										else if (get.type(name) == 'basic' && event.filterCard({ name: name }, player, event)) list.push(['基本', '', name]);
+									}
+									return ui.create.dialog('神威：将一张坐骑牌当一张牌使用或打出', [list, 'vcard']);
+								},
+								filter: function (button, player) {
+									return _status.event.getParent().filterCard({ name: button.link[2] }, player, _status.event.getParent());
+								},
+								check: function (button) {
+									if (_status.event.getParent().type != 'phase') return 1;
+									var player = _status.event.player;
+									return player.getUseValue({ name: button.link[2], nature: button.link[3] });
+								},
+								backup: function (links, player) {
+									return {
+										filterCard: true,
+										audio: 'shen_machao',
+										popname: true,
+										check: function (card) { return 8 - get.value(card); },
+										position: 'e',
+										viewAs: { name: links[0][2], nature: links[0][3] },
+										precontent: function () {
+											// 无次数和距离限制：转化使用期间挂临时 mod（回合结束自动过期）
+											player.addTempSkill('mx_shenwei_free');
+										},
+									};
+								},
+								prompt: function (links, player) {
+									return '神威：将一张坐骑牌当做' + (get.translation(links[0][3]) || '') + get.translation(links[0][2]) + '使用或打出（无次数和距离限制）';
+								},
+							},
+							hiddenCard: function (player, name) {
+								if (!lib.inpile.contains(name)) return false;
+								var type = get.type2(name);
+								return player.getCards('e', function (card) {
+									return get.subtype(card) == 'equip3' || get.subtype(card) == 'equip4';
+								}).length > 0;
+							},
+							ai: {
+								order: 1,
+								respondSha: true,
+								respondShan: true,
+								skillTagFilter: function (player) {
+									return player.getCards('e', function (card) {
+										return get.subtype(card) == 'equip3' || get.subtype(card) == 'equip4';
+									}).length > 0;
+								},
+								result: { player: 1 },
+							},
+						},
+						// 转化使用无次数距离限制（precontent 动态挂，回合结束过期）——
+						// **不能**列进武将数组（mod 常驻会让全部手牌无限制）
+						mx_shenwei_free: {
+							charlotte: true,
+							sub: true,
+							mod: {
+								cardUsable: function (card, player, num) {
+									if (num === false) return false;
+									if (typeof num != 'number') num = 0;
+									return num + 99;
+								},
+								targetInRange: function () { return true; },
+							},
+						},
+						// 驭雷：免雷伤 / 雷伤记标记 / 消耗五驭插队新回合 —— 多时机锁定技
+						mx_yulei: {
+							locked: true,
+							forced: true,
+							charlotte: true,
+							popup: false,
+							direct: true,
+							trigger: { player: 'damageBegin2', source: 'damageEnd', global: 'phaseBefore' },
+							filter: function (event, player) {
+								if (!player.isIn()) return false;
+								var tn = event.triggername;
+								if (tn == 'damageBegin2') return event.nature == 'thunder';
+								if (tn == 'damageEnd') return event.nature == 'thunder' && event.source == player && (event.num || 0) > 0;
+								if (tn == 'phaseBefore') return player.countMark('mx_yu') >= 5;
+								return false;
+							},
+							content: function () {
+								'step 0'
+								var tn = event.triggername;
+								if (tn == 'damageBegin2') {
+									trigger.cancel();
+									game.log(player, '【驭雷】：免疫了雷属性伤害');
+									event.finish(); return;
+								}
+								if (tn == 'damageEnd') {
+									// 受伤者获得「雷」（显示壳动态挂）
+									var t = trigger.player;
+									if (t && t.isIn()) {
+										if (!t.hasSkill('mx_lei')) t.addSkill('mx_lei');
+										t.addMark('mx_lei', 1);
+										var leiCount = 0;
+										for (var i = 0; i < game.players.length; i++) {
+											if (game.players[i].isIn() && game.players[i].hasMark('mx_lei')) leiCount++;
+										}
+										if (leiCount > 1) {
+											t.loseHp(1);
+											t.removeMark('mx_lei', t.countMark('mx_lei'));
+											game.log(t, '【驭雷】：场上拥有「雷」的角色大于一个，失去了1点体力并移去其「雷」');
+										}
+									}
+									// 你获得一个「驭」
+									if (!player.hasSkill('mx_yu')) player.addSkill('mx_yu');
+									player.addMark('mx_yu', 1);
+									game.log(player, '【驭雷】：获得了', get.cnNumber(player.countMark('mx_yu')), '个「驭」');
+									event.finish(); return;
+								}
+								// phaseBefore：消耗五驭 → 立即获得一个额外回合（插队当前回合之前）
+								player.chooseBool('驭雷：是否消耗五个「驭」，立即获得一个额外的回合？（本回合你的伤害均视为雷属性）')
+									.set('ai', function () { return true; });
+								'step 1'
+								if (!result.bool) { event.finish(); return; }
+								player.removeMark('mx_yu', 5);
+								player.addTempSkill('mx_yulei_thunder');
+								var next = player.phase();
+								event.next.remove(next);       // createEvent 自动入列（game.js:40348）——先摘再插队
+								trigger.next.unshift(next);    // 插到当前回合队列最前 ⇒ 马超立即行动，原回合顺延
+								game.log(player, '【驭雷】：消耗了五个「驭」，立即获得了一个额外的回合');
+							},
+						},
+						// 额外回合内伤害转雷（addTempSkill 回合结束自动过期）
+						mx_yulei_thunder: {
+							forced: true, locked: true, charlotte: true, sub: true, popup: false, direct: true,
+							trigger: { source: 'damageBegin2' },
+							filter: function (event, player) {
+								return event.nature != 'thunder';
+							},
+							content: function () {
+								trigger.nature = 'thunder';
+							},
+						},
+						// 「雷」「驭」标记显示壳——**不列进武将数组**（mark:true 壳列数组会
+						// 开局自带假标记，曹操「治」的同款事故），由结算路径动态 addSkill。
+						mx_lei: {
+							charlotte: true,
+							sub: true,
+							mark: true,
+							marktext: '雷',
+							intro: { name: '雷', content: '被驭雷的雷属性印记。' },
+						},
+						mx_yu: {
+							charlotte: true,
+							sub: true,
+							mark: true,
+							marktext: '驭',
+							intro: { name: '驭', content: '任意角色的回合开始前，可消耗五个「驭」立即获得一个额外的回合（回合内伤害视为雷属性）。' },
 						},
 
 					},
