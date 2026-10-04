@@ -334,8 +334,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							if (typeof loopContent == 'function' && !loopContent.bzWrapped) {
 								var wrap = function (ev) {
 									try {
-										var ctx = '事件=' + (ev && ev.name) + '｜step=' + (ev && ev.step) +
-											'｜skill=' + (ev && ev.skill) + '｜player=' + (ev && ev.player && ev.player.name);
+										var ctx = '事件=' + (ev && ev.name) + '|step=' + (ev && ev.step) +
+											'|skill=' + (ev && ev.skill) + '|player=' + (ev && ev.player && ev.player.name);
 										return ctx;
 									} catch (e) { return '事件=?' }
 								};
@@ -365,11 +365,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 引擎 game.js:59041：技能语音只在 lib.config.background_speak 为真时播放！
 						try {
 							var _ac = 'background_speak=' + lib.config.background_speak +
-								'｜volumn_audio=' + lib.config.volumn_audio +
-								'｜repeat_audio=' + lib.config.repeat_audio +
-								'｜equip_audio=' + lib.config.equip_audio +
-								'｜background_audio=' + lib.config.background_audio +
-								'｜assetURL=' + lib.assetURL;
+								'|volumn_audio=' + lib.config.volumn_audio +
+								'|repeat_audio=' + lib.config.repeat_audio +
+								'|equip_audio=' + lib.config.equip_audio +
+								'|background_audio=' + lib.config.background_audio +
+								'|assetURL=' + lib.assetURL;
 							bzWrite('【音频配置】' + _ac);
 						} catch (eAc) { }
 						// ---- 语音播放链挂钩：把 trySkillAudio 的每一步决策录下来 ----
@@ -432,9 +432,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var raw = info ? info.audio : '(无技能信息)';
 									var direct = info ? !!info.direct : null;
 									bzWrite('【语音】trySkillAudio 技能=' + skill +
-										'｜audio原值=' + (typeof raw == 'object' ? JSON.stringify(raw) : String(raw)) +
-										'｜direct=' + direct + '｜directaudio=' + directaudio +
-										'｜background_speak=' + lib.config.background_speak);
+										'|audio原值=' + (typeof raw == 'object' ? JSON.stringify(raw) : String(raw)) +
+										'|direct=' + direct + '|directaudio=' + directaudio +
+										'|background_speak=' + lib.config.background_speak);
 									// 若 audio 是字符串名，额外确认它是否为 lib.skill 里的技能
 									if (typeof raw == 'string') {
 										bzWrite('【语音】  audio 指向 "' + raw + '" ⇒ lib.skill 里' +
@@ -796,7 +796,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'tdgx_zhaoyun': '名·赵云',
 						'tdgx_machao': '极·马超',
 						'mx_shenwei': '神威',
-						'mx_shenwei_info': '锁定技。当你使用或打出【杀】时，你可以对一名角色造成1点雷属性伤害，并摸X张牌（X为你攻击范围内的人数）。当你获得进攻马或防御马时，你选择一项执行：①永久增加1点攻击距离；②永久使其他角色计算与你的距离+1（攻击距离与他人距离均以此法至多加三）。你可以将任意一张坐骑牌转化为任意牌使用或打出（无次数和距离限制）。',
+						'mx_shenwei_info': '锁定技。当你使用或打出【杀】时，你可以对一名角色造成1点雷属性伤害，并摸X张牌（X为你攻击范围内的人数）。当你获得进攻马或防御马时，你选择一项执行：（一）永久增加1点攻击距离；（二）永久使其他角色计算与你的距离+1（攻击距离与他人距离均以此法至多加三）。你可以将任意一张坐骑牌转化为任意牌使用或打出（无次数和距离限制）。',
 						'mx_shenwei_horse': '神威·铁蹄',
 							'mx_shenwei_horse_info': '你可以将装备区里的一张坐骑牌转化为任意一张牌使用或打出（无次数和距离限制）。',
 							'mx_shenwei_mod': '神威·驰',
@@ -860,7 +860,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'cm_juejing': '决境',
 						'cm_juejing_info': '每轮开始时，你令全场各摸一张牌，并将各自摸到的那张转为闪电对其自己使用（判定区内已有闪电者跳过）。当场上进行闪电判定时，你摸一张牌。当你进行闪电判定时，判定成功，你免疫此次伤害，并且你弃置在场角色判定区内的闪电，然后你失去技能「决境」。',
 						'cm_qiji': '奇技',
-						'cm_qiji_info': '锁定技。回合结束时，你获得此回合内你未对其造成伤害的角色区域内的一张牌。当你受到伤害时，你可以弃置自己判定区内的一张牌，并免疫此伤害。当场上有角色受到的伤害不小于两点，你可以执行以下选项的其中之一：①摸X张牌（X为你的体力值）；②摸Y张牌（Y为全场角色判定区内牌数的总和）。',
+						'cm_qiji_info': '锁定技。回合结束时，你获得此回合内你未对其造成伤害的角色区域内的一张牌。当你受到伤害时，你可以弃置自己判定区内的一张牌，并免疫此伤害。当场上有角色受到的伤害不小于两点，你可以执行以下选项的其中之一：（一）摸X张牌（X为你的体力值）；（二）摸Y张牌（Y为全场角色判定区内牌数的总和）。',
 						'cm_taozei': '讨贼',
 						'cm_taozei_info': '锁定技。每轮开始时，你可以将任意牌置于牌堆底。当你以此法放于牌堆底的牌大于你的体力上限，你可以无视次数、距离限制使用牌堆底的牌，直到无法使用此牌为止。',
 						// 隐藏子技能（sub:true，刻意不给 _info —— lint 的 C5 对 sub 技能降级为 INFO）
@@ -1684,7 +1684,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						cm_qiji_seize: {
 							locked: true,
 							sub: true,
-							trigger: { global: 'damage' },
+							trigger: { global: 'damageEnd' },
 							filter: function (event, player) {
 								return player.isIn() && event.num > 2;
 							},
@@ -1989,9 +1989,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// ★ 双通道诊断：把每个条件值都打出来
 								try {
 									var _d = '连营·诊断 事件=' + event.name +
-										'｜用牌+响应=' + used + '｜体力=' + player.hp +
-										'｜lose事件=' + history.length + '｜其中discard=' + nDisc +
-										'｜弃牌阶段弃置数=' + n;
+										'|用牌+响应=' + used + '|体力=' + player.hp +
+										'|lose事件=' + history.length + '|其中discard=' + nDisc +
+										'|弃牌阶段弃置数=' + n;
 									(game.bzDiag2 || lib.bzDiag2)('连营·诊断 ' + _d);
 								} catch (eD) { }
 								if (used > player.hp) return false;
@@ -2076,9 +2076,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								// ★ 双通道诊断
 								try {
 									var _d = '炽炎·诊断 事件=' + event.name +
-										'｜sourceDamage事件=' + history.length +
-										'｜带lx_cy标记=' + nCy + '｜合计火伤=' + total +
-										'｜体力=' + player.hp;
+										'|sourceDamage事件=' + history.length +
+										'|带lx_cy标记=' + nCy + '|合计火伤=' + total +
+										'|体力=' + player.hp;
 									(game.bzDiag2 || lib.bzDiag2)('炽炎·诊断 ' + _d);
 								} catch (eD) { }
 								return total > 0 && total >= player.hp;
@@ -2946,7 +2946,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							sub: true,
 							popup: false,
-							trigger: { source: 'damageSource' },
+							trigger: { source: 'damageEnd' },
 							filter: function (event, player) {
 								var z = player.storage.lkang_zone;
 								if (!z) return false;
@@ -3581,11 +3581,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								//   用于区分三种情况：①根本没触发 ②触发了但被闸门挡住 ③技能没挂上
 								try {
 									var _q = 'qixing入口 事件=' + event.name +
-										'｜轮号=' + game.roundNumber +
-										'｜记录=' + player.storage.zl_qixing_round +
-										'｜在场=' + player.isIn() +
-										'｜有七星=' + player.hasSkill('zl_qixing') +
-										'｜有星区=' + player.hasSkill('zl_xing_tu');
+										'|轮号=' + game.roundNumber +
+										'|记录=' + player.storage.zl_qixing_round +
+										'|在场=' + player.isIn() +
+										'|有七星=' + player.hasSkill('zl_qixing') +
+										'|有星区=' + player.hasSkill('zl_xing_tu');
 									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 ' + _q);
 								} catch (eD0) { }
 								// 「每轮开始时」= 每轮第一次轮到我（引擎的 roundStart 只派发给最小座位号，不可用）
@@ -3612,8 +3612,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var _xs = player.getCards('x');
 									var _tagged = lib.skill.zl_xing_tu.stars(player);
 									var _d = 'qixing取牌 got=' + got.length +
-										'｜x区总数=' + _xs.length +
-										'｜带zl_xing标记=' + _tagged.length;
+										'|x区总数=' + _xs.length +
+										'|带zl_xing标记=' + _tagged.length;
 									(game.bzDiag2 || lib.bzDiag2)('七星·诊断 ' + _d);
 								} catch (eD1) { }
 								'step 1'
@@ -3652,13 +3652,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										}
 									} catch (eTT) { _dTs = '(读取异常)'; }
 									(game.bzDiag2 || lib.bzDiag2)('空城·入口 事件名=' + event.name +
-										'｜triggername=' + event.triggername +
-										'｜step=' + event.step +
-										'｜手牌=' + player.countCards('h') +
-										'｜星=' + lib.skill.zl_xing_use.stars(player).length +
-										'｜目标=[' + _dTs + ']' +
-										'｜牌=' + (event.card ? get.translation(event.card) : '-') +
-										'｜使用者=' + (event.player ? event.player.name : '-'));
+										'|triggername=' + event.triggername +
+										'|step=' + event.step +
+										'|手牌=' + player.countCards('h') +
+										'|星=' + lib.skill.zl_xing_use.stars(player).length +
+										'|目标=[' + _dTs + ']' +
+										'|牌=' + (event.card ? get.translation(event.card) : '-') +
+										'|使用者=' + (event.player ? event.player.name : '-'));
 								} catch (eD0) { }
 								var _h = player.countCards('h');
 								var _s = lib.skill.zl_xing_use.stars(player).length;
@@ -3679,9 +3679,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								} catch (eT) { }
 								// ★ 双通道诊断：把各条件都打出来
 								try {
-									var _kc = '事件=' + event.name + '｜在场=' + _in + '｜手牌=' + _h +
-										'｜星=' + _s + '｜是目标=' + (_isT ? 1 : 0) +
-										'｜牌=' + (event.card ? get.translation(event.card) : '-');
+									var _kc = '事件=' + event.name + '|在场=' + _in + '|手牌=' + _h +
+										'|星=' + _s + '|是目标=' + (_isT ? 1 : 0) +
+										'|牌=' + (event.card ? get.translation(event.card) : '-');
 									(game.bzDiag2 || lib.bzDiag2)('空城·诊断 ' + _kc);
 								} catch (eD) { }
 								if (!_in) return false;
@@ -4762,11 +4762,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							popup: false,
 							direct: true,
 							trigger: { player: 'damageBegin2', source: 'damageSource', global: 'phaseBefore' },
-							filter: function (event, player) {
-								if (!player.isIn()) return false;
-								var tn = event.triggername;
+							filter: function (event, player, name) {
+								// filter 的 event 是原始事件（无 triggername），时机名在第三形参 name
+								var tn = name;
 								if (tn == 'damageBegin2') return event.nature == 'thunder';
-								if (tn == 'damageEnd') return event.nature == 'thunder' && event.source == player && (event.num || 0) > 0;
+								if (tn == 'damageSource') return event.nature == 'thunder' && event.source == player && (event.num || 0) > 0;
 								if (tn == 'phaseBefore') return player.countMark('mx_yu') >= 5;
 								return false;
 							},
