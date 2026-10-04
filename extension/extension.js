@@ -506,7 +506,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								document.head.appendChild(_showStyle);
 							}
 							if (!game.tdgxShow) {
-								game.tdgxShow = function (color, title, quote) {
+								// signature: game.tdgxShow(色, 技能名, 名句, [spineName])
+								// 有十周年UI 的 Spine 播放器 ⇒ 播专属骨骼动画（不叠大字，动画自带视觉）；
+								// 未装/播放失败 ⇒ 回落 CSS 演出（暗幕+大字+名句）。
+								game.tdgxShow = function (color, title, quote, spineName) {
+									try {
+										if (spineName && window.decadeUI && decadeUI.animation && decadeUI.animation.playSpine) {
+											decadeUI.animation.playSpine({ name: spineName, speed: 1 }, { parent: ui.window, scale: 1, action: 'play' });
+											return;
+										}
+									} catch (eSpine) { }
 									try {
 										var old = document.getElementById('tdgx_show');
 										if (old) old.remove();
@@ -2135,7 +2144,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								player.storage.tdgx_sw['lx_zhangcai']--;
-								game.tdgxShow && game.tdgxShow('#ff6a00', '彰才', '火烧连营，七百里尽赤');
+								game.tdgxShow && game.tdgxShow('#ff6a00', '彰才', '火烧连营，七百里尽赤', 'effect_huosha');
 								// ★ 持续时间修正（2026-09-13 用户校准）：本回合，非本局——
 								//   addTempSkill 缺省过期 ['phaseAfter','phaseBefore']（game.js:28663）
 								//   = 回合结束自动移除，恢复神威技的次数门槛。
@@ -2342,7 +2351,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								player.storage.tdgx_sw['mlb_zhangwu']--;
-								game.tdgxShow && game.tdgxShow('#d4a017', '章武', '嗣武二祖，龚行天罚');
+								game.tdgxShow && game.tdgxShow('#d4a017', '章武', '嗣武二祖，龚行天罚', 'SF_kaizhan_eff_jiangjun');
 								player.addTempSkill('mlb_zhangwu_mod');
 								var next = player.phaseUse();
 								event.next.remove(next);
@@ -2682,7 +2691,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								player.storage.tdgx_sw['dy_miewu']--;
-								game.tdgxShow && game.tdgxShow('#3a7bd5', '灭吴', '以计代战，一当万');
+								game.tdgxShow && game.tdgxShow('#3a7bd5', '灭吴', '以计代战，一当万', 'effect_caochuanjiejian');
 								var x = player.countMark('dy_bei') + player.maxHp;
 								player.draw(x);
 								game.log(player, '发动了神威技', '#g【灭吴】', '，摸了', get.cnNumber(x), '张牌');
@@ -3078,7 +3087,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								player.storage.tdgx_sw['lkang_beishui']--;
-								game.tdgxShow && game.tdgxShow('#2e9e8f', '背水', '拔西陵，诛步阐');
+								game.tdgxShow && game.tdgxShow('#2e9e8f', '背水', '拔西陵，诛步阐', 'SS_pve_KaLiuShuigx');
 								player.enableEquip([1, 2, 3, 4]);
 								// ★ 判定区的失效走引擎 storage._disableJudge（见毁堰处注释）。
 								//   只清**本技能设的**（lkang_judge_own）：_disableJudge 是引擎全局开关，
@@ -3388,7 +3397,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							content: function () {
 								'step 0'
 								player.storage.tdgx_sw['gy_po_di']--;
-								game.tdgxShow && game.tdgxShow('#d43a2f', '破敌', '策马刺良于万众之中');
+								game.tdgxShow && game.tdgxShow('#d43a2f', '破敌', '策马刺良于万众之中', 'SS_gyskill');
 								player.storage.gy_po_on = true;
 								player.addTempSkill('gy_po_turn');
 								player.chooseTarget(true, '破敌：令一名其他角色获得「破」', function (card, player, target) {
@@ -3732,7 +3741,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							content: function () {
 								'step 0'
 								player.storage.tdgx_sw['zl_huoji']--;
-								game.tdgxShow && game.tdgxShow('#e8842a', '火计', '万事俱备，只欠东风');
+								game.tdgxShow && game.tdgxShow('#e8842a', '火计', '万事俱备，只欠东风', 'effect_huogong');
 								// ★ 只弃「星」（expansion 区），**绝不动手牌** ——
 								//   之前用 storage 列表 + lose() 会把手牌一起卷走（用户实测"回合开始摸到的手牌会消失"）
 								var stars = lib.skill.zl_xing_use.stars(player);
@@ -3997,7 +4006,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.idx = 0;
 								if (!event.pool.length) { event.finish(); return; }
 								game.log(player, '发动了神威技', '#g【志略】', '，将按记录顺序使用', get.cnNumber(event.pool.length), '张牌');
-								game.tdgxShow && game.tdgxShow('#9a7b2d', '志略', '设使天下无有孤，不知当几人称王');
+								game.tdgxShow && game.tdgxShow('#9a7b2d', '志略', '设使天下无有孤，不知当几人称王', 'effect_zhulutianxia');
 								'step 1'
 								if (event.idx >= event.pool.length) {
 									// 全部用完 ⇒ 消耗一次神威额度
