@@ -782,7 +782,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'gy_po_lock': '破敌·锁',
 						'gy_po_lock_info': '【破敌】的免疫在伤害结算的第二阶段兜底生效。',
 						'cc_lue_mark': '略',
-						'cc_lue_mark_info': '【奸雄】的计数标记：每有1枚「略」，你受到伤害后摸牌时多摸1张；每轮开始时移去所有「略」。',
+						'cc_lue_mark_info': '【奸雄】的计数标记：每有1枚「&#30053;」，你受到伤害后摸牌时多摸1张；每轮开始时移去所有「&#30053;」。',
 						'zl_xing': '星',
 						'cc_zhi': '智',
 						'zl_kongcheng': '空城',
@@ -804,7 +804,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'mx_shenwei_free': '神威·翼',
 						'mx_shenwei_free_info': '你使用转化牌无次数和距离限制。',
 						'mx_yulei': '驭雷',
-						'mx_yulei_info': '锁定技。你免疫雷属性伤害；当你造成雷属性伤害后，受伤角色获得一个雷印记，你获得一个驭标记；当场上拥有雷印记的角色大于一个，受伤角色失去1点体力并移去其雷印记。一名角色的回合开始前，你可以消耗五个驭标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为雷属性伤害。',
+						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。',
 						'mx_lei': '雷',
 						'mx_lei_info': '驭雷的雷属性印记（失去1点体力时移去）。',
 						'mx_yu': '驭',
@@ -817,7 +817,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// ★ 技能描述＝用户提供的原文，不再改写
 						// ★ 每个技能都必须有自己的译名，否则：界面空白、主动技按钮无字
 						//   （引擎用 lib.translate[skillId] 取技能名、lib.translate[skillId+'_info'] 取说明）
-						'cc_jianxiong_info': '每轮开始时，你清除你身上的略标记。当你受到1点伤害后，你记录此牌X次到智区（X为本轮受到的伤害；同一张实体牌无法重复记录时，从牌堆补一张同名牌），并获得一个略标记，然后摸X张牌（X为略标记的数量）。',
+						'cc_jianxiong_info': '每轮开始时，你清除你身上的&#30053;标记。当你受到1点伤害后，你记录此牌X次到&#26234;区（X为本轮受到的伤害；同一张实体牌无法重复记录时，从牌堆补一张同名牌），并获得一个&#30053;标记，然后摸X张牌（X为&#30053;标记的数量）。',
 						'cc_zhi_zone': '智',
 						'cc_zhi_zone_info': '你受到伤害后置于武将牌上的牌，可供【志略】使用。',
 						'cc_qingzheng': '清正',
@@ -827,7 +827,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'cc_qingzheng_cut': '清正·裁',
 						'cc_qingzheng_cut_info': '拥有「治」的角色回合开始时，【清正】拥有者选择令其摸X张牌或弃置X张牌。',
 						'cc_zhilue': '志略',
-						'cc_zhilue_info': '神威技，每局游戏限一次。你可以按任意顺序使用「智」中记录的牌（无距离、次数限制）；已被移走的牌不再可选。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
+						'cc_zhilue_info': '神威技，每局游戏限一次。你可以按任意顺序使用「&#26234;」中记录的牌（无距离、次数限制）；已被移走的牌不再可选。<br>（神威技：初始可用1次；当你击杀一名角色时使用次数+1，该加成每局游戏限触发一次）',
 
 						'mouguojia_soul': '谋郭嘉·魂',
 						'mgj_dingce': '定策',
@@ -3776,17 +3776,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
 						// ────────────── 名·曹操（四血/魏）──────────────
 
-						// 略·标记（★ 修：原来没有任何技能显示「略」⇒ 用户看不到数量）
+						// 略·标记（★ 修：原来没有任何技能显示「&#30053;」⇒ 用户看不到数量）
 						cc_lue_mark: {
 							charlotte: true, sub: true, popup: false, mark: true, marktext: '略',
-							intro: { name: '略', content: '奸雄：每有1枚「略」，你受到伤害后摸牌时多摸1张（每轮开始移去所有「略」）。' },
+							intro: { name: '略', content: '奸雄：每有1枚「&#30053;」，你受到伤害后摸牌时多摸1张（每轮开始移去所有「&#30053;」）。' },
 						},
 						// 智·区（记录造成伤害的牌）
 						// ★★ 存放到**独立容器** player.node.expansions，不用 's' 区 ★★
 						//   实测原因：'s' 区（loseToSpecial → directgains）在
 						//   game.js:25965-25993 里是 `node.handcards1` + 'glows' 类，
 						//   也就是"**放在手牌容器里的牌**" ⇒ 引擎把手牌区的牌都当可用
-						//   ⇒ 用户实测「智」显示在手牌区且可直接用。
+						//   ⇒ 用户实测「&#26234;」显示在手牌区且可直接用。
 						//   player.node.expansions 是独立的武将牌容器：
 						//   既看得见（引擎自带渲染）、又不在手牌区 ⇒ 不会进通用出牌池。
 						//   按用户裁定 **B**：UI 上可点看牌，但"使用"只走【志略】。
@@ -3832,7 +3832,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							trigger: { player: ['phaseBefore', 'damageAfter'] },
 							// ★ 分派依据（实测）：`phaseBefore` 是**真实事件名**，可用 event.name 判；
 							//   `damageAfter` 是**触发键**（伤害事件名恒为 `damage`）⇒ 只能靠"不是 phaseBefore"区分。
-							//   两分支语义：phaseBefore=每轮开始移去「略」；damageAfter=受伤后记录并摸牌。
+							//   两分支语义：phaseBefore=每轮开始移去「&#30053;」；damageAfter=受伤后记录并摸牌。
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
 								if (event.name == 'phaseBefore') {
@@ -3853,7 +3853,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var n0 = player.countMark('cc_lue');
 									if (n0 > 0) {
 										player.removeMark('cc_lue', n0);
-										game.log(player, '【奸雄】：移去了所有的「略」');
+										game.log(player, '【奸雄】：移去了所有的「&#30053;」');
 									}
 									event.finish(); return;
 								}
@@ -3921,13 +3921,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										}
 									}
 								}
-								// 没有实体牌（虚拟伤害）时只记次数、不给「智」添牌，避免崩溃
+								// 没有实体牌（虚拟伤害）时只记次数、不给「&#26234;」添牌，避免崩溃
 								player.addMark('cc_lue', 1);
 								if (!player.hasSkill('cc_lue_mark')) player.addSkill('cc_lue_mark');
-								player.markSkill('cc_lue_mark');   // ★ 刷新「略」数量显示
+								player.markSkill('cc_lue_mark');   // ★ 刷新「&#30053;」数量显示
 								var n = player.countMark('cc_lue');
 								player.draw(n);
-								game.log(player, '【奸雄】：记录1次，获得1枚「略」（', n, '），摸', get.cnNumber(n), '张牌');
+								game.log(player, '【奸雄】：记录1次，获得1枚「&#30053;」（', n, '），摸', get.cnNumber(n), '张牌');
 								event.goto(1);
 								'step 2'
 							},
@@ -3987,7 +3987,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.finish(); return;
 							},
 						},
-						// 志略（神威技）：把「智」中的牌当手牌使用（无距离、次数限制）
+						// 志略（神威技）：把「&#26234;」中的牌当手牌使用（无距离、次数限制）
 						// ★★ 改用 **viewAs 出口** 写法 ★★
 						//   这是本包**已验证能工作**的模式（武圣、七星都用它）：
 						//     enable:'phaseUse' + filterCard(判区) + viewAs(返回该牌)
@@ -4007,7 +4007,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								}).length > 0;
 							},
 							// ★★ 按 **记录顺序依次使用** ★★
-							//   用户口径（原文）："你可以按照记录顺序依次使用或打出「智」中已记录的牌"。
+							//   用户口径（原文）："你可以按照记录顺序依次使用或打出「&#26234;」中已记录的牌"。
 							//   所以不做"弹面板让玩家挑" —— 而是从**最早记录的那张**开始，
 							//   一张张依次用出去（selectCard 固定取第 1 张 = 最早记录的那张）。
 							//   [1,1] + filterCard 取整个带智的牌列表的**第一张**即可保证顺序。
@@ -4031,7 +4031,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.card = event.pool[event.idx];
 								event.idx++;
 								if (!event.card || !event.card.parentNode) { event.goto(1); return; }
-								// 从「智」区移出并进入手牌，再按标准流程使用（可选择目标）
+								// 从「&#26234;」区移出并进入手牌，再按标准流程使用（可选择目标）
 								try {
 									if (player.storage.cc_zhi_markcount > 0) player.storage.cc_zhi_markcount--;
 									player.gain(event.card, 'draw');
