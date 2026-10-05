@@ -4598,6 +4598,17 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							content: function () {
 								'step 0'
 								if (event.triggername == 'equipAfter') {
+									// —— 运行时诊断：获马瞬间自动落盘（BZ_DIAG_ON 开着）——
+									try {
+										var _dgHasMod = player.skills.contains('mx_shenwei_mod');
+										var _dgT = null;
+										for (var _di = 0; _di < game.players.length; _di++) {
+											if (game.players[_di] != player && game.players[_di].isIn()) { _dgT = game.players[_di]; break; }
+										}
+										var _dgGf = _dgT ? game.checkMod(player, _dgT, 2, 'globalFrom', player) : '-';
+										var _dgAf = _dgT ? game.checkMod(player, _dgT, 2, 'attackFrom', player) : '-';
+										bzDiag2('【神威获马诊断】mod挂载=' + _dgHasMod + ' | mx_cd=' + (player.storage.mx_cd || 0) + ' | checkMod(globalFrom,2)=' + _dgGf + ' | checkMod(attackFrom,2)=' + _dgAf);
+									} catch (eDg) { }
 									// ★ chooseControl 防弹版（clan.js:2018 官方模式）：controls 传内部键
 									//（atk/def/cancel2），显示文本走 choiceList —— result.control
 									// 恒为内部键，十周年UI 重写样式不影响判定。
