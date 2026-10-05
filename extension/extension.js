@@ -4591,13 +4591,24 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									}
 									return false;
 								}
+								// ★ 获马路径②：从手牌装备坐骑走 useCard（装备牌是"使用"的）——
+								// useCardAfter 为实测可靠时机（equipAfter 部分路径不派发）
+								if (event.name == 'useCard' && event.player == player) {
+									var cs2 = event.cards || [];
+									for (var j2 = 0; j2 < cs2.length; j2++) {
+										var c2 = cs2[j2];
+										if (c2 && (get.subtype(c2) == 'equip3' || get.subtype(c2) == 'equip4')) return true;
+									}
+									return false;
+								}
 								// 使用或打出【杀】
 								if (event.player != player) return false;
 								return !!(event.card && get.name(event.card) == 'sha');
 							},
 							content: function () {
 								'step 0'
-								if (event.triggername == 'equipAfter') {
+																var _mxHorse = (event.triggername == 'useCardAfter' && event.card && (get.subtype(event.card) == 'equip3' || get.subtype(event.card) == 'equip4'));
+								if (event.triggername == 'equipAfter' || _mxHorse) {
 									// —— 运行时诊断：获马瞬间自动落盘（BZ_DIAG_ON 开着）——
 									try {
 										var _dgHasMod = player.skills.contains('mx_shenwei_mod');
