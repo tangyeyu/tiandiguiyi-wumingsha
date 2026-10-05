@@ -4598,28 +4598,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							content: function () {
 								'step 0'
 								if (event.triggername == 'equipAfter') {
-									// ★ 串行排除式问询（chooseBool 基础事件，零 UI 依赖）：
-									// chooseControl 在十周年UI 下 result.control/index 形态不可靠
-									//（实测①②全落同一分支），故弃用。先问①，取消或已满再问②。
-									if ((player.storage.mx_cd || 0) >= 3 && (player.storage.mx_cm || 0) >= 3) { event.finish(); return; }
+									// ★ chooseControl 防弹版（clan.js:2018 官方模式）：controls 传内部键
+									//（atk/def/cancel2），显示文本走 choiceList —— result.control
+									// 恒为内部键，十周年UI 重写样式不影响判定。
+									var keys = [], labels = [];
+									if ((player.storage.mx_cd || 0) < 3) { keys.push('atk'); labels.push('永久增加1点攻击距离'); }
+									if ((player.storage.mx_cm || 0) < 3) { keys.push('def'); labels.push('永久使其他角色计算与你的距离+1'); }
+									if (!keys.length) { event.finish(); return; }
+									keys.push('cancel2');
+									labels.push('放弃（本次不生效）');
+									player.chooseControl(keys)
+										.set('choiceList', labels)
+										.set('prompt', '神威：选择一项执行（永久生效）')
+										.set('ai', function () { return 'atk'; });
 									'step 1'
-									if ((player.storage.mx_cd || 0) >= 3) { event.goto(3); return; }
-									player.chooseBool('神威：是否永久使你计算与其他角色的距离-1（-1马效果）？')
-										.set('ai', function () { return true; });
-									'step 2'
-									if (result.bool) {
+									var pick = result.control;
+									if (pick == 'atk') {
 										player.storage.mx_cd = (player.storage.mx_cd || 0) + 1;
 										player.markSkill('mx_shenwei_mod');
 										game.log(player, '【神威】：你计算与其他角色的距离永久-1（当前-' + player.storage.mx_cd + '）');
-										event.finish(); return;
-									}
-									event.goto(3);
-									'step 3'
-									if ((player.storage.mx_cm || 0) >= 3) { event.finish(); return; }
-									player.chooseBool('神威：是否永久使其他角色计算与你的距离+1（+1马效果）？')
-										.set('ai', function () { return true; });
-									'step 4'
-									if (result.bool) {
+									} else if (pick == 'def') {
 										player.storage.mx_cm = (player.storage.mx_cm || 0) + 1;
 										player.markSkill('mx_shenwei_mod');
 										game.log(player, '【神威】：其他角色计算与你的距离永久+1（当前+' + player.storage.mx_cm + '）');
