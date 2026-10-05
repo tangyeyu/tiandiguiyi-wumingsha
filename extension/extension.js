@@ -4658,7 +4658,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								attackRange: function (player, num) {
 									return num + (player.storage.mx_cd || 0);
 								},
-								globalFrom: function (from, to, dist) {
+								// ★ 距离+1 必须挂 globalTo（防守方修正）：globalFrom 是 from 侧
+								//（game.js:61998-62000 当次核实），挂在 from 上读 to 的 storage
+								// 永远为 0 ⇒ 选②不生效（用户实测）。globalTo 的 checkMod
+								// 以 to 为技能收集方 ⇒ to=马超时读到 mx_cm ✓
+								globalTo: function (from, to, dist) {
 									return dist + (to.storage.mx_cm || 0);
 								},
 							},
