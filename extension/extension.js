@@ -801,8 +801,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'mx_shenwei_horse_info': '你可以将装备区里的一张坐骑牌转化为任意一张牌使用或打出（无次数和距离限制）。',
 							'mx_shenwei_mod': '神威·驰',
 						'mx_shenwei_mod_info': '你的攻击范围永久+X，其他角色计算与你的距离永久+Y（X、Y为你以此法增加的次数，各至多3）。',
-						'mx_shenwei_free': '神威·翼',
-						'mx_shenwei_free_info': '你使用转化牌无次数和距离限制。',
 						'mx_yulei': '驭雷',
 						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。',
 						'mx_lei': '雷',
@@ -4573,7 +4571,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// 神威：三机制合一的多时机锁定技（雷杀触发/获马增益分派）；
 						//   转化入口独立为 mx_shenwei_horse（enable 按钮需带 translate 才能显示）。
 						//   距离加成经 mx_shenwei_mod（attackRange/globalFrom，storage 驱动，
-						//   各至多 +3）；转化无次数距离经 precontent 动态挂 mx_shenwei_free。
+						//   各至多 +3）；转化无次数距离由 backup 内联 mod 承担。
 						mx_shenwei: {
 							locked: true,
 							forced: true,
@@ -4668,7 +4666,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 						},
 						// 马转任意牌：照武库·启备的官方灭吴范式（chooseButton + backup），
-						// 来源限装备区坐骑（position 'e'），无次数距离限制由 mx_shenwei_free 承担。
+						// 来源限装备区坐骑（position 'e'），无次数距离限制由 backup 内联 mod 承担。
 						mx_shenwei_horse: {
 							audio: 'shen_machao',
 							enable: ['chooseToUse', 'chooseToRespond'],
@@ -4716,9 +4714,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										check: function (card) { return 8 - get.value(card); },
 										position: 'e',
 										viewAs: { name: links[0][2], nature: links[0][3] },
-										precontent: function () {
-											// 无次数和距离限制：转化使用期间挂临时 mod（回合结束自动过期）
-											player.addTempSkill('mx_shenwei_free', 'useCardAfter'); // 仅本次转化使用有效，结束即过期
+										// ★ 无次数距离限制直接内联进 backup：backup 技能在「选目标+使用」
+										//   全程挂载（早于距离判定），precontent 挂载时机实测偏晚不可靠。
+										mod: {
+											cardUsable: function (card, player, num) {
+												if (num === false) return false;
+												if (typeof num != 'number') num = 0;
+												return num + 99;
+											},
+											targetInRange: function () { return true; },
 										},
 									};
 								},
@@ -4745,20 +4749,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								result: { player: 1 },
 							},
 						},
-						// 转化使用无次数距离限制（precontent 动态挂，回合结束过期）——
-						// **不能**列进武将数组（mod 常驻会让全部手牌无限制）
-						mx_shenwei_free: {
-							charlotte: true,
-							sub: true,
-							mod: {
-								cardUsable: function (card, player, num) {
-									if (num === false) return false;
-									if (typeof num != 'number') num = 0;
-									return num + 99;
-								},
-								targetInRange: function () { return true; },
-							},
-						},
+
 						// 驭雷：免雷伤 / 雷伤记标记 / 消耗五驭插队新回合 —— 多时机锁定技
 						mx_yulei: {
 							locked: true,
