@@ -802,7 +802,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'mx_shenwei_mod': '神威·驰',
 						'mx_shenwei_mod_info': '你的攻击范围永久+X，其他角色计算与你的距离永久+Y（X、Y为你以此法增加的次数，各至多3）。',
 						'mx_yulei': '驭雷',
-						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。',
+						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。当任意角色回合结束时，若本回合有角色造成过&#38647;属性伤害，你获得一个&#39533;标记。',
 						'mx_lei': '雷',
 						'mx_lei_info': '驭雷的雷属性印记（失去1点体力时移去）。',
 						'mx_yu': '驭',
@@ -4604,23 +4604,26 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if ((player.storage.mx_cm || 0) < 3) controls.push('②永久使其他角色计算与你的距离+1');
 									if (!controls.length) { event.finish(); return; }
 									if (controls.length == 1) {
-										event.mxPick = controls[0];
+										event.mxPickIdx = 0;
 										event.goto(2); return;
 									}
 									player.chooseControl(controls)
 										.set('prompt', '神威：选择一项执行（永久生效）')
 										.set('ai', function () {
-											var cs = _status.event.controls;
 											return 0; // 默认加攻击距离（马超进攻向）
 										});
 									'step 1'
-									event.mxPick = result.control;
+									// ★ result.index 数字判定：十周年UI 重写 chooseControl 后
+									//   result.control 的文本形态不可靠，文本匹配曾致①②全落错分支
+									event.mxPickIdx = (result && typeof result.index == 'number') ? result.index : -1;
 									'step 2'
-									if (event.mxPick && event.mxPick.indexOf('①') == 0) {
+									if (event.mxPickIdx == 0) {
 										player.storage.mx_cd = (player.storage.mx_cd || 0) + 1;
+										player.markSkill('mx_shenwei_mod');
 										game.log(player, '【神威】：攻击范围永久+', player.storage.mx_cd);
-									} else {
+									} else if (event.mxPickIdx == 1) {
 										player.storage.mx_cm = (player.storage.mx_cm || 0) + 1;
+										player.markSkill('mx_shenwei_mod');
 										game.log(player, '【神威】：其他角色计算与你的距离永久+', player.storage.mx_cm);
 									}
 									event.finish(); return;
@@ -4652,6 +4655,13 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						mx_shenwei_mod: {
 							charlotte: true,
 							sub: true,
+							mark: true,
+							marktext: '骑',
+							intro: {
+								content: function (storage, player) {
+									return '神威加成：攻击范围+' + (player.storage.mx_cd || 0) + '；其他角色计算与你的距离+' + (player.storage.mx_cm || 0);
+								},
+							},
 							mod: {
 								// ★ ①真-1马等价（用户校准）：马超计算与其他角色的距离-X
 								globalFrom: function (from, to, dist) {
@@ -4757,18 +4767,35 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							popup: false,
 							direct: true,
-							trigger: { player: 'damageBegin2', source: 'damageSource', global: 'phaseBefore' },
+							trigger: { player: 'damageBegin2', source: 'damageSource', global: ['phaseBefore', 'phaseEnd', 'damageEnd'] },
 							filter: function (event, player, name) {
 								// filter 的 event 是原始事件（无 triggername），时机名在第三形参 name
 								var tn = name;
 								if (tn == 'damageBegin2') return event.nature == 'thunder';
 								if (tn == 'damageSource') return event.nature == 'thunder' && event.source == player && (event.num || 0) > 0;
+								if (tn == 'damageEnd') return event.nature == 'thunder' && (event.num || 0) > 0; // 记录：任意来源雷伤（用户新增条款）
+								if (tn == 'phaseEnd') return player.isIn() && player.storage.mx_thunder_phase == event;
 								if (tn == 'phaseBefore') return player.countMark('mx_yu') >= 5;
 								return false;
 							},
 							content: function () {
 								'step 0'
 								var tn = event.triggername;
+								if (tn == 'damageEnd') {
+									// 用户新增条款：本回合内有人造成过雷伤 ⇒ 回合结束时 +1「驭」
+									// （以 phase 事件引用为「本回合」凭据，phaseEnd 分支比对结算）
+									player.storage.mx_thunder_phase = event.getParent('phase');
+									event.finish(); return;
+								}
+								if (tn == 'phaseEnd') {
+									if (player.storage.mx_thunder_phase == trigger) {
+										delete player.storage.mx_thunder_phase;
+										if (!player.hasSkill('mx_yu')) player.addSkill('mx_yu');
+										player.addMark('mx_yu', 1);
+										game.log(player, '【驭雷】：本回合有雷属性伤害造成，获得了', get.cnNumber(player.countMark('mx_yu')), '个「驭」');
+									}
+									event.finish(); return;
+								}
 								if (tn == 'damageBegin2') {
 									trigger.cancel();
 									game.log(player, '【驭雷】：免疫了雷属性伤害');
