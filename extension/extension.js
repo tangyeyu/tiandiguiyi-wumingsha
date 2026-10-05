@@ -802,7 +802,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							'mx_shenwei_mod': '神威·驰',
 						'mx_shenwei_mod_info': '你的攻击范围永久+X，其他角色计算与你的距离永久+Y（X、Y为你以此法增加的次数，各至多3）。',
 						'mx_yulei': '驭雷',
-						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。当任意角色回合结束时，若本回合有角色造成过&#38647;属性伤害，你获得一个&#39533;标记。',
+						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。',
 						'mx_lei': '雷',
 						'mx_lei_info': '驭雷的雷属性印记（失去1点体力时移去）。',
 						'mx_yu': '驭',
@@ -4607,7 +4607,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							},
 							content: function () {
 								'step 0'
-																var _mxHorse = (event.triggername == 'useCardAfter' && event.card && (get.subtype(event.card) == 'equip3' || get.subtype(event.card) == 'equip4'));
+																// ★ 原始事件字段在 trigger 上（content 的 event 是技能事件，无 card）
+									var _mxHorse = (event.triggername == 'useCardAfter' && trigger.card && (get.subtype(trigger.card) == 'equip3' || get.subtype(trigger.card) == 'equip4'));
 								if (event.triggername == 'equipAfter' || _mxHorse) {
 									// —— 运行时诊断：获马瞬间自动落盘（BZ_DIAG_ON 开着）——
 									try {
@@ -4794,7 +4795,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							charlotte: true,
 							popup: false,
 							direct: true,
-							trigger: { player: 'damageBegin2', source: 'damageSource', global: ['phaseBefore', 'phaseEnd', 'damageEnd'] },
+							trigger: { player: 'damageBegin2', source: 'damageSource', global: 'phaseBefore' },
 							filter: function (event, player, name) {
 								// filter 的 event 是原始事件（无 triggername），时机名在第三形参 name
 								var tn = name;
