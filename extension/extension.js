@@ -4917,7 +4917,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				try {
 					var _mx = pkg.skill && pkg.skill.mx_shenwei_mod;
 					if (!_mx || !_mx.mod) {
-						bzWrite('【马超单测】mx_shenwei_mod 未注册或缺 mod 对象');
+						require('fs').appendFileSync('C:/bz-diag.log', new Date().toLocaleTimeString() + '  【马超单测】mx_shenwei_mod 未注册或缺 mod 对象\n');
 					} else {
 						var _from = { storage: { mx_cd: 1 }, name: 'machao-mock' };
 						var _to = { storage: { mx_cm: 1 }, name: 'target-mock' };
@@ -4925,10 +4925,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						var af = _mx.mod.attackFrom ? _mx.mod.attackFrom(_from, _to, 2) : 'nofn';
 						var gt = _mx.mod.globalTo ? _mx.mod.globalTo(_from, _to, 2) : 'nofn';
 						var at = _mx.mod.attackTo ? _mx.mod.attackTo(_from, _to, 2) : 'nofn';
-						bzWrite('【马超单测】globalFrom(2,cd=1)=' + gf + '(期望1) | attackFrom=' + af + '(期望1) | globalTo(2,cm=1)=' + gt + '(期望3) | attackTo=' + at + '(期望3)');
+						require('fs').appendFileSync('C:/bz-diag.log', new Date().toLocaleTimeString() + '  【马超单测】globalFrom(2,cd=1)=' + gf + '(期望1) | attackFrom=' + af + '(期望1) | globalTo(2,cm=1)=' + gt + '(期望3) | attackTo=' + at + '(期望3)\n');
 					}
 				} catch (eMx) {
-					bzWrite('【马超单测】异常: ' + eMx.message);
+					require('fs').appendFileSync('C:/bz-diag.log', new Date().toLocaleTimeString() + '  【马超单测】异常: ' + eMx.message + '\n');
 				}
 			} catch (eBoot) {
 				try {
