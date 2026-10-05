@@ -4584,11 +4584,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							filter: function (event, player) {
 								if (!player.isIn()) return false;
 								if (event.name == 'equip') {
-									// 获得坐骑（含被夺/换装）：cards 里有 equip3/equip4
-									if (event.player != player) return false;
+									// 获得坐骑：cards 里的马牌**当前归属者是自己**才算
+									//（equip 事件的 event.player 在琉璃版 content 中未赋值，旧判据恒 false ⇒ 选项不弹）
 									var cs = event.cards || [];
 									for (var i = 0; i < cs.length; i++) {
-										if (cs[i] && (get.subtype(cs[i]) == 'equip3' || get.subtype(cs[i]) == 'equip4')) return true;
+										var c = cs[i];
+										if (c && (get.subtype(c) == 'equip3' || get.subtype(c) == 'equip4') && get.owner(c) == player) return true;
 									}
 									return false;
 								}
@@ -4703,7 +4704,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								},
 								backup: function (links, player) {
 									return {
-										filterCard: true,
+										filterCard: function (card) {
+											return get.subtype(card) == 'equip3' || get.subtype(card) == 'equip4';
+										},
 										audio: 'shen_machao',
 										popname: true,
 										check: function (card) { return 8 - get.value(card); },
@@ -4711,7 +4714,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										viewAs: { name: links[0][2], nature: links[0][3] },
 										precontent: function () {
 											// 无次数和距离限制：转化使用期间挂临时 mod（回合结束自动过期）
-											player.addTempSkill('mx_shenwei_free');
+											player.addTempSkill('mx_shenwei_free', 'useCardAfter'); // 仅本次转化使用有效，结束即过期
 										},
 									};
 								},
