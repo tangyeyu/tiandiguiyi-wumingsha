@@ -4746,6 +4746,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								},
 								backup: function (links, player) {
 									return {
+										ignoreMod: true, // 防其他扩展的 cardEnabled 类 mod 拦截转化牌
 										filterCard: function (card) {
 											return get.subtype(card) == 'equip3' || get.subtype(card) == 'equip4';
 										},
