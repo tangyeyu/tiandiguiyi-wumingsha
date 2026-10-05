@@ -4659,14 +4659,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								},
 							},
 							mod: {
-								// ★ ①真-1马等价（用户校准）：马超计算与其他角色的距离-X
+								// ★ ①真-1马等价（用户校准）：inRange 的最终判定是 return m<=range
+								//（game.js:22647 当次核实）——m 与 n 是两条修正链（globalFrom/
+								// globalTo 修 n，attackFrom/attackTo 修 m），真坐骑的 distance
+								// 字段在两链各加一次 ⇒ 虚拟加成也必须四键补齐才算等价：
 								globalFrom: function (from, to, dist) {
+									return dist - (from.storage.mx_cd || 0);
+								},
+								attackFrom: function (from, to, dist) {
 									return dist - (from.storage.mx_cd || 0);
 								},
 								//（game.js:61998-62000 当次核实），挂在 from 上读 to 的 storage
 								// 永远为 0 ⇒ 选②不生效（用户实测）。globalTo 的 checkMod
 								// 以 to 为技能收集方 ⇒ to=马超时读到 mx_cm ✓
 								globalTo: function (from, to, dist) {
+									return dist + (to.storage.mx_cm || 0);
+								},
+								attackTo: function (from, to, dist) {
 									return dist + (to.storage.mx_cm || 0);
 								},
 							},
