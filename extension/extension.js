@@ -729,8 +729,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						tdgx_machao: ['male', 'qun', 4, [
 							'mx_shenwei', 'mx_shenwei_mod',
 							'mx_shenwei_horse',
-							'mx_yulei',
-							'tdgx_turn_reset'
+							'mx_yulei'
 						], ['ext:天地归一/tdgx_machao.jpg']],
 					},
 					characterIntro: {
@@ -801,9 +800,9 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'mx_shenwei_horse': '神威·铁蹄',
 							'mx_shenwei_horse_info': '你可以将装备区里的一张坐骑牌转化为任意一张牌使用或打出（无次数和距离限制）。',
 							'mx_shenwei_mod': '神威·驰',
-						'mx_shenwei_mod_info': '你的杀触发神威时多摸X张牌；本回合你使用【杀】的次数+Y（X、Y为你以此法增加的次数，X至多3，Y回合结束清零）。',
+						'mx_shenwei_mod_info': '你的攻击范围永久+X，其他角色计算与你的距离永久+Y（X、Y为你以此法增加的次数，各至多3）。',
 						'mx_yulei': '驭雷',
-						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。当任意角色回合结束时，若本回合有角色造成过&#38647;属性伤害，你获得一个&#39533;标记。',
+						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。',
 						'mx_lei': '雷',
 						'mx_lei_info': '驭雷的雷属性印记（失去1点体力时移去）。',
 						'mx_yu': '驭',
@@ -1898,7 +1897,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (p.storage.mlb_rd_used) p.storage.mlb_rd_used = 0;
 									if (p.storage.mlb_xh_log) p.storage.mlb_xh_log = {};
 									if (p.storage.lkang_kj_restore) p.storage.lkang_kj_restore = 0;
-										if (p.storage.mx_cm) p.storage.mx_cm = 0;
 								}
 								if (trigger.player && trigger.player.storage) {
 									trigger.player.storage.lx_cy_used = 0;
@@ -4627,8 +4625,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									//（atk/def/cancel2），显示文本走 choiceList —— result.control
 									// 恒为内部键，十周年UI 重写样式不影响判定。
 									var keys = [], labels = [];
-									if ((player.storage.mx_cd || 0) < 3) { keys.push('atk'); labels.push('永久使你的杀多摸1张牌'); }
-									if ((player.storage.mx_cm || 0) < 3) { keys.push('def'); labels.push('本回合使用【杀】的次数+1'); }
+									if ((player.storage.mx_cd || 0) < 3) { keys.push('atk'); labels.push('永久增加1点攻击距离'); }
+									if ((player.storage.mx_cm || 0) < 3) { keys.push('def'); labels.push('永久使其他角色计算与你的距离+1'); }
 									if (!keys.length) { event.finish(); return; }
 									keys.push('cancel2');
 									labels.push('放弃（本次不生效）');
@@ -4641,11 +4639,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (pick == 'atk') {
 										player.storage.mx_cd = (player.storage.mx_cd || 0) + 1;
 										player.markSkill('mx_shenwei_mod');
-										game.log(player, '【神威】：你的杀多摸1张牌（永久，当前+' + player.storage.mx_cd + '）');
+										game.log(player, '【神威】：你计算与其他角色的距离永久-1（当前-' + player.storage.mx_cd + '）');
 									} else if (pick == 'def') {
 										player.storage.mx_cm = (player.storage.mx_cm || 0) + 1;
 										player.markSkill('mx_shenwei_mod');
-										game.log(player, '【神威】：本回合使用【杀】的次数+1');
+										game.log(player, '【神威】：其他角色计算与你的距离永久+1（当前+' + player.storage.mx_cm + '）');
 									}
 									event.finish(); return;
 								}
@@ -4669,7 +4667,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (c != player && c.isIn() && player.inRange(c)) n++;
 								}
 								if (n > 0) player.draw(n);
-								game.log(player, '【神威】：对', event.mxT, '造成1点雷属性伤害，并摸了', get.cnNumber(drawN), '张牌（范围内人数' + n + '＋杀牌加成' + (player.storage.mx_cd || 0) + '）');
+								game.log(player, '【神威】：对', event.mxT, '造成1点雷属性伤害，并摸了', get.cnNumber(n), '张牌（攻击范围内人数）');
 							},
 						},
 						// 距离加成落地：attackRange（自己攻击范围）/ globalFrom（他人到自己的距离）
@@ -4746,7 +4744,6 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								},
 								backup: function (links, player) {
 									return {
-										ignoreMod: true, // 防其他扩展的 cardEnabled 类 mod 拦截转化牌
 										filterCard: function (card) {
 											return get.subtype(card) == 'equip3' || get.subtype(card) == 'equip4';
 										},
