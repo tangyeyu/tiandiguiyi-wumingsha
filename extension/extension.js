@@ -176,7 +176,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				//   功能性问题已修完（见 git 历史），保留代码是为了日后回归排查。
 				// ★ 开启方式：把下面 BZ_DIAG_ON 改为 true（仅此一处），
 				//   所有 (game.bzDiag2||lib.bzDiag2)(...) 调用即刻恢复落盘到 C:/bz-diag.log。
-				var BZ_DIAG_ON = false;
+				var BZ_DIAG_ON = true;
 				// ★ 挂到 game/lib 上：content 是引擎用 new Function 编译的，只能靠形参
 				//   （event/player/game/lib…）拿到外部东西，闭包变量不保险。
 				var bzDiag = function (msg) {
@@ -4913,6 +4913,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				_boot.push('星区=' + !!(pkg && pkg.skill && pkg.skill.zl_xing_tu));
 				require('fs').appendFileSync('C:/bz-diag.log',
 					new Date().toLocaleTimeString() + '  【开机自检】' + _boot.join(' | ') + '\n');
+				// —— 极·马超 mod 单测（mock 数据直接调函数，验证四键逻辑）——
+				try {
+					var _mx = pkg.skill && pkg.skill.mx_shenwei_mod;
+					if (!_mx || !_mx.mod) {
+						bzWrite('【马超单测】mx_shenwei_mod 未注册或缺 mod 对象');
+					} else {
+						var _from = { storage: { mx_cd: 1 }, name: 'machao-mock' };
+						var _to = { storage: { mx_cm: 1 }, name: 'target-mock' };
+						var gf = _mx.mod.globalFrom ? _mx.mod.globalFrom(_from, _to, 2) : 'nofn';
+						var af = _mx.mod.attackFrom ? _mx.mod.attackFrom(_from, _to, 2) : 'nofn';
+						var gt = _mx.mod.globalTo ? _mx.mod.globalTo(_from, _to, 2) : 'nofn';
+						var at = _mx.mod.attackTo ? _mx.mod.attackTo(_from, _to, 2) : 'nofn';
+						bzWrite('【马超单测】globalFrom(2,cd=1)=' + gf + '(期望1) | attackFrom=' + af + '(期望1) | globalTo(2,cm=1)=' + gt + '(期望3) | attackTo=' + at + '(期望3)');
+					}
+				} catch (eMx) {
+					bzWrite('【马超单测】异常: ' + eMx.message);
+				}
 			} catch (eBoot) {
 				try {
 					require('fs').appendFileSync('C:/bz-diag.log', '开机自检异常: ' + eBoot.message + '\n');
