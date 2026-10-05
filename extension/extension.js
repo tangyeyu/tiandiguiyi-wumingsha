@@ -4598,33 +4598,31 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 							content: function () {
 								'step 0'
 								if (event.triggername == 'equipAfter') {
-									// 二选一：按各自剩余上限过滤（各至多+3）
-									var controls = [];
-									if ((player.storage.mx_cd || 0) < 3) controls.push('①永久增加1点攻击距离');
-									if ((player.storage.mx_cm || 0) < 3) controls.push('②永久使其他角色计算与你的距离+1');
-									if (!controls.length) { event.finish(); return; }
-									if (controls.length == 1) {
-										event.mxPickIdx = 0;
-										event.goto(2); return;
-									}
-									player.chooseControl(controls)
-										.set('prompt', '神威：选择一项执行（永久生效）')
-										.set('ai', function () {
-											return 0; // 默认加攻击距离（马超进攻向）
-										});
+									// ★ 串行排除式问询（chooseBool 基础事件，零 UI 依赖）：
+									// chooseControl 在十周年UI 下 result.control/index 形态不可靠
+									//（实测①②全落同一分支），故弃用。先问①，取消或已满再问②。
+									if ((player.storage.mx_cd || 0) >= 3 && (player.storage.mx_cm || 0) >= 3) { event.finish(); return; }
 									'step 1'
-									// ★ result.index 数字判定：十周年UI 重写 chooseControl 后
-									//   result.control 的文本形态不可靠，文本匹配曾致①②全落错分支
-									event.mxPickIdx = (result && typeof result.index == 'number') ? result.index : -1;
+									if ((player.storage.mx_cd || 0) >= 3) { event.goto(3); return; }
+									player.chooseBool('神威：是否永久使你计算与其他角色的距离-1（-1马效果）？')
+										.set('ai', function () { return true; });
 									'step 2'
-									if (event.mxPickIdx == 0) {
+									if (result.bool) {
 										player.storage.mx_cd = (player.storage.mx_cd || 0) + 1;
 										player.markSkill('mx_shenwei_mod');
-										game.log(player, '【神威】：攻击范围永久+', player.storage.mx_cd);
-									} else if (event.mxPickIdx == 1) {
+										game.log(player, '【神威】：你计算与其他角色的距离永久-1（当前-' + player.storage.mx_cd + '）');
+										event.finish(); return;
+									}
+									event.goto(3);
+									'step 3'
+									if ((player.storage.mx_cm || 0) >= 3) { event.finish(); return; }
+									player.chooseBool('神威：是否永久使其他角色计算与你的距离+1（+1马效果）？')
+										.set('ai', function () { return true; });
+									'step 4'
+									if (result.bool) {
 										player.storage.mx_cm = (player.storage.mx_cm || 0) + 1;
 										player.markSkill('mx_shenwei_mod');
-										game.log(player, '【神威】：其他角色计算与你的距离永久+', player.storage.mx_cm);
+										game.log(player, '【神威】：其他角色计算与你的距离永久+1（当前+' + player.storage.mx_cm + '）');
 									}
 									event.finish(); return;
 								}
