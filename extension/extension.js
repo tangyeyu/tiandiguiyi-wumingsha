@@ -4675,6 +4675,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										player.addMark('mx_yu', 1);
 										game.log(player, '【神威】：获得了一个「驭」（当前' + get.cnNumber(player.countMark('mx_yu')) + '个）');
 									}
+									// ★ 语音：mx_shenwei 是 direct 技能，引擎的自动播放在
+									//   game.js:37360 的 if(info.direct&&!directaudio) return; 处被跳过，
+									//   所以要"发动了就出声"必须自己调，第三参 true 即 directaudio。
+									//   （官方同类用法：character/yijiang.js:13214 game.trySkillAudio('xiansi2',event.target,true)）
+									if (pick != 'cancel2') game.trySkillAudio('mx_shenwei', player, true);
 									event.finish(); return;
 								}
 								if (!result.bool || !result.targets || !result.targets.length) {
@@ -4692,6 +4697,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								var mxDrawN = n + mxBonus;
 								if (mxDrawN > 0) player.draw(mxDrawN);
 								game.log(player, '【神威】：对', event.mxT, '造成1点雷属性伤害，并摸了', get.cnNumber(mxDrawN), '张牌（范围内' + n + '人＋神威加成' + mxBonus + '）');
+								// ★ 语音：发动了就出声（用杀触发神威造成雷伤同样算"发动"）
+								game.trySkillAudio('mx_shenwei', player, true);
 							},
 						},
 						// 神威·驰：纯展示壳（摸牌加成 mx_cd / 本回合出杀次数加成 mx_cm 都由结算路径直接读，无需 mod）
@@ -4846,12 +4853,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (!player.hasSkill('mx_yu')) player.addSkill('mx_yu');
 									player.addMark('mx_yu', 1);
 									game.log(player, '【驭雷】：本回合有角色造成过雷属性伤害，获得了', get.cnNumber(player.countMark('mx_yu')), '个「驭」');
+									game.trySkillAudio('mx_yulei', player, true);
 								}
 									event.finish(); return;
 								}
 								if (tn == 'damageBegin2') {
 									trigger.cancel();
 									game.log(player, '【驭雷】：免疫了雷属性伤害');
+									// ★ direct 技能需自行播语音（第三参 true = directaudio）
+									game.trySkillAudio('mx_yulei', player, true);
 									event.finish(); return;
 								}
 								if (tn == 'damageSource') {
@@ -4882,6 +4892,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (!player.hasSkill('mx_yu')) player.addSkill('mx_yu');
 									player.addMark('mx_yu', 1);
 									game.log(player, '【驭雷】：获得了', get.cnNumber(player.countMark('mx_yu')), '个驭标记');
+									// ★ direct 技能需自行播语音（第三参 true = directaudio）
+									game.trySkillAudio('mx_yulei', player, true);
 									event.finish(); return;
 								}
 								// phaseBefore：消耗五驭 → 立即获得一个额外回合（插队当前回合之前）
@@ -4895,6 +4907,8 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								event.next.remove(next);       // createEvent 自动入列（game.js:40348）——先摘再插队
 								trigger.next.unshift(next);    // 插到当前回合队列最前 ⇒ 马超立即行动，原回合顺延
 								game.log(player, '【驭雷】：消耗了五个驭标记，立即获得了一个额外的回合');
+									// ★ direct 技能需自行播语音（第三参 true = directaudio）
+									game.trySkillAudio('mx_yulei', player, true);
 							},
 						},
 						// 额外回合内伤害转雷（addTempSkill 回合结束自动过期）
