@@ -2459,7 +2459,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// · 来源牌 position 'he'（卡面「区域内的一张牌」=手牌+装备区；
 						//   chooseCard 不支持判定区，atlas C11）。
 						dy_wuku_qibei: {
-							audio: 'wuku',
+							audio: 'spwuku',
 							enable: ['chooseToUse', 'chooseToRespond'],
 							filter: function (event, player) {
 								if (!player.countMark('dy_bei') || !player.countCards('he') || player.hasSkill('dy_wuku_qibei_used')) return false;
@@ -2501,7 +2501,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								backup: function (links, player) {
 									return {
 										filterCard: true,
-										audio: 'wuku',
+										audio: 'spwuku',
 										popname: true,
 										check: function (card) { return 8 - get.value(card); },
 										position: 'he',
