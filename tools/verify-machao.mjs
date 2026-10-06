@@ -148,6 +148,25 @@ check('C11 mx_cm 由 tdgx_turn_reset 清零', () => {
   return { ok: /if \(p\.storage\.mx_cm\) p\.storage\.mx_cm = 0;/.test(b), detail: 'ok' };
 });
 
+// ★ 2026-10-06 补：重制时只改了卡面 `mx_shenwei_info` / `mx_yulei_info`，
+//   characterIntro（选将界面/介绍面板显示的简介）漏改 —— 于是名单界面还在教
+//   "距离±1，各至多加三"那套已被移除的玩法。C9/C10 只看 `_info`，所以没拦住。
+//   这条把简介也纳入断言；反例：改动前的仓库版本必须 FAIL。
+check('C12 characterIntro 与卡面同步（无旧距离语义 / 有三选一 / 有回合末充能 / 印记全体结算）', () => {
+  const m = text.match(/tdgx_machao: '极·马超。([^']*)'/);
+  const v = m ? m[1] : '';
+  const bad = /距离[-+]1|计算与你的距离|计算与其他角色的距离/.test(v);
+  const trio = /永久多摸一张牌/.test(v) && /使用【杀】的次数\+1/.test(v) && /获得一个驭标记/.test(v);
+  const tail = /任意角色的回合结束时，若本回合有角色造成过雷属性伤害，你获得一个驭标记/.test(v);
+  // 与代码一致：4880-4889 是「场上所有带雷印记的角色各失去 1 点体力」，
+  // 不是卡面写的「受伤角色」—— 2026-09-13 用户校准。
+  const all = /所有拥有雷印记的角色失去1点体力并移去其雷印记/.test(v);
+  return {
+    ok: v.length > 0 && !bad && trio && tail && all,
+    detail: `长度=${v.length} 旧距离语义=${bad} 三选一=${trio} 回合末充能=${tail} 全体结算=${all}`,
+  };
+});
+
 const pass = results.filter((r) => r.ok).length;
 console.log(`\n=== 自检报告：${label} ===`);
 for (const r of results) console.log(`  ${r.ok ? '✓' : '✗'} ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
