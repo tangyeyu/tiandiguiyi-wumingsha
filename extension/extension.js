@@ -725,12 +725,15 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						], ['ext:天地归一/tdgx_caocao.jpg']],
 						// ==== 2026-09-13 二批扩展新增：极·马超（用户手写卡）====
 						// 「神威」「驭雷」均为纯锁定触发技（卡面无"使用"概念），
-						// 不接神威技类别次数机制；无每回合复位项 ⇒ 不列 tdgx_turn_reset。
+						// 不接神威技类别次数机制；但 ②「本回合使用【杀】的次数+1」需要每回合清零
+						// mx_cm，故列入 tdgx_turn_reset。
 						tdgx_machao: ['male', 'qun', 4, [
 							'mx_shenwei', 'mx_shenwei_mod',
+							'mx_sha_limit',
 							'mx_shenwei_horse',
-							'mx_yulei'
-						], ['ext:天地归一/tdgx_machao.jpg']],
+							'mx_yulei',
+							'tdgx_turn_reset'
+						], ['ext:天地归一/tdgx_machao.jpg', 'die:die/shen_machao']],
 					},
 					characterIntro: {
 						mouguojia_soul: '谋郭嘉·魂。<br>定策：游戏开始时，你可以选择一名其他角色令其获得「策」（放弃发动则本技能本局不再生效），你与该角色相互间无法造成伤害；当你死亡时，可选择移除「策」。<br>铸策：你的回合开始时，给「策」添加一项效果（回复体力/额外执行一个出牌阶段（不摸牌）/使用牌造成的伤害+1/跳过一次弃牌阶段；前三项各限一次并永久存在，④不限次数但其标记在持有者回合结束时弃置）。<br>沥血：锁定技，当你体力值发生变动时，你可以摸X+1张牌（X为「策」的效果数，至多4）；若场上没有「策」，你摸一张牌。',
@@ -796,13 +799,14 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						'tdgx_zhaoyun': '名·赵云',
 						'tdgx_machao': '极·马超',
 						'mx_shenwei': '神威',
-						'mx_shenwei_info': '锁定技。当你使用或打出【杀】时，你可以对一名角色造成1点雷属性伤害，并摸X张牌（X为你攻击范围内的人数）。当你获得进攻马或防御马时，你选择一项执行：（一）永久使你计算与其他角色的距离-1；（二）永久使其他角色计算与你的距离+1（均以此法至多叠加3）。你可以将任意一张坐骑牌转化为任意牌使用或打出（无次数和距离限制）。',
+						'mx_shenwei_info': '锁定技。当你使用或打出【杀】时，你可以对一名角色造成1点&#38647;属性伤害，并摸X张牌（X为你攻击范围内的人数与你已累积的神威摸牌加成之和）。当你获得进攻马或防御马时，你选择一项执行：（一）神威永久多摸一张牌（至多累积3次）；（二）本回合你使用【杀】的次数+1（回合结束清零）；（三）获得一个&#39533;标记。你可以将任意一张坐骑牌转化为任意牌使用或打出（无次数和距离限制）。',
 						'mx_shenwei_horse': '神威·铁蹄',
 							'mx_shenwei_horse_info': '你可以将装备区里的一张坐骑牌转化为任意一张牌使用或打出（无次数和距离限制）。',
 							'mx_shenwei_mod': '神威·驰',
-						'mx_shenwei_mod_info': '你的攻击范围永久+X，其他角色计算与你的距离永久+Y（X、Y为你以此法增加的次数，各至多3）。',
+						'mx_shenwei_mod_info': '你的杀触发神威时多摸X张牌；本回合你使用【杀】的次数+Y（X、Y为你以此法增加的次数，X至多3，Y回合结束清零）。',
+						'mx_sha_limit': '神威·骁',
 						'mx_yulei': '驭雷',
-						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。',
+						'mx_yulei_info': '锁定技。你免疫&#38647;属性伤害；当你造成&#38647;属性伤害后，受伤角色获得一个&#38647;印记，你获得一个&#39533;标记；当场上拥有&#38647;印记的角色大于一个，受伤角色失去1点体力并移去其&#38647;印记。一名角色的回合开始前，你可以消耗五个&#39533;标记，立即获得一个额外的回合，且你的回合内你造成的伤害均视为&#38647;属性伤害。当任意角色回合结束时，若本回合有角色造成过&#38647;属性伤害，你获得一个&#39533;标记。',
 						'mx_lei': '雷',
 						'mx_lei_info': '驭雷的雷属性印记（失去1点体力时移去）。',
 						'mx_yu': '驭',
@@ -1897,6 +1901,7 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									if (p.storage.mlb_rd_used) p.storage.mlb_rd_used = 0;
 									if (p.storage.mlb_xh_log) p.storage.mlb_xh_log = {};
 									if (p.storage.lkang_kj_restore) p.storage.lkang_kj_restore = 0;
+									if (p.storage.mx_cm) p.storage.mx_cm = 0;
 								}
 								if (trigger.player && trigger.player.storage) {
 									trigger.player.storage.lx_cy_used = 0;
@@ -4570,9 +4575,12 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 						// ============ 极·马超（用户手写卡，2026-09-13）============
 						// 神威：三机制合一的多时机锁定技（雷杀触发/获马增益分派）；
 						//   转化入口独立为 mx_shenwei_horse（enable 按钮需带 translate 才能显示）。
-						//   距离加成经 mx_shenwei_mod（attackRange/globalFrom，storage 驱动，
-						//   各至多 +3）；转化无次数距离由 backup 内联 mod 承担。
+						//   三选一走 chooseControl（内部键 + choiceList）：①mx_cd 永久多摸一张牌（至多3）
+//   ②mx_cm 本回合出杀次数+1（tdgx_turn_reset 每回合清零，mod 由 mx_sha_limit 承担）
+//   ③获得一个「驭」；旧的距离加成已按用户口径（2026-10-06）彻底移除。
+//   转化无次数距离由 backup 内联 mod 承担。
 						mx_shenwei: {
+							audio: 'shouli',
 							locked: true,
 							forced: true,
 							charlotte: true,
@@ -4583,6 +4591,10 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (!player.isIn()) return false;
 								if (event.name == 'equip') {
 									// 获得坐骑：cards 里的马牌**当前归属者是自己**才算
+									// ★ [B3 修复] 装备牌是"使用"的 ⇒ 同一个动作同时派发 equip 与 useCard 两个事件，
+									//   若两条都处理就会弹两次对话框。本路径只负责"非使用获得"（顺手牵羊/移动装备等），
+									//   由 useCard 引起的那次交给 useCardAfter 分支。
+									if (event.getParent && event.getParent('useCard')) return false;
 									//（equip 事件的 event.player 在琉璃版 content 中未赋值，旧判据恒 false ⇒ 选项不弹）
 									var cs = event.cards || [];
 									for (var i = 0; i < cs.length; i++) {
@@ -4599,64 +4611,74 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 										var c2 = cs2[j2];
 										if (c2 && (get.subtype(c2) == 'equip3' || get.subtype(c2) == 'equip4')) return true;
 									}
-									return false;
-								}
+									// ★ [B1 修复] 这里**不能** return false：使用【杀】走的也是 useCard，
+									//   一旦在此早退，下面的【杀】判定永远够不到（旧版实测：用杀不触发神威）。
+									//   非马牌非杀的情形由下面的判定自然排除。
+}
 								// 使用或打出【杀】
 								if (event.player != player) return false;
 								return !!(event.card && get.name(event.card) == 'sha');
 							},
-							content: function () {
+														content: function () {
 								'step 0'
-																// ★ 原始事件字段在 trigger 上（content 的 event 是技能事件，无 card）
-									var _mxHorse = (event.triggername == 'useCardAfter' && trigger.card && (get.subtype(trigger.card) == 'equip3' || get.subtype(trigger.card) == 'equip4'));
-								if (event.triggername == 'equipAfter' || _mxHorse) {
-									// —— 运行时诊断：获马瞬间自动落盘（BZ_DIAG_ON 开着）——
+								// ★ 原始事件字段在 trigger 上（content 的 event 是技能事件，无 card）
+								var _mxHorse = (event.triggername == 'useCardAfter' && trigger.card && (get.subtype(trigger.card) == 'equip3' || get.subtype(trigger.card) == 'equip4'));
+								// ★ [B2 修复] 分支必须在**顶层**判定并存进技能事件：
+								//   'step N' 只能出现在函数体顶层。旧版把 'step 1' 写在 if 里，引擎的
+								//   parsex 用 try{new Function} 逐个试位，嵌套那个（case 出现在 switch 的
+								//   内嵌块）通不过校验被跳过 ⇒ case 1 落到了【杀】分支，于是答完获马
+								//   对话框后执行的是【杀】分支的代码、读到 chooseControl 的结果就 finish
+								//   ⇒ 三个选项永不生效（旧版实测）。
+								event.mxHorse = !!(event.triggername == 'equipAfter' || _mxHorse);
+								if (event.mxHorse) {
+									// —— 运行时诊断：获马瞬间落盘当前加成值（必须走 game./lib. 前缀，包级闭包里没有裸 bzDiag2）——
 									try {
-										var _dgHasMod = player.skills.contains('mx_shenwei_mod');
-										var _dgT = null;
-										for (var _di = 0; _di < game.players.length; _di++) {
-											if (game.players[_di] != player && game.players[_di].isIn()) { _dgT = game.players[_di]; break; }
-										}
-										var _dgGf = _dgT ? game.checkMod(player, _dgT, 2, 'globalFrom', player) : '-';
-										var _dgAf = _dgT ? game.checkMod(player, _dgT, 2, 'attackFrom', player) : '-';
-										bzDiag2('【神威获马诊断】mod挂载=' + _dgHasMod + ' | mx_cd=' + (player.storage.mx_cd || 0) + ' | checkMod(globalFrom,2)=' + _dgGf + ' | checkMod(attackFrom,2)=' + _dgAf);
-									} catch (eDg) { }
+										(game.bzDiag2 || lib.bzDiag2)('【神威获马】mx_cd(永久摸牌加成)=' + (player.storage.mx_cd || 0) + ' | mx_cm(本回合出杀次数)=' + (player.storage.mx_cm || 0) + ' | 有mx_sha_limit=' + player.hasSkill('mx_sha_limit'));
+									} catch (eDg) {
+										try { (game.bzDiag2 || lib.bzDiag2)('神威获马诊断异常: ' + eDg.message); } catch (e2) { }
+									}
 									// ★ chooseControl 防弹版（clan.js:2018 官方模式）：controls 传内部键
-									//（atk/def/cancel2），显示文本走 choiceList —— result.control
+									//（atk/def/yu/cancel2），显示文本走 choiceList —— result.control
 									// 恒为内部键，十周年UI 重写样式不影响判定。
 									var keys = [], labels = [];
-									if ((player.storage.mx_cd || 0) < 3) { keys.push('atk'); labels.push('永久增加1点攻击距离'); }
-									if ((player.storage.mx_cm || 0) < 3) { keys.push('def'); labels.push('永久使其他角色计算与你的距离+1'); }
-									if (!keys.length) { event.finish(); return; }
+									if ((player.storage.mx_cd || 0) < 3) { keys.push('atk'); labels.push('神威永久多摸一张牌'); }
+									if ((player.storage.mx_cm || 0) < 3) { keys.push('def'); labels.push('本回合使用【杀】的次数+1'); }
+									keys.push('yu');
+									labels.push('获得一个「驭」');
 									keys.push('cancel2');
 									labels.push('放弃（本次不生效）');
 									player.chooseControl(keys)
 										.set('choiceList', labels)
-										.set('prompt', '神威：选择一项执行（永久生效）')
+										.set('prompt', '神威：你获得了坐骑，选择一项执行')
 										.set('ai', function () { return 'atk'; });
-									'step 1'
+								} else {
+									// 使用或打出【杀】：对一名角色造成 1 点雷伤 + 摸（攻击范围内人数 + 神威加成）
+									player.chooseTarget('神威：对一名角色造成1点雷属性伤害', function (card, player, target) {
+										return target.isIn();
+									}).set('ai', function (target) {
+										return -get.attitude(_status.event.player, target);
+									});
+								}
+								'step 1'
+								if (event.mxHorse) {
 									var pick = result.control;
 									if (pick == 'atk') {
 										player.storage.mx_cd = (player.storage.mx_cd || 0) + 1;
 										player.markSkill('mx_shenwei_mod');
-										game.log(player, '【神威】：你计算与其他角色的距离永久-1（当前-' + player.storage.mx_cd + '）');
+										game.log(player, '【神威】：你的杀多摸1张牌（永久，当前+' + player.storage.mx_cd + '）');
 									} else if (pick == 'def') {
 										player.storage.mx_cm = (player.storage.mx_cm || 0) + 1;
 										player.markSkill('mx_shenwei_mod');
-										game.log(player, '【神威】：其他角色计算与你的距离永久+1（当前+' + player.storage.mx_cm + '）');
+										game.log(player, '【神威】：本回合使用【杀】的次数+1');
+									} else if (pick == 'yu') {
+										if (!player.hasSkill('mx_yu')) player.addSkill('mx_yu');
+										player.addMark('mx_yu', 1);
+										game.log(player, '【神威】：获得了一个「驭」（当前' + get.cnNumber(player.countMark('mx_yu')) + '个）');
 									}
 									event.finish(); return;
 								}
-								// 使用或打出【杀】：对一名角色造成 1 点雷伤 + 摸 X（攻击范围内人数）
-								player.chooseTarget('神威：对一名角色造成1点雷属性伤害', function (card, player, target) {
-									return target.isIn();
-								}).set('ai', function (target) {
-									return -get.attitude(_status.event.player, target);
-								});
-								'step 1'
 								if (!result.bool || !result.targets || !result.targets.length) {
-									// 未选目标（可取消）——跳过雷伤，仍结算摸牌？卡面两句并列于同一触发，
-									// 取消伤害则本段整体放弃（严格按"你可以对一名角色…"整体可选）。
+									// 未选目标（可取消）——跳过雷伤；卡面"你可以对一名角色…"整体可选。
 									event.finish(); return;
 								}
 								event.mxT = result.targets[0];
@@ -4666,47 +4688,48 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 									var c = game.players[i];
 									if (c != player && c.isIn() && player.inRange(c)) n++;
 								}
-								if (n > 0) player.draw(n);
-								game.log(player, '【神威】：对', event.mxT, '造成1点雷属性伤害，并摸了', get.cnNumber(n), '张牌（攻击范围内人数）');
+								var mxBonus = player.storage.mx_cd || 0;
+								var mxDrawN = n + mxBonus;
+								if (mxDrawN > 0) player.draw(mxDrawN);
+								game.log(player, '【神威】：对', event.mxT, '造成1点雷属性伤害，并摸了', get.cnNumber(mxDrawN), '张牌（范围内' + n + '人＋神威加成' + mxBonus + '）');
 							},
 						},
-						// 距离加成落地：attackRange（自己攻击范围）/ globalFrom（他人到自己的距离）
+						// 神威·驰：纯展示壳（摸牌加成 mx_cd / 本回合出杀次数加成 mx_cm 都由结算路径直接读，无需 mod）
 						mx_shenwei_mod: {
 							charlotte: true,
 							sub: true,
 							mark: true,
-							marktext: '骑',
+							marktext: '驰',
 							intro: {
+								name: '神威·驰',
 								content: function (storage, player) {
-									return '神威加成：攻击范围+' + (player.storage.mx_cd || 0) + '；其他角色计算与你的距离+' + (player.storage.mx_cm || 0);
+									return '神威永久摸牌加成：+' + (player.storage.mx_cd || 0) + '；本回合出杀次数加成：+' + (player.storage.mx_cm || 0);
 								},
 							},
+						},
+						// 神威·骁：②「本回合使用【杀】的次数+1」的落地实现。
+						//   · mod 必须纯查询（引擎高频调用，不得有副作用）——见 atlas/02-范式库.md
+						//   · num 可能是 undefined（无 usable 字段的牌）⇒ 先归零再加，否则 NaN 会让牌反而不可用
+						//   · 无加成时直接 return（= 不改动引擎原值），避免影响无限次等特例——同 dy_pozhu_turn
+						//   · 清零点：mx_cm 由 tdgx_turn_reset 在每个回合开始时归零
+						mx_sha_limit: {
+							charlotte: true,
+							sub: true,
 							mod: {
-								// ★ ①真-1马等价（用户校准）：inRange 的最终判定是 return m<=range
-								//（game.js:22647 当次核实）——m 与 n 是两条修正链（globalFrom/
-								// globalTo 修 n，attackFrom/attackTo 修 m），真坐骑的 distance
-								// 字段在两链各加一次 ⇒ 虚拟加成也必须四键补齐才算等价：
-								globalFrom: function (from, to, dist) {
-									return dist - (from.storage.mx_cd || 0);
-								},
-								attackFrom: function (from, to, dist) {
-									return dist - (from.storage.mx_cd || 0);
-								},
-								//（game.js:61998-62000 当次核实），挂在 from 上读 to 的 storage
-								// 永远为 0 ⇒ 选②不生效（用户实测）。globalTo 的 checkMod
-								// 以 to 为技能收集方 ⇒ to=马超时读到 mx_cm ✓
-								globalTo: function (from, to, dist) {
-									return dist + (to.storage.mx_cm || 0);
-								},
-								attackTo: function (from, to, dist) {
-									return dist + (to.storage.mx_cm || 0);
+								cardUsable: function (card, player, num) {
+									if (get.name(card) != 'sha') return;
+									var y = (player.storage && player.storage.mx_cm) || 0;
+									if (y <= 0) return;
+									if (num === false) return false;
+									if (typeof num != 'number') num = 0;
+									return num + y;
 								},
 							},
 						},
 						// 马转任意牌：照武库·启备的官方灭吴范式（chooseButton + backup），
 						// 来源限装备区坐骑（position 'e'），无次数距离限制由 backup 内联 mod 承担。
 						mx_shenwei_horse: {
-							audio: 'shen_machao',
+							audio: 'shouli',
 							enable: ['chooseToUse', 'chooseToRespond'],
 							filter: function (event, player) {
 								return player.getCards('e', function (card) {
@@ -4744,10 +4767,11 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								},
 								backup: function (links, player) {
 									return {
+										ignoreMod: true, // 防其他扩展的 cardEnabled 类 mod 拦截转化牌
 										filterCard: function (card) {
 											return get.subtype(card) == 'equip3' || get.subtype(card) == 'equip4';
 										},
-										audio: 'shen_machao',
+										audio: 'shouli',
 										popname: true,
 										check: function (card) { return 8 - get.value(card); },
 										position: 'e',
@@ -4790,19 +4814,20 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 
 						// 驭雷：免雷伤 / 雷伤记标记 / 消耗五驭插队新回合 —— 多时机锁定技
 						mx_yulei: {
+							audio: 'hengwu',
 							locked: true,
 							forced: true,
 							charlotte: true,
 							popup: false,
 							direct: true,
-							trigger: { player: 'damageBegin2', source: 'damageSource', global: 'phaseBefore' },
+							trigger: { player: 'damageBegin2', source: 'damageSource', global: ['damageEnd', 'phaseBefore', 'phaseEnd'] },
 							filter: function (event, player, name) {
 								// filter 的 event 是原始事件（无 triggername），时机名在第三形参 name
 								var tn = name;
 								if (tn == 'damageBegin2') return event.nature == 'thunder';
 								if (tn == 'damageSource') return event.nature == 'thunder' && event.source == player && (event.num || 0) > 0;
 								if (tn == 'damageEnd') return event.nature == 'thunder' && (event.num || 0) > 0; // 记录：任意来源雷伤（用户新增条款）
-								if (tn == 'phaseEnd') return player.isIn() && player.storage.mx_thunder_phase == event;
+								if (tn == 'phaseEnd') return player.isIn() && !!player.storage.mx_thunder_flag;
 								if (tn == 'phaseBefore') return player.countMark('mx_yu') >= 5;
 								return false;
 							},
@@ -4812,16 +4837,16 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 								if (tn == 'damageEnd') {
 									// 用户新增条款：本回合内有人造成过雷伤 ⇒ 回合结束时 +1「驭」
 									// （以 phase 事件引用为「本回合」凭据，phaseEnd 分支比对结算）
-									player.storage.mx_thunder_phase = event.getParent('phase');
+									player.storage.mx_thunder_flag = true;
 									event.finish(); return;
 								}
 								if (tn == 'phaseEnd') {
-									if (player.storage.mx_thunder_phase == trigger) {
-										delete player.storage.mx_thunder_phase;
-										if (!player.hasSkill('mx_yu')) player.addSkill('mx_yu');
-										player.addMark('mx_yu', 1);
-										game.log(player, '【驭雷】：本回合有雷属性伤害造成，获得了', get.cnNumber(player.countMark('mx_yu')), '个「驭」');
-									}
+									if (player.storage.mx_thunder_flag) {
+									delete player.storage.mx_thunder_flag;
+									if (!player.hasSkill('mx_yu')) player.addSkill('mx_yu');
+									player.addMark('mx_yu', 1);
+									game.log(player, '【驭雷】：本回合有角色造成过雷属性伤害，获得了', get.cnNumber(player.countMark('mx_yu')), '个「驭」');
+								}
 									event.finish(); return;
 								}
 								if (tn == 'damageBegin2') {
@@ -4936,20 +4961,23 @@ game.import("extension", function (lib, game, ui, get, ai, _status) {
 				_boot.push('星区=' + !!(pkg && pkg.skill && pkg.skill.zl_xing_tu));
 				require('fs').appendFileSync('C:/bz-diag.log',
 					new Date().toLocaleTimeString() + '  【开机自检】' + _boot.join(' | ') + '\n');
-				// —— 极·马超 mod 单测（mock 数据直接调函数，验证四键逻辑）——
+				// —— 极·马超 mod 单测（mock 直接调函数：验证「本回合出杀次数+1」的落地，旧距离断言已废弃）——
 				try {
-					var _mx = pkg.skill && pkg.skill.mx_shenwei_mod;
-					if (!_mx || !_mx.mod) {
-						require('fs').appendFileSync('C:/bz-diag.log', new Date().toLocaleTimeString() + '  【马超单测】mx_shenwei_mod 未注册或缺 mod 对象\n');
-					} else {
-						var _from = { storage: { mx_cd: 1 }, name: 'machao-mock' };
-						var _to = { storage: { mx_cm: 1 }, name: 'target-mock' };
-						var gf = _mx.mod.globalFrom ? _mx.mod.globalFrom(_from, _to, 2) : 'nofn';
-						var af = _mx.mod.attackFrom ? _mx.mod.attackFrom(_from, _to, 2) : 'nofn';
-						var gt = _mx.mod.globalTo ? _mx.mod.globalTo(_from, _to, 2) : 'nofn';
-						var at = _mx.mod.attackTo ? _mx.mod.attackTo(_from, _to, 2) : 'nofn';
-						require('fs').appendFileSync('C:/bz-diag.log', new Date().toLocaleTimeString() + '  【马超单测】globalFrom(2,cd=1)=' + gf + '(期望1) | attackFrom=' + af + '(期望1) | globalTo(2,cm=1)=' + gt + '(期望3) | attackTo=' + at + '(期望3)\n');
+					var _mx = pkg.skill && pkg.skill.mx_sha_limit;
+					var _mxm = pkg.skill && pkg.skill.mx_shenwei_mod;
+					var _d = [];
+					_d.push('mx_sha_limit=' + !!_mx);
+					_d.push('hasCardUsable=' + !!(_mx && _mx.mod && _mx.mod.cardUsable));
+					_d.push('mx_shenwei_mod残留mod=' + !!(_mxm && _mxm.mod) + '(期望false)');
+					if (_mx && _mx.mod && _mx.mod.cardUsable) {
+						var _p0 = { storage: {} };
+						var _p1 = { storage: { mx_cm: 2 } };
+						_d.push('无加成(1)->' + _mx.mod.cardUsable({ name: 'sha' }, _p0, 1) + '(期望undefined=不改引擎原值)');
+						_d.push('加成2(1)->' + _mx.mod.cardUsable({ name: 'sha' }, _p1, 1) + '(期望3)');
+						_d.push('加成2(undefined)->' + _mx.mod.cardUsable({ name: 'sha' }, _p1, undefined) + '(期望2)');
+						_d.push('非杀->' + _mx.mod.cardUsable({ name: 'shan' }, _p1, 1) + '(期望undefined)');
 					}
+					require('fs').appendFileSync('C:/bz-diag.log', new Date().toLocaleTimeString() + '  【马超单测】' + _d.join(' | ') + '\n');
 				} catch (eMx) {
 					require('fs').appendFileSync('C:/bz-diag.log', new Date().toLocaleTimeString() + '  【马超单测】异常: ' + eMx.message + '\n');
 				}
